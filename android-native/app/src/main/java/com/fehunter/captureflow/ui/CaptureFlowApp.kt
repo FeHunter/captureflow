@@ -555,7 +555,7 @@ private fun CaptureCard(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().weight(0.30f).padding(start = 20.dp, top = 12.dp, end = 12.dp, bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth().weight(0.20f).padding(start = 20.dp, top = 12.dp, end = 12.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -595,7 +595,7 @@ private fun CaptureCard(
                 }
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxWidth().weight(0.70f).background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().weight(0.80f).background(MaterialTheme.colorScheme.surfaceVariant),
                     key = { page -> allCaptures[page].id },
                 ) { page ->
                     FullscreenCapturePage(
