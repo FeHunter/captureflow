@@ -307,7 +307,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
         val viewerCaptures = filtered.filter { it.category == capture.category }
         val initialPage = viewerCaptures.indexOfFirst { it.id == capture.id }.coerceAtLeast(0)
         val sourceUrl = capture.sourceUrl?.takeIf { url ->
-            Uri.parse(url).scheme?.lowercase() in setOf("http", "https")
+            Uri.parse(url).scheme?.lowercase()?.let { it == "http" || it == "https" } == true
         }
         Dialog(
             onDismissRequest = { selectedCapture = null },
