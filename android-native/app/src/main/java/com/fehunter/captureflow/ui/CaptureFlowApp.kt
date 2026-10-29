@@ -402,7 +402,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     TextButton(onClick = {
                         confirmOcrSourceUrl = false
                         viewModel.confirmSourceUrl(capture.id)
-                        selectedCapture = capture.copy(sourceVerified = true)
+                        selectedCapture = capture.copy(sourceVerified = true, sourceDetectionMethod = "ocr_confirmed")
                         runCatching {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(sourceUrl)))
                         }
