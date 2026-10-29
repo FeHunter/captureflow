@@ -77,21 +77,14 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
-    var content by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var imageCategory by remember { mutableStateOf("Referência") }
-    var taskTitle by remember { mutableStateOf("") }
-    val tasks by viewModel.tasks.collectAsState()
     val categories = listOf("Todas", "Ler depois", "Ideias", "Tarefas", "Referência")
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
-    )
-    val taskImagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let(viewModel::addImageTask) },
     )
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
@@ -140,22 +133,21 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
                 }
             }
         }
-        item(key = "text-entry") {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = content, onValueChange = { content = it }, modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Salvar texto ou link") }, placeholder = { Text("Cole um link ou escreva uma referência") },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { viewModel.addCapture(content); content = "" }),
-                    minLines = 1, maxLines = 3)
-                Button(onClick = { viewModel.addCapture(content); content = "" }, enabled = content.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("Salvar referência")
-                }
-            }
-        }
         item(key = "search") {
-            OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
-                label = { Text("Buscar referências") }, singleLine = true)
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Buscar referências") },
+                singleLine = true,
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { query = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = "Limpar busca")
+                        }
+                    }
+                },
+            )
         }
         item(key = "categories") {
             Row(
@@ -188,17 +180,6 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
                     onDeleteSubtask = viewModel::deleteCaptureSubtask,
                 )
             }
-        }
-        item(key = "task-section") {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
-            Text("Checklist", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = taskTitle, onValueChange = { taskTitle = it }, modifier = Modifier.weight(1f), label = { Text("Nova tarefa") }, singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { viewModel.addTask(taskTitle); taskTitle = "" }))
-                IconButton(onClick = { viewModel.addTask(taskTitle); taskTitle = "" }, enabled = taskTitle.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = "Adicionar tarefa") }
-            }
-            OutlinedButton(onClick = { taskImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Image, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Adicionar screenshot à checklist") }
-            if (tasks.isEmpty()) Text("Nenhuma tarefa ainda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            else tasks.forEach { task -> TaskCard(task = task, onCompleted = { viewModel.setTaskCompleted(task.id, it) }, onDelete = { viewModel.deleteTask(task.id) }, onAnalyze = { viewModel.analyzeTaskScreenshot(task) }) }
         }
     }
     selectedImageUri?.let { uri ->

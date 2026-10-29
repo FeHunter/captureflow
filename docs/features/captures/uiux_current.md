@@ -30,3 +30,10 @@
 - Ao selecionar uma imagem, abrir um diálogo de categoria/tag (Ler depois, Ideias, Tarefas ou Referência) antes de persistir e iniciar OCR.
 - O seletor de tema fica no cabeçalho e oferece Seguir dispositivo, Claro e Escuro.
 - Paleta inspirada na arte Hunter: azul-marinho profundo, azul oceano, azul-ciano e branco; no tema escuro, superfícies azul-marinho em vez de preto puro.
+
+
+## Simplificação da tela principal
+- A tela principal mantém a seleção de imagem, a busca, os filtros e a lista de referências.
+- Não exibir a seção independente Checklist nem o formulário manual de texto/link; compartilhar conteúdo de outros apps continua sendo uma forma de captura.
+- Exibir um ícone X no campo de busca somente quando houver texto, permitindo limpar a consulta com um toque.
+- A versão exibida no cabeçalho usa `BuildConfig.VERSION_NAME`, que recebe a versão base e o hash curto do commit atual no build.

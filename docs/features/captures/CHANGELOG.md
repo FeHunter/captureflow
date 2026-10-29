@@ -38,3 +38,10 @@
 - Removida a navegação inferior entre Referências e Checklist; ambas as áreas estão na tela principal.
 - Adicionado seletor de categoria para imagens escolhidas no dispositivo.
 - Adicionado seletor persistente de tema: sistema, claro e escuro, com paleta azul-marinho/ciano inspirada na referência visual fornecida.
+
+
+## Tela principal simplificada
+- Removida a seção independente Checklist da tela principal; permanece a seleção inicial de imagem.
+- Removido o formulário manual para adicionar texto/link; o compartilhamento de conteúdo de outros apps continua disponível.
+- Campo de busca ganhou ação X para limpar o texto quando preenchido.
+- Versão base atualizada para 0.3.1 e título identifica automaticamente o commit por um sufixo curto gerado no build.

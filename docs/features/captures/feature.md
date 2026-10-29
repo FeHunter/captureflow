@@ -1,16 +1,16 @@
 # Contrato funcional — Captures
 
-**Versão do app:** 0.3.0  
+**Versão base do app:** 0.3.1 (o sufixo do commit é gerado automaticamente no build)  
 **Status:** implementação em validação no emulador.
 
 ## Objetivo
 Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo como referência ou tarefa, mantendo os dados no aparelho.
 
 ## Fluxos funcionais
-1. O usuário cola texto/URL ou compartilha texto com CaptureFlow.
+1. O usuário compartilha texto/URL com CaptureFlow; a entrada manual de texto/link não aparece na tela principal.
 2. O app salva uma referência local e, para URLs HTTP(S), tenta recuperar título e descrição do HTML público.
 3. O usuário seleciona uma imagem na tela principal de Referências ou compartilha uma imagem/screenshot com o app; ao selecionar manualmente, escolhe uma categoria/tag antes de salvar. A imagem é copiada para o armazenamento privado quando possível.
-4. A tela principal reúne referências e checklist, sem bottom navigation. A imagem anexada é exibida como capa do cartão, e tarefas independentes ficam na seção Checklist da mesma tela.
+4. A tela principal reúne a seleção de imagem e a biblioteca de referências, sem bottom navigation. A checklist independente não é exibida nesta tela.
 5. Assim que uma imagem é selecionada ou compartilhada para a aba Referências, o app inicia OCR local automaticamente e atualiza o título da referência; o cartão mantém a imagem original como capa.
 6. O cartão de referência exibe apenas título, capa, checkbox de conclusão e botão de exclusão. Durante a análise, pode exibir um indicador de carregamento ou uma mensagem de erro.
 7. Ao tocar na capa de uma referência, a imagem abre em visualização fullscreen com opção de fechar.
@@ -40,3 +40,10 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 - O usuário pode selecionar Seguir dispositivo, Claro ou Escuro; a preferência é persistida localmente.
 - A seleção manual de imagem permite atribuir uma das categorias existentes antes de criar a referência.
 - Referências e tarefas independentes são apresentadas em uma única tela; não há bottom navigation.
+
+
+## Tela principal simplificada
+- A tela mantém a seleção de imagem, a busca e os filtros por categoria.
+- A seção independente com o título Checklist e o formulário manual de texto/link não são exibidos na tela principal.
+- O campo de busca mostra um botão de limpar (X) somente enquanto há texto digitado.
+- O título do app usa a versão base mais o identificador curto do commit, gerado pelo Gradle para diferenciar cada commit.
