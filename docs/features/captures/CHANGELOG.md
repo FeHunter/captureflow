@@ -70,3 +70,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 
 ## 2026-10-29 — Ajuste de proporção do fullscreen
 - Alterada a proporção do detalhe fullscreen de 30/70 para 20% de cabeçalho e 80% de imagem, ampliando a área visual da referência.
+
+
+## 2026-10-29 — Tags, prévia de links e layout
+- Padronizadas as tags e opções de filtro para Ler depois, Verificar, Salvar e Importante.
+- Links compartilhados agora tentam extrair título, descrição e imagem Open Graph/Twitter; a imagem é salva localmente quando possível.
+- Ajustada a altura dos cartões compactos para 272 dp e a proporção do fullscreen para 20% de cabeçalho e 80% de imagem.
