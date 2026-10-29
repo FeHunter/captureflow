@@ -67,3 +67,13 @@ Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes s�
 - O nome visível do produto é **Capture Flow** na barra superior e no rótulo do aplicativo Android; “Biblioteca” não deve substituir o nome do produto.
 - Ao abrir uma captura por um thumbnail, o visualizador permite swipe-left para a próxima captura da mesma categoria filtrada e swipe-right para a anterior, sem loop nas extremidades.
 - A data, categoria, conclusão e imagem acompanham a captura selecionada no pager. A dica de swipe permanece sobre a imagem e o botão/gesto nativo Back continua fechando o visualizador sem fechar a categoria por baixo.
+
+
+## Contrato de compartilhamento de links (2026-10-29)
+- Ao receber URL via Android Sharesheet, o ViewModel prepara uma captura pendente e a UI abre o diálogo **Salvar link como referência**.
+- O diálogo mostra o título extraído, URL, descrição quando encontrada e quatro opções exclusivas: Ler depois, Verificar, Salvar, Importante.
+- Uma categoria precisa estar selecionada e a requisição de metadados precisa terminar para habilitar **Salvar referência**.
+- Cancelar descarta o estado pendente e não persiste a referência. Se o fetch falhar, o usuário ainda pode salvar com o título fallback.
+- O parser HTTP lê até 512 KB do HTML; prioriza H1, depois metadados e title. Para imagem, prioriza img dentro de article/main, depois og:image/Twitter. Não executa JavaScript.
+- Após confirmar, salva título, URL/conteúdo e categoria; a imagem, quando disponível, é baixada para armazenamento privado e usada como capa.
+- Texto compartilhado sem URL continua sendo salvo diretamente; compartilhamento de imagem segue o fluxo de importação/OCR.
