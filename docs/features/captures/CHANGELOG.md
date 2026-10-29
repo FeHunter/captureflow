@@ -60,3 +60,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Kept filtered-list boundaries and synchronized the fullscreen header with the settled page.
 - Replaced fullscreen sub-checklist shortcut with an **Editar título** action.
 - Added title-only persistence through ViewModel and DAO; the sub-checklist remains available from the card.
+
+
+## 2026-10-29 — OCR centralizado e fluxo de screenshots
+- Priorizada a região central da imagem na pontuação de candidatos a título OCR.
+- Fixada a divisão do fullscreen em 30% de cabeçalho e 70% de imagem, com fade escuro sobre a imagem para títulos longos.
+- Adicionada remoção best-effort do screenshot original após importação confirmada pelo fluxo de notificação; imagens escolhidas manualmente permanecem na galeria. A exclusão pode ser impedida pelo Android sem consentimento do usuário.
