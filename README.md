@@ -50,3 +50,8 @@ MVP data stays on-device; no cloud sync, account, analytics or upload of capture
 
 ## Status
 Native code and documentation have been added in the migration branch. Build and device validation are still pending; this is not yet release-ready.
+
+
+## Feature documentation
+
+- [Captures feature documentation](docs/features/captures/README.md): functional contract, architecture, database contract, data access, integrations, security/privacy, UI/UX, wireframes, tests and changelog.
