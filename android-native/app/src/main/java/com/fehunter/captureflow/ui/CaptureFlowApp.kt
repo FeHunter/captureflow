@@ -59,6 +59,7 @@ import com.fehunter.captureflow.data.ChecklistTaskEntity
 @Composable
 fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, pendingTaskScreenshotUri: Uri?, onTaskScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
+    var selectedScreen by remember { mutableStateOf("library") }
     Scaffold(
         topBar = {
             TopAppBar(title = {
@@ -75,15 +76,41 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
                 }
             })
         },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = selectedScreen == "library",
+                    onClick = { selectedScreen = "library" },
+                    icon = { Icon(Icons.Default.Image, contentDescription = null) },
+                    label = { Text("Referências") },
+                )
+                NavigationBarItem(
+                    selected = selectedScreen == "tasks",
+                    onClick = { selectedScreen = "tasks" },
+                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
+                    label = { Text("Tarefas") },
+                )
+            }
+        },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            CaptureLibrary(viewModel, hasScreenshotAccess, screenshotMonitoringEnabled, detectedScreenshotUri, pendingTaskScreenshotUri, onRequestScreenshotAccess, onStopScreenshotMonitoring, onScreenshotHandled, onTaskScreenshotHandled)
+            if (selectedScreen == "tasks") {
+                ChecklistScreen(viewModel)
+            } else {
+                CaptureLibrary(
+                    viewModel, hasScreenshotAccess, screenshotMonitoringEnabled,
+                    detectedScreenshotUri, pendingTaskScreenshotUri,
+                    onRequestScreenshotAccess, onStopScreenshotMonitoring,
+                    onScreenshotHandled, onTaskScreenshotHandled,
+                    onTaskScreenshotCreated = { selectedScreen = "tasks" },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit, onTaskScreenshotCreated: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
@@ -260,6 +287,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     viewModel.addImageTask(uri)
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
+                    onTaskScreenshotCreated()
                 }) { Text("Criar tarefa") }
             },
             dismissButton = {
@@ -602,6 +630,24 @@ private fun CaptureCard(
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    // Overlay hint: it does not participate in measurement, preserving the image area.
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        tonalElevation = 2.dp,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text("‹", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("Deslize para navegar", style = MaterialTheme.typography.labelMedium)
+                            Text("›", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
