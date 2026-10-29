@@ -75,8 +75,6 @@ interface CaptureDao {
     @Query("UPDATE captures SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
-    @Query("UPDATE captures SET sourceUrl = :sourceUrl, sourceDetectionMethod = :method, sourceVerified = :verified WHERE id = :id AND sourceUrl IS NULL")
-    suspend fun updateSourceUrlIfMissing(id: String, sourceUrl: String, method: String, verified: Boolean)
     @Query("UPDATE captures SET sourceVerified = 1, sourceDetectionMethod = 'ocr_confirmed' WHERE id = :id") suspend fun confirmSourceUrl(id: String)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
