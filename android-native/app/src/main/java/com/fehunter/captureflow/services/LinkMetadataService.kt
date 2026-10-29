@@ -86,24 +86,64 @@ class LinkMetadataService {
             "<main\\b[^>]*>(.*?)</main>",
             setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
         ).find(html)?.groupValues?.getOrNull(1)
-        return firstImage(article) ?: firstImage(main)
+        val body = Regex(
+            "<body\\b[^>]*>(.*?)</body>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        ).find(html)?.groupValues?.getOrNull(1) ?: html
+
+        // Prefer semantic content containers, then inspect the body as fallback.
+        // Rank images so a logo or tracking pixel does not win just because it appears first.
+        return bestContentImage(article)
+            ?: bestContentImage(main)
+            ?: bestContentImage(body)
     }
 
-    private fun firstImage(region: String?): String? {
+    private data class ImageCandidate(val source: String, val score: Int)
+
+    private fun bestContentImage(region: String?): String? {
         if (region.isNullOrBlank()) return null
-        return Regex("<img\\b[^>]*>", RegexOption.IGNORE_CASE)
-            .findAll(region)
-            .mapNotNull { match ->
-                val element = match.value
-                val source = attribute(element, "data-src")
-                    ?: attribute(element, "data-lazy-src")
-                    ?: attribute(element, "data-original")
-                    ?: attribute(element, "src")
-                    ?: attribute(element, "srcset")?.substringBefore(',')?.substringBefore(' ')
-                source?.takeIf(String::isNotBlank)
-            }
-            .firstOrNull()
+        val candidates = mutableListOf<ImageCandidate>()
+        for (match in Regex("<img\\b[^>]*>", RegexOption.IGNORE_CASE).findAll(region)) {
+            val element = match.value
+            val srcset = attribute(element, "srcset")?.let(::bestSrcSetCandidate)
+            val source = sequenceOf(
+                attribute(element, "data-src"),
+                attribute(element, "data-lazy-src"),
+                attribute(element, "data-original"),
+                attribute(element, "data-url"),
+                attribute(element, "src"),
+                srcset,
+            ).filterNotNull().firstOrNull(String::isNotBlank) ?: continue
+            val alt = attribute(element, "alt").orEmpty()
+            val hint = listOf(alt, attribute(element, "class").orEmpty(),
+                attribute(element, "id").orEmpty()).joinToString(" ").lowercase()
+            val width = attribute(element, "width")?.filter(Char::isDigit)?.toIntOrNull() ?: 0
+            val height = attribute(element, "height")?.filter(Char::isDigit)?.toIntOrNull() ?: 0
+            if (source.startsWith("data:", ignoreCase = true) ||
+                source.endsWith(".svg", ignoreCase = true) ||
+                listOf("logo", "avatar", "icon", "sprite", "tracking", "pixel", "spinner")
+                    .any(hint::contains)) continue
+
+            var score = 0
+            if (alt.isNotBlank()) score += 3
+            if (listOf("hero", "featured", "cover", "thumbnail", "article", "content", "post")
+                    .any(hint::contains)) score += 5
+            if (listOf("logo", "avatar", "icon", "banner-ad", "advert")
+                    .any(hint::contains)) score -= 8
+            if (width >= 300) score += 4 else if (width in 1..120) score -= 4
+            if (height >= 180) score += 4 else if (height in 1..80) score -= 4
+            candidates += ImageCandidate(source, score)
+        }
+        return candidates.maxByOrNull { it.score }?.source
     }
+
+    private fun bestSrcSetCandidate(srcset: String): String? =
+        srcset.split(',').mapNotNull { entry ->
+            val parts = entry.trim().split(Regex("\\s+"))
+            val url = parts.firstOrNull()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+            val descriptor = parts.getOrNull(1)?.filter(Char::isDigit)?.toIntOrNull() ?: 0
+            url to descriptor
+        }.maxByOrNull { it.second }?.first
 
     private fun resolveHttpUrl(base: String, candidate: String): String? =
         runCatching { URL(URL(base), candidate.trim()).toString() }.getOrNull()
