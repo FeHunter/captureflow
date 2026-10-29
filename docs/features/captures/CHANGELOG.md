@@ -1,5 +1,13 @@
 # Changelog — Captures
 
+## 2026-10-29 — Recuperação em camadas da URL de origem
+- Prioridade 1: associa automaticamente URL HTTP(S) recebida em `EXTRA_TEXT` junto com imagem compartilhada.
+- Fallback de texto: procura URL em itens textuais de `ClipData`.
+- OCR local identifica URL visível como candidata não verificada; o fullscreen pede confirmação explícita antes de marcar como verificada e abrir.
+- Registra `sourceApp`, `sourceDetectionMethod` e `sourceVerified`; referrer Android e `MediaStore.OWNER_PACKAGE_NAME` são apenas indícios de pacote, não URLs nem prova da página.
+- Migração Room 5→6 preserva registros e marca URLs preexistentes como verificadas.
+- Documentados limites, privacidade e casos de teste.
+
 ## Atualização — botão de link no fullscreen
 - Reaproveita `CaptureEntity.sourceUrl`, já presente no modelo/payload, para manter a URL original sem duplicar campos.
 - Adiciona no header do visualizador fullscreen um botão para abrir o link no app/navegador padrão; aparece apenas quando a URL é HTTP(S) válida.
