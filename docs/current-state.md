@@ -26,18 +26,20 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Grupos e thumbnails de referência
 - A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails e a ação “Ver todas”.
-- Ao expandir uma categoria, as referências aparecem em grade de três colunas. Cada thumbnail usa `ContentScale.Crop` e placeholder quando não há imagem acessível.
-- Título truncado em até duas linhas. O código atual mostra `capture.title` também no texto secundário; não tratar esse segundo campo como descrição independente.
-- Menu de categoria, data/hora local `dd/MM/yyyy · HH:mm`, checkbox de conclusão, botão de sub-checklist com contagem e excluir.
-- Concluídas podem ser ocultadas. Excluir uma referência também remove suas subtarefas e somente arquivos de imagem privados dentro do diretório próprio do app.
+- Ao expandir uma categoria, as referências aparecem em grade de três colunas. Cada thumbnail usa `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder quando não há imagem acessível.
+- Estado de OCR pode exibir indicador de processamento/erro.
+- O botão/gesto Back fecha a categoria expandida quando nenhum visualizador está por cima.
 
-## Visualizadores fullscreen
-Existem dois caminhos de visualização:
-1. **Aberto pelo cartão:** cabeçalho ~20%, imagem ~80%; título/data/categoria, ação **Editar título** e fechar. A imagem usa `ContentScale.Fit`. O `HorizontalPager` permite swipe-left para próxima e swipe-right para anterior, respeitando a lista filtrada recebida pelo cartão, sem loop.
-2. **Aberto pelo thumbnail da categoria:** tela de imagem fullscreen, data/categoria e ações concluir/excluir/fechar; swipe horizontal navega apenas pelas capturas da mesma categoria filtrada, sem loop. Título sobre imagem com gradiente preto forte até transparente e dica de swipe sobreposta sem reservar espaço.
-- Back nativo fecha a camada superior. Fechar o viewer não deve fechar a categoria subjacente; outro Back retorna à biblioteca.
-- Editar título persiste somente `captures.title`. Manter proporções, gradiente, `ContentScale.Fit` e controles explícitos.
-
+## Visualizador fullscreen ativo
+- É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
+- A barra superior mostra data/hora local, categoria, checkbox de conclusão, excluir e fechar.
+- A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
+- O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
+- `HorizontalPager`: swipe-left avança e swipe-right retorna dentro das capturas da mesma categoria filtrada, sem loop nas extremidades.
+- A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada. A dica `‹ Deslize para navegar ›` é overlay e não reserva altura.
+- Back nativo fecha apenas o visualizador e mantém a categoria expandida por baixo; Back novamente retorna à biblioteca.
+- Observação: existe um composable `CaptureCard` com outro layout fullscreen e edição de título no mesmo arquivo, mas ele não é referenciado pelo fluxo ativo atual. Não o tratar como funcionalidade visível até reativação explícita.
+ 
 ## Compartilhamento de link
 1. Android envia `ACTION_SEND` com `text/plain`; `CaptureClassifier` identifica URL HTTP(S).
 2. ViewModel expõe uma captura pendente e consulta o HTML em coroutine; nenhuma referência de link é persistida ainda.
