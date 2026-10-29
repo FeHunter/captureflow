@@ -57,3 +57,8 @@ O usuário ativa explicitamente `ScreenshotNotificationService`, que roda como f
 
 ## Regras de manutenção
 Manter a direção UI → ViewModel → serviços/DAOs. Atualizar documentação e testes com mudanças em entidades, intents, OCR, navegação ou permissões. Nunca declarar build/testes aprovados sem verificar o commit correspondente.
+
+
+## Fullscreen navigation and title editing
+
+The fullscreen viewer uses Compose `HorizontalPager`, advances on swipe-left and returns on swipe-right, follows the filtered reference list, and does not wrap around. Keep the header synchronized with the settled page. The **Editar título** action exists only in fullscreen and updates `captures.title` through the ViewModel and a title-only DAO query. Keep sub-checklist access on the reference card, not in the fullscreen header.

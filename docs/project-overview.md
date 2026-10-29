@@ -81,9 +81,11 @@ Categorias/filtros visíveis: `Todas` (filtro), `Ler depois`, `Ideias`, `Tarefa`
 
 - Cabeçalho com título, data, categoria, atalho para sub-checklist e fechar.
 - Imagem ajustada por `ContentScale.Fit`, preservando proporção.
-- Swipe horizontal: esquerda para próxima referência; direita para anterior.
-- Navegação usa a lista passada pelo cartão (filtrada) e não faz loop nas extremidades.
-- Dica visual `‹ Deslize para navegar ›` sobreposta na parte inferior da imagem; não reserva espaço de layout.
+- Navegação horizontal implementada com `HorizontalPager` do Compose Foundation: deslizar para a esquerda avança para a próxima referência; deslizar para a direita retorna à anterior, com animação/gesto nativos de pager.
+- O pager usa a lista fornecida ao cartão (incluindo busca e filtro ativos) e não faz loop nas extremidades.
+- A página selecionada sincroniza o título, data e categoria do cabeçalho; cada página carrega a imagem correspondente com `ContentScale.Fit`.
+- A dica visual `‹ Deslize para navegar ›` permanece sobreposta à imagem e não reserva espaço de layout.
+- O cabeçalho do fullscreen tem ação **Editar título**. O diálogo permite corrigir o título sugerido pelo OCR; salvar persiste apenas `captures.title`, sem sobrescrever conteúdo ou imagem. A edição está disponível somente no fullscreen.
 
 ### Sub-checklist
 
@@ -168,3 +170,16 @@ Não declarar build ou testes aprovados sem verificar o resultado do commit corr
 - PR #23: chegou a introduzir uma tela/aba independente de tarefas, mas a direção foi corrigida depois.
 - PR #24: removida a navegação inferior/tela independente; screenshot de notificação volta a ser `CaptureEntity` na tela Referências; dica de swipe sobreposta. Merge commit `0dfe7157fff10dcbc2bb95d750dd99b54b869e79`.
 - PR #25: correção de imports Compose (`KeyboardOptions` e `ImeAction`) integrada em 2026-10-29; validar o CI do commit atual.
+
+
+## Atualização de UX — 2026-10-29
+
+- O detalhe fullscreen usa `HorizontalPager` do Jetpack Compose em vez de detectar manualmente o fim de um gesto de arraste. A mudança de página é contínua, mantém a lista filtrada e não faz wrap-around.
+- O título do cabeçalho acompanha a página ativa. A imagem de cada página mantém `ContentScale.Fit` e a dica de navegação continua como overlay.
+- A ação do cabeçalho que abria a sub-checklist foi substituída por **Editar título**. A sub-checklist continua disponível pelo controle do cartão; não foi removida do produto.
+- O diálogo de edição aparece somente no fullscreen e grava apenas o campo `captures.title` via ViewModel/DAO, preservando conteúdo, categoria e imagem.
+
+
+## Atualização de UX — 2026-10-29
+
+O detalhe fullscreen agora usa `HorizontalPager` em vez de detectar manualmente o fim de um arraste. O título principal pode ser corrigido no fullscreen; a atualização passa por `CaptureViewModel.updateCaptureTitle` e `CaptureDao.updateTitle`, sem sobrescrever os demais campos. O atalho de sub-checklist saiu do cabeçalho fullscreen, mas o controle no cartão permanece.

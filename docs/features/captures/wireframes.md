@@ -105,3 +105,18 @@ Persistência em `capture_subtasks`; cada item pertence a uma referência via `c
 - Tema atual usa paleta azul-marinho/oceano/ciano.
 - Estados previstos: sem referências, busca sem resultado, imagem ausente, OCR processando, OCR sem texto/erro, referência concluída.
 - Validar com fontes ampliadas, leitores de tela, largura reduzida e dispositivos reais.
+
+
+### Detalhe fullscreen (atualização 2026-10-29)
+
+- O conteúdo principal é um pager horizontal; deslizar à esquerda avança e à direita volta dentro da lista filtrada.
+- O cabeçalho exibe a ação **Editar título**. O diálogo não aparece no cartão/lista e não substitui o controle de sub-checklist do cartão.
+- A dica de navegação fica sobreposta à imagem; a imagem mantém proporção com `ContentScale.Fit`.
+
+
+## Fullscreen details — current behavior
+
+- Horizontal pager: swipe left to next reference, swipe right to previous; filtered ordering, no wrap-around.
+- Header includes **Editar título**, shown only in fullscreen.
+- Sub-checklist remains available from the reference card, not from the fullscreen header.
+- Image uses `ContentScale.Fit`; navigation hint remains an overlay.

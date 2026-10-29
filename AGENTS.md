@@ -59,3 +59,10 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - When a behavior changes, update functional contract, UI/UX, wireframes and changelog together.
 - Mark unverified behavior and known inconsistencies explicitly rather than documenting assumptions as fact.
 - Use concise conventional commits and reviewable pull requests.
+
+
+## Fullscreen interaction rules
+- Use Compose `HorizontalPager` for reference navigation: left advances, right goes back; preserve filtered order and do not wrap at the ends.
+- Keep the fullscreen header synchronized with the settled pager page.
+- **Editar título** is available only in fullscreen. Persist through `CaptureViewModel.updateCaptureTitle` and `CaptureDao.updateTitle`, changing only the title.
+- Keep the sub-checklist entry point on the reference card; do not restore its shortcut in the fullscreen header.
