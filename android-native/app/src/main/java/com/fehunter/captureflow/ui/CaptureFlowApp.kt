@@ -396,7 +396,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 onDismissRequest = { confirmOcrSourceUrl = false },
                 title = { Text("Confirmar link detectado") },
                 text = {
-                    Text("Este endereço foi identificado por OCR na imagem e ainda não foi confirmado. Deseja marcar como origem desta referência e abrir o link?\\n\\n$sourceUrl")
+                    Text("Este endereço foi identificado por OCR na imagem e ainda não foi confirmado. Deseja marcar como origem desta referência e abrir o link?\n\n$sourceUrl")
                 },
                 confirmButton = {
                     TextButton(onClick = {
