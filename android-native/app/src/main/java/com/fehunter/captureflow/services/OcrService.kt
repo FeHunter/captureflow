@@ -58,6 +58,8 @@ class OcrService {
             val widthScore = line.bounds.width().toFloat() / imageWidth
             val y = line.bounds.centerY().toFloat() / imageHeight
             val topPenalty = line.bounds.top.toFloat() / imageHeight
+            // Users often scroll important content into the center before taking a screenshot.
+            val centerScore = (1f - (kotlin.math.abs(y - 0.50f) / 0.50f)).coerceIn(0f, 1f)
             val lengthScore = when (line.text.length) {
                 in 18..120 -> 0.35f
                 in 10..160 -> 0.18f
@@ -72,7 +74,7 @@ class OcrService {
                 UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> 0f
             }
             heightScore * 4f + widthScore * 0.65f - topPenalty * 0.12f +
-                lengthScore + contentScore + profilePositionScore
+                centerScore * 0.95f + lengthScore + contentScore + profilePositionScore
         } ?: candidateLines.first()
 
         // Headline text is commonly split into multiple adjacent lines with similar
