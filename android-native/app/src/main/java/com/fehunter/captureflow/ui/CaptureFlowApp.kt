@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 
@@ -39,7 +40,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel) {
         topBar = {
             TopAppBar(title = {
                 Column {
-                    Text("CaptureFlow", fontWeight = FontWeight.Bold)
+                    Text("CaptureFlow v${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
                     Text(if (tab == 0) "Suas referências, organizadas" else "Transforme ideias em ação",
                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -185,6 +186,21 @@ private fun CaptureCard(
                     Text(capture.category, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir referência") }
+            }
+            val cover = remember(capture.imageUri) {
+                capture.imageUri?.let { raw ->
+                    runCatching {
+                        BitmapFactory.decodeFile(Uri.parse(raw).path)?.asImageBitmap()
+                    }.getOrNull()
+                }
+            }
+            cover?.let { bitmap ->
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Imagem de capa da referência",
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                    contentScale = ContentScale.Crop,
+                )
             }
             Text(capture.content, style = MaterialTheme.typography.bodyMedium, maxLines = 5)
             if (capture.kind == "image" && capture.imageUri != null) {
