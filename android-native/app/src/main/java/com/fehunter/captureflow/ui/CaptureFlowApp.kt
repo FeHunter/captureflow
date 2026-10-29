@@ -511,7 +511,7 @@ private fun CaptureCard(
                     )
                     IconButton(
                         onClick = {
-                            onAddSubtask(newSubtask)
+                            onAddSubtask(fullscreenCapture.id, newSubtask)
                             newSubtask = ""
                         },
                         enabled = newSubtask.isNotBlank(),
