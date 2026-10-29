@@ -66,3 +66,9 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - Keep the fullscreen header synchronized with the settled pager page.
 - **Editar título** is available only in fullscreen. Persist through `CaptureViewModel.updateCaptureTitle` and `CaptureDao.updateTitle`, changing only the title.
 - Keep the sub-checklist entry point on the reference card; do not restore its shortcut in the fullscreen header.
+
+
+## OCR center focus and screenshot cleanup
+- Prefer title candidates in the central vertical band (30%–72% of image height) and add a score favoring proximity to the center. Fall back to other candidates if the center has none.
+- Fullscreen layout uses a fixed 30% header and 70% image area. Detect title overflow; when it occurs, overlay the title over the image with a dark-to-transparent gradient.
+- For screenshots opened from the monitoring notification, copy to app-private storage and persist the reference before requesting deletion of the original through Android/MediaStore. System confirmation may be required; never treat deletion as guaranteed. Manual Photo Picker imports must not delete the original.
