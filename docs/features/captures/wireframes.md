@@ -270,3 +270,46 @@ O resultado esperado é abrir a etapa de confirmação com a imagem associada à
 - Swipe-left e swipe-right atuam somente na área principal da imagem.
 - A sequência de navegação acompanha a biblioteca filtrada. Os limites da sequência não fazem loop automático.
 - Ao navegar, o cabeçalho, a imagem e as subtarefas devem mudar em conjunto para a nova referência.
+
+
+## 11. Ajustes de descoberta e fluxo de tarefa
+
+### Navegação inferior
+
+~~~text
+┌──────────────────────────────────────┐
+│ CaptureFlow                          │
+├──────────────────────────────────────┤
+│                                      │
+│       Conteúdo da tela ativa         │
+│   Referências ou lista de tarefas    │
+│                                      │
+├──────────────────────────────────────┤
+│   [▧ Referências]       [✓ Tarefas]  │
+└──────────────────────────────────────┘
+~~~
+
+- **Referências** mantém a biblioteca existente, busca, filtros e cartões.
+- **Tarefas** mostra a lista reativa de tarefas persistidas, incluindo screenshot anexado.
+- Ao confirmar uma screenshot no modal “Criar tarefa com screenshot?”, o app salva a tarefa e abre **Tarefas**, tornando o resultado imediatamente verificável.
+- Cancelar ou fechar o modal não cria tarefa e não muda a aba ativa.
+
+### Indicador de swipe sobre a imagem
+
+~~~text
+┌──────────────────────────────────────┐
+│ Título completo       [☷ tarefas] [✕]│
+│ Data/hora · [Categoria/tag]          │
+├──────────────────────────────────────┤
+│                                      │
+│             IMAGEM INTEGRAL           │
+│                                      │
+│       ┌────────────────────────┐     │
+│       │ ‹ Deslize para navegar ›│     │
+│       └────────────────────────┘     │
+└──────────────────────────────────────┘
+~~~
+
+- O indicador fica sobre a imagem, alinhado ao centro inferior e com fundo translúcido.
+- É uma camada visual sobreposta: não reduz a área medida da imagem nem altera o ajuste `Fit/contain`.
+- Swipe-left abre a próxima referência; swipe-right abre a anterior. A navegação respeita os filtros e não faz loop nas extremidades.
