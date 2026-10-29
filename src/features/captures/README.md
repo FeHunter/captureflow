@@ -12,3 +12,10 @@ Rules:
 - Preserve provenance for extracted and inferred fields.
 - Deduplicate safely without discarding user-created items.
 - Do not add background screenshot monitoring until permission, lifecycle, and device behavior are documented and tested.
+
+## OCR (text extraction)
+
+- OCR runs only when the user selects an image and taps **Extrair texto da imagem**.
+- Uses `expo-text-extractor` (Google ML Kit on Android, Apple Vision on iOS) locally on the device; there is no upload to a backend.
+- Extracted text is inserted into the editable capture content so the user can review it before saving.
+- This native module requires a development build; Expo Go does not include it.

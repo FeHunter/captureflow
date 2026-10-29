@@ -25,7 +25,8 @@
     "react-native-screens": "~4.30.0",
     "react-dom": "19.3.1",
     "expo-sqlite": "~16.0.8",
-    "expo-image-picker": "~17.0.10"
+    "expo-image-picker": "~17.0.10",
+    "expo-text-extractor": "^2.0.0"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

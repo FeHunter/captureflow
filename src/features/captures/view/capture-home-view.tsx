@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { colors } from "@/shared/theme/colors";
 import type { Capture } from "../model/capture";
@@ -12,6 +12,7 @@ export function CaptureHomeView() {
   const [draft, setDraft] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [extractingText, setExtractingText] = useState(false);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -21,6 +22,23 @@ export function CaptureHomeView() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.9 });
     if (!result.canceled && result.assets[0]) setSelectedImage(result.assets[0].uri);
+  };
+
+  const extractTextFromImage = async () => {
+    if (!selectedImage || extractingText) return;
+    setExtractingText(true);
+    const extracted = await vm.extractText(selectedImage);
+    setExtractingText(false);
+    if (extracted === null) {
+      Alert.alert("Não foi possível ler a imagem", vm.error ?? "Tente novamente com uma screenshot mais nítida.");
+      return;
+    }
+    if (!extracted.trim()) {
+      Alert.alert("Nenhum texto encontrado", "Tente uma imagem com texto maior e mais nítido.");
+      return;
+    }
+    setDraft((current) => current.trim() ? `${current.trim()}\n\n${extracted}` : extracted);
+    Alert.alert("Texto extraído", "O texto foi adicionado ao campo de conteúdo. Revise antes de salvar.");
   };
 
   const submit = async () => {
@@ -63,6 +81,9 @@ export function CaptureHomeView() {
           {selectedImage ? (
             <View style={styles.imagePreview}>
               <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+              <Pressable onPress={extractTextFromImage} disabled={extractingText} style={styles.extractButton} accessibilityLabel="Extrair texto da imagem">
+                {extractingText ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.extractButtonText}>Extrair texto da imagem</Text>}
+              </Pressable>
               <Pressable onPress={() => setSelectedImage(null)} accessibilityLabel="Remover imagem"><Text style={styles.removeImage}>Remover imagem ×</Text></Pressable>
             </View>
           ) : null}
@@ -115,7 +136,7 @@ function CaptureCard({ item, onToggle, onDelete }: { item: Capture; onToggle: ()
         </Pressable>
       </View>
       {item.imageUri ? <Image source={{ uri: item.imageUri }} style={styles.itemImage} resizeMode="cover" /> : null}
-      {item.content && item.kind !== "image" ? <Text numberOfLines={3} style={styles.itemContent}>{item.content}</Text> : null}
+      {item.content && item.content !== "Imagem importada da galeria" ? <Text numberOfLines={5} style={styles.itemContent}>{item.content}</Text> : null}
       <View style={styles.itemBottom}><Text style={styles.typeLabel}>{item.kind === "link" ? "LINK" : item.kind === "image" ? "IMAGEM" : "NOTA"}</Text><Pressable onPress={onDelete}><Text style={styles.deleteText}>Excluir</Text></Pressable></View>
     </View>
   );
@@ -139,7 +160,9 @@ const styles = StyleSheet.create({
   input: { minHeight: 88, maxHeight: 150, textAlignVertical: "top", padding: 13, borderRadius: 14, borderWidth: 1, borderColor: colors.border, marginTop: 14, color: colors.text, fontSize: 14, lineHeight: 21 },
   imagePreview: { marginTop: 12 },
   previewImage: { width: "100%", height: 130, borderRadius: 12 },
-  removeImage: { color: colors.warning, fontSize: 12, fontWeight: "700", marginTop: 6, alignSelf: "flex-end" },
+  removeImage: { color: colors.warning, fontSize: 12, fontWeight: "700", marginTop: 10, alignSelf: "flex-end" },
+  extractButton: { alignSelf: "flex-start", marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: "#F1EDFF" },
+  extractButtonText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   secondaryButton: { flexGrow: 1, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 12, backgroundColor: "#F1EDFF", alignItems: "center" },
   secondaryButtonText: { color: colors.primary, fontSize: 12, fontWeight: "800" },
