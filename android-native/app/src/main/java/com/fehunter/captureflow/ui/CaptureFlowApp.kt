@@ -245,6 +245,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CaptureCard(
     capture: CaptureEntity,
