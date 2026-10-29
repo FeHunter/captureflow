@@ -27,12 +27,13 @@ export function CaptureHomeView() {
   const extractTextFromImage = async () => {
     if (!selectedImage || extractingText) return;
     setExtractingText(true);
-    const extracted = await vm.extractText(selectedImage);
+    const result = await vm.extractText(selectedImage);
     setExtractingText(false);
-    if (extracted === null) {
-      Alert.alert("Não foi possível ler a imagem", vm.error ?? "Tente novamente com uma screenshot mais nítida.");
+    if (result.error) {
+      Alert.alert("Não foi possível ler a imagem", result.error);
       return;
     }
+    const extracted = result.text ?? "";
     if (!extracted.trim()) {
       Alert.alert("Nenhum texto encontrado", "Tente uma imagem com texto maior e mais nítido.");
       return;

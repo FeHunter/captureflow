@@ -19,3 +19,8 @@ Rules:
 - Uses `expo-text-extractor` (Google ML Kit on Android, Apple Vision on iOS) locally on the device; there is no upload to a backend.
 - Extracted text is inserted into the editable capture content so the user can review it before saving.
 - This native module requires a development build; Expo Go does not include it.
+
+
+## Troubleshooting: native OCR module not found
+
+Installing the npm package does not add its native code to an already-installed Android binary. After adding or updating `expo-text-extractor`, build and install the app again with `npx expo run:android` (or create a new EAS development build). Start Metro separately with `npx expo start -c`. The OCR adapter uses a lazy import so a stale binary does not crash the whole app on startup; it shows an actionable error when OCR is requested instead.

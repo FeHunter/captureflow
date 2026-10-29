@@ -29,14 +29,15 @@ export function useCaptureViewModel() {
     return () => { active = false; };
   }, []);
 
-  const extractText = useCallback(async (imageUri: string): Promise<string | null> => {
+  const extractText = useCallback(async (imageUri: string): Promise<{ text: string | null; error: string | null }> => {
     try {
       const text = await extractImageText(imageUri);
       setError(null);
-      return text;
+      return { text, error: null };
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível extrair o texto da imagem.");
-      return null;
+      const message = cause instanceof Error ? cause.message : "Não foi possível extrair o texto da imagem.";
+      setError(message);
+      return { text: null, error: message };
     }
   }, []);
 
