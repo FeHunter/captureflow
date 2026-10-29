@@ -274,7 +274,7 @@ O resultado esperado é abrir a etapa de confirmação com a imagem associada à
 
 ## 11. Ajustes de descoberta e fluxo de tarefa
 
-### Navegação inferior
+### Tela única de Referências
 
 ~~~text
 ┌──────────────────────────────────────┐
@@ -285,14 +285,14 @@ O resultado esperado é abrir a etapa de confirmação com a imagem associada à
 │   Referências ou lista de tarefas    │
 │                                      │
 ├──────────────────────────────────────┤
-│   [▧ Referências]       [✓ Tarefas]  │
+│       Uma única tela: REFERÊNCIAS    │
 └──────────────────────────────────────┘
 ~~~
 
-- **Referências** mantém a biblioteca existente, busca, filtros e cartões.
-- **Tarefas** mostra a lista reativa de tarefas persistidas, incluindo screenshot anexado.
-- Ao confirmar uma screenshot no modal “Criar tarefa com screenshot?”, o app salva a tarefa e abre **Tarefas**, tornando o resultado imediatamente verificável.
-- Cancelar ou fechar o modal não cria tarefa e não muda a aba ativa.
+- **Referências** é a única tela principal e mantém a biblioteca existente, busca, filtros e cartões.
+- Não existe aba independente de Tarefas. Screenshots recebidos pela notificação são salvos como referências com imagem.
+- Ao confirmar no modal “Adicionar screenshot às referências?”, o app salva a imagem como referência na biblioteca.
+- Cancelar ou fechar o modal não cria referência.
 
 ### Indicador de swipe sobre a imagem
 
@@ -313,3 +313,42 @@ O resultado esperado é abrir a etapa de confirmação com a imagem associada à
 - O indicador fica sobre a imagem, alinhado ao centro inferior e com fundo translúcido.
 - É uma camada visual sobreposta: não reduz a área medida da imagem nem altera o ajuste `Fit/contain`.
 - Swipe-left abre a próxima referência; swipe-right abre a anterior. A navegação respeita os filtros e não faz loop nas extremidades.
+
+
+## 12. Fluxo atualizado: screenshot dentro de Referências
+
+~~~text
+Notificação de screenshot
+          │ toque
+          ▼
+CaptureFlow → modal com prévia
+          │ “Adicionar às referências”
+          ▼
+CaptureViewModel.addImageCapture(uri)
+          │ persistência de CaptureEntity + imagem
+          ▼
+Uma única tela: REFERÊNCIAS
+          │
+          ├── cartão da nova screenshot
+          └── detalhes em tela cheia → sub-checklist + swipe
+~~~
+
+Não existe uma aba independente de **Tarefas**. A screenshot capturada pela notificação é uma referência com imagem, armazenada junto das demais referências.
+
+## 13. Indicador de swipe — detalhes em tela cheia
+
+~~~text
+┌──────────────────────────────────────┐
+│ Título da referência [☷]         [✕] │
+│ Data/hora · [Categoria]              │
+├──────────────────────────────────────┤
+│                                      │
+│            IMAGEM INTEGRAL           │
+│                                      │
+│       ‹ Deslize para navegar ›       │
+└──────────────────────────────────────┘
+~~~
+
+- O indicador aparece apenas dentro dos detalhes em tela cheia, sobre a região da imagem.
+- É minimalista e sobreposto; não altera a altura ou o dimensionamento da imagem.
+- A ação de swipe permanece independente do atalho para a sub-checklist e do botão de fechar.

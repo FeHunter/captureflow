@@ -26,7 +26,6 @@ import java.util.Locale
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -45,7 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,13 +51,11 @@ import java.io.File
 import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.CaptureSubtaskEntity
-import com.fehunter.captureflow.data.ChecklistTaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, pendingTaskScreenshotUri: Uri?, onTaskScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
-    var selectedScreen by remember { mutableStateOf("library") }
     Scaffold(
         topBar = {
             TopAppBar(title = {
@@ -76,41 +72,20 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
                 }
             })
         },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedScreen == "library",
-                    onClick = { selectedScreen = "library" },
-                    icon = { Icon(Icons.Default.Image, contentDescription = null) },
-                    label = { Text("Referências") },
-                )
-                NavigationBarItem(
-                    selected = selectedScreen == "tasks",
-                    onClick = { selectedScreen = "tasks" },
-                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = null) },
-                    label = { Text("Tarefas") },
-                )
-            }
-        },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            if (selectedScreen == "tasks") {
-                ChecklistScreen(viewModel)
-            } else {
-                CaptureLibrary(
-                    viewModel, hasScreenshotAccess, screenshotMonitoringEnabled,
-                    detectedScreenshotUri, pendingTaskScreenshotUri,
-                    onRequestScreenshotAccess, onStopScreenshotMonitoring,
-                    onScreenshotHandled, onTaskScreenshotHandled,
-                    onTaskScreenshotCreated = { selectedScreen = "tasks" },
-                )
-            }
+            CaptureLibrary(
+                viewModel, hasScreenshotAccess, screenshotMonitoringEnabled,
+                detectedScreenshotUri, pendingTaskScreenshotUri,
+                onRequestScreenshotAccess, onStopScreenshotMonitoring,
+                onScreenshotHandled, onTaskScreenshotHandled,
+            )
         }
     }
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit, onTaskScreenshotCreated: () -> Unit) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
@@ -268,7 +243,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 taskScreenshotToConfirm = null
                 onTaskScreenshotHandled()
             },
-            title = { Text("Criar tarefa com screenshot?") },
+            title = { Text("Adicionar screenshot às referências?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("A captura foi aberta pela notificação. Confirme para anexá-la a uma nova tarefa.")
@@ -284,11 +259,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.addImageTask(uri)
+                    viewModel.addImageCapture(uri, category = "Referência")
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
-                    onTaskScreenshotCreated()
-                }) { Text("Criar tarefa") }
+                }) { Text("Adicionar às referências") }
             },
             dismissButton = {
                 TextButton(onClick = {
@@ -655,111 +629,6 @@ private fun CaptureCard(
         }
     }
 }
-
-@Composable
-private fun ChecklistScreen(viewModel: CaptureViewModel) {
-    val tasks by viewModel.tasks.collectAsState()
-    var title by remember { mutableStateOf("") }
-    val screenshotPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let(viewModel::addImageTask) },
-    )
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedTextField(value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
-            label = { Text("Nova tarefa") }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { viewModel.addTask(title); title = "" }), singleLine = true)
-        Button(onClick = { viewModel.addTask(title); title = "" }, enabled = title.isNotBlank(),
-            modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("Adicionar tarefa")
-        }
-        OutlinedButton(
-            onClick = {
-                screenshotPicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Default.Image, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Salvar screenshot como tarefa")
-        }
-        if (tasks.isEmpty()) Text("Suas tarefas aparecerão aqui.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(tasks, key = { it.id }) { task ->
-                TaskCard(
-                    task = task,
-                    onCompleted = { viewModel.setTaskCompleted(task.id, it) },
-                    onDelete = { viewModel.deleteTask(task.id) },
-                    onAnalyze = { viewModel.analyzeTaskScreenshot(task) },
-                    onCategoryChange = { viewModel.setTaskCategory(task.id, it) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TaskCard(
-    task: ChecklistTaskEntity,
-    onCompleted: (Boolean) -> Unit,
-    onDelete: () -> Unit,
-    onAnalyze: () -> Unit,
-    onCategoryChange: (String) -> Unit,
-) {
-    var showCategoryMenu by remember(task.id) { mutableStateOf(false) }
-    val taskCategories = listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde")
-    val context = LocalContext.current
-    val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null, task.imageUri,
-    ) {
-        value = task.imageUri?.let { raw ->
-            withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
-            }
-        }
-    }
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = task.isCompleted, onCheckedChange = onCompleted)
-                Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold)
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir tarefa") }
-            }
-            Box {
-                OutlinedButton(onClick = { showCategoryMenu = true }) { Text(task.category) }
-                DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
-                    taskCategories.forEach { tag ->
-                        DropdownMenuItem(text = { Text(tag) }, onClick = {
-                            onCategoryChange(tag)
-                            showCategoryMenu = false
-                        })
-                    }
-                }
-            }
-            cover?.let { bitmap ->
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = "Screenshot anexado à tarefa",
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-            task.description?.takeIf(String::isNotBlank)?.let { description ->
-                Text(description, style = MaterialTheme.typography.bodyMedium, maxLines = 6)
-            }
-            if (task.imageUri != null) {
-                OutlinedButton(onClick = onAnalyze, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Image, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Analisar screenshot")
-                }
-            }
-        }
-    }
-}
-
 
 private fun loadCoverBitmap(context: Context, rawUri: String): androidx.compose.ui.graphics.ImageBitmap? {
     val uri = Uri.parse(rawUri)
