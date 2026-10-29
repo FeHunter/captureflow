@@ -1,22 +1,28 @@
 # Acesso a dados e ações — Captures
 
-## Persistência local
-- `CaptureDao` persiste referências e observa alterações ordenadas por data.
-- `ChecklistDao` persiste tarefas e observa alterações ordenadas por data.
-- O ViewModel chama DAOs em coroutines; a View consome os fluxos expostos pelo ViewModel.
+## Estado observável
+`CaptureViewModel` expõe Flow/StateFlow para referências, tarefas mantidas no modelo e sub-checklists. A UI coleta estado e encaminha eventos; não consulta DAO diretamente.
 
-## Captura de imagens
-- `SharedImageStorageService` tenta copiar imagens para `filesDir/captures`.
-- Compartilhamento de imagem recebido pelo Android cria uma referência na aba Referências; o seletor da aba Checklist cria uma tarefa.
-- Se a cópia falhar, a URI original é mantida como fallback; o acesso futuro pode depender da permissão concedida pelo provedor.
-- Ao excluir uma captura/tarefa, o app tenta apagar apenas arquivos locais dentro do diretório privado de captures.
+## Referências
+- `addCapture(raw)`: normaliza e classifica conteúdo; evita duplicatas textuais e tenta enriquecer URL.
+- `addImageCapture(uri, category)`: tenta copiar imagem para armazenamento privado, cria `CaptureEntity` e inicia OCR.
+- `setCaptureCompleted` e `setCaptureCategory`: atualizam campos persistidos.
+- `deleteCapture`: tenta remover arquivo privado, apaga sub-itens associados e remove a referência.
+- `extractText`: executa OCR em background, atualiza estado de processamento/erro e persiste o título sugerido.
+
+## Imagens
+`SharedImageStorageService` tenta copiar para `filesDir/captures`. Se falhar, mantém a URI original como fallback. Exclusão deve apagar apenas arquivos privados que pertencem ao app; nunca apagar arquivos externos fornecidos pelo sistema/provedor.
 
 ## Links
-- `LinkMetadataService` tenta ler `og:title`, `og:description`, Twitter Card e tags HTML padrão.
-- Requisições têm timeout e limite de bytes lidos.
-- Redirecionamentos automáticos estão desativados; páginas que redirecionam podem não fornecer metadados.
-- A URL original continua sendo a fonte de recuperação caso os metadados não estejam disponíveis.
+`LinkMetadataService` procura metadados HTML comuns (`og:title`, `og:description`, Twitter Card e tags padrão). Há limites de timeout/tamanho e redirecionamentos automáticos desativados. Se a busca falhar, manter o conteúdo/URL original.
 
-## OCR
-- `OcrService` usa ML Kit local e retorna texto completo mais uma sugestão de título e descrição.
-- A heurística usa caixas delimitadoras e posição visual. Não há garantia de detecção real de bold ou entendimento semântico.
+## Sub-checklists
+- Inserir item com UUID, `captureId`, título, estado inicial incompleto e timestamp.
+- Marcar conclusão e remover por ID.
+- Excluir os itens associados antes de excluir uma referência.
+
+## Tarefas legadas no modelo
+O banco/ViewModel ainda possui `ChecklistTaskEntity`, `checklistDao`, operações de criar/concluir/categorizar/excluir tarefa e análise de imagem de tarefa. A tela atual não expõe uma aba/lista de tarefas independente. Não conectar novamente esses fluxos à UI sem decisão explícita de produto.
+
+## Screenshot da notificação
+A confirmação atual chama `addImageCapture(uri, category = "Referência")`. Embora o nome da ação interna ainda possa conter `CREATE_TASK`, o resultado esperado é uma referência, não `ChecklistTaskEntity`.

@@ -1,20 +1,12 @@
 # Segurança e privacidade — Captures
 
-- Referências, descrições e imagens são persistidas localmente no dispositivo.
-- Imagens são copiadas para o diretório privado do app quando possível.
-- Para seleção manual de imagem, usar o seletor de sistema sem permissão ampla. A detecção opcional de screenshots exige permissão de leitura de imagens e explica seu propósito antes do pedido.
-- Metadados de links exigem uma requisição de rede para a URL escolhida pelo usuário. Não enviar o conteúdo capturado a um serviço de IA externo.
-- A requisição de metadados limita o tempo de conexão/leitura e o volume de HTML, aceita apenas HTTP(S) com host em formato de domínio público e não segue redirecionamentos automaticamente.
-- A remoção de imagem deve restringir-se ao diretório privado do app; nunca apagar arquivos de URI externos.
-- Revisar proteção contra SSRF/hosts especiais e redirects caso o serviço de metadados seja alterado.
-
-- A detecção de screenshots é opcional e só observa o MediaStore enquanto o app está em primeiro plano; não usa Accessibility Service, não monitora conteúdo de outros apps e não mantém serviço em segundo plano.
-- A detecção é heurística e depende de nomes de arquivo/pastas expostos pelo MediaStore. Capturas com nomes/pastas personalizados ou em dispositivos com restrições de acesso podem não ser reconhecidas.
-
-
-## Monitoramento de screenshots em segundo plano
-- Ativação explícita do usuário; permissão de leitura de imagens e permissão de notificações (Android 13+) são pré-requisitos.
-- O serviço em primeiro plano usa tipo `specialUse`, com subtipo declarado no Manifest. Antes de distribuir pela Google Play, validar as políticas atuais de foreground services e a declaração/revisão exigida para `specialUse`.
-- O monitor consulta apenas metadados recentes do MediaStore e não usa Accessibility Service nem captura o conteúdo de tela de outros apps.
-- As notificações expõem ações rápidas para salvar uma referência ou criar uma tarefa; as imagens são salvas no armazenamento privado ao serem importadas pelo fluxo existente.
-- Restrições de bateria, force-stop, permissões negadas e nomes/pastas não padronizados podem impedir ou atrasar a detecção.
+- Referências, sub-checklists e imagens persistidas ficam no dispositivo; não há sincronização cloud implementada.
+- OCR é executado localmente via ML Kit; não enviar imagem/texto capturado a serviço de IA externo.
+- Metadados de links requerem requisição de rede à URL fornecida pelo usuário. Manter validação de esquema/host, limites de tempo e volume e revisar riscos de SSRF/redirecionamento se o serviço mudar.
+- Copiar imagens para diretório privado reduz dependência de permissões temporárias do provedor. Se a cópia falhar, URI original é fallback e pode expirar/deixar de ser acessível.
+- Ao excluir, remover apenas arquivos privados que o app reconhece como seus; nunca apagar conteúdo externo do MediaStore/provedor.
+- Photo Picker é o caminho manual preferido para evitar permissão ampla de imagens.
+- O monitor de screenshots é opt-in e baseado em metadados MediaStore (nome/pasta/data); não lê pixels de outros apps e não usa Accessibility Service.
+- Monitoramento em segundo plano usa foreground service tipo `specialUse`; antes de publicar, validar política vigente do Google Play, justificativa e declaração/revisão exigidas.
+- Permissões negadas, force-stop, economia de bateria e particularidades OEM podem interromper a detecção.
+- Não documentar monitoramento como garantido ou permanente em todos os dispositivos.

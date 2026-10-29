@@ -1,18 +1,19 @@
 # Integrações — Captures
 
-## ML Kit Text Recognition
-Usado localmente para reconhecer texto em imagens. Não há upload da imagem para análise. A saída estruturada é uma heurística construída a partir das linhas e caixas delimitadoras fornecidas pelo ML Kit.
+## Android Sharesheet / Intents
+`MainActivity` recebe payloads suportados por Android Share Intent, incluindo texto/URLs e URI de imagem (`EXTRA_STREAM`/ClipData conforme suporte do código). Conteúdo compartilhado é encaminhado ao ViewModel. O formulário manual de texto/link não faz parte da tela atual.
 
-## Android Sharesheet e Photo Picker
-- Recebe compartilhamentos explícitos por intents suportadas no Manifest.
-- Usa Photo Picker do Android para seleção manual sem pedir acesso amplo à galeria.
-- O fluxo de detecção automática de screenshots em segundo plano não está implementado.
+## Photo Picker
+O seletor de imagem do sistema é usado para importar uma imagem sem solicitar permissão ampla de leitura de toda a galeria no fluxo manual. A URI é copiada para armazenamento privado quando possível.
 
-## HTTP(S) e metadados de páginas
-- Requisição direta para o host da URL salva.
-- Busca título/descrição em metadados HTML comuns.
-- Não executa JavaScript, não faz scraping visual e não segue redirecionamentos automaticamente.
-- Uma página que bloqueie acesso pode não fornecer metadados; o app mantém a referência original.
+## Google ML Kit Text Recognition
+OCR roda localmente no aparelho. `OcrService` processa blocos/linhas, caixas delimitadoras e perfil heurístico de UI para sugerir título e descrição. A referência de imagem atual persiste o título sugerido, não o OCR bruto no campo `content`. Resultado pode variar por layout/idioma/qualidade da imagem.
 
-## Dependências locais
-Room/SQLite, Coroutines/Flow e Jetpack Compose. Não existe sincronização cloud implementada para a feature.
+## Metadados HTTP(S)
+`LinkMetadataService` busca título e descrição em HTML público. Não executa JavaScript nem scraping visual; redirecionamentos automáticos estão desativados. Sites autenticados, bloqueados ou dependentes de JS podem não fornecer metadados.
+
+## Screenshot monitor
+`ScreenshotMonitor` observa MediaStore enquanto a UI está em primeiro plano. `ScreenshotNotificationService` implementa monitoramento opcional em foreground service e notificação persistente. Ambos reconhecem screenshots por metadados de nome/pasta e têm limitações por fabricante, permissões e política de bateria. Não usam Accessibility Service.
+
+## Persistência
+Room/SQLite é local. Não há sincronização cloud ou upload de imagem para OCR. O serviço de metadados de link faz uma requisição de rede à URL compartilhada.

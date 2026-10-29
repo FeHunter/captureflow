@@ -1,74 +1,70 @@
 # Contrato funcional — Captures
 
-**Versão do app:** 0.3.3  
-**Status:** implementação em validação no emulador.
+**Versão documentada:** 0.3.3 (confirmar configuração Gradle antes de release).  
+**Estado:** código em evolução; verificação de build e teste em dispositivo são gates separados.
 
 ## Objetivo
-Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo como referência ou tarefa, mantendo os dados no aparelho.
+Guardar links, textos e imagens como referências locais pesquisáveis. Cada referência pode ter uma sub-checklist persistente. Não existe uma tela principal independente de Tarefas.
 
-## Fluxos funcionais
-1. O usuário compartilha texto/URL com CaptureFlow; a entrada manual de texto/link não aparece na tela principal.
-2. O app salva uma referência local e, para URLs HTTP(S), tenta recuperar título e descrição do HTML público.
-3. O usuário seleciona uma imagem na tela principal de Referências ou compartilha uma imagem/screenshot com o app; ao selecionar manualmente, escolhe uma categoria/tag antes de salvar. A imagem é copiada para o armazenamento privado quando possível.
-4. A tela principal reúne a seleção de imagem e a biblioteca de referências, sem bottom navigation. A checklist independente não é exibida nesta tela.
-5. Assim que uma imagem é selecionada ou compartilhada para a aba Referências, o app inicia OCR local automaticamente e atualiza o título da referência; o cartão mantém a imagem original como capa.
-6. O cartão de referência exibe apenas título, capa, checkbox de conclusão e botão de exclusão. Durante a análise, pode exibir um indicador de carregamento ou uma mensagem de erro.
-7. Ao tocar na capa de uma referência, a imagem abre em visualização fullscreen com opção de fechar.
-8. Cada referência pode ter uma sub-checklist persistida, com itens adicionáveis, concluíveis e removíveis.
-9. Uma imagem pode ser salva como tarefa com descrição opcional; esse fluxo continua separado do cartão de Referências, mas acessível na mesma tela.
+## Tela principal
+1. Top bar com versão e menu de tema (seguir sistema, claro, escuro).
+2. Cartão para selecionar imagem e mostrar/configurar monitoramento de screenshots.
+3. Campo de pesquisa, com X para limpar quando preenchido.
+4. Chips: Todas, Ler depois, Ideias, Tarefa, Importante e Mais tarde.
+5. Biblioteca rolável em duas colunas de cartões.
 
-## Regras
-- O conteúdo persistido não é enviado para um backend ou serviço de analytics.
-- Recuperar metadados de páginas exige conexão de rede; se falhar, a URL original permanece salva.
-- OCR roda localmente com ML Kit.
-- A imagem original permanece vinculada à referência/tarefa, mesmo após o OCR.
-- Para referências baseadas em imagem, o resultado persistido da análise é o título; o texto complementar do OCR não é mostrado nem armazenado no campo de conteúdo da referência.
-- A análise de imagem é iniciada automaticamente após salvar a cópia local; não há botão manual de OCR no cartão de referência.
-- OCR usa perfis heurísticos de famílias visuais (vídeo, social, notícias, comércio e produtividade) para ajustar a pontuação do título e filtrar ruído conhecido.
-- OCR é heurístico; não garante identificar semanticamente o título em todos os layouts.
-- A versão exibida no cabeçalho vem de `BuildConfig.VERSION_NAME`, não de texto duplicado na interface.
-- A sub-checklist de uma referência é armazenada em uma tabela Room separada e é removida quando a referência é excluída.
-- A heurística de OCR filtra linhas de interface do YouTube/navegador (URL `youtube.com`, `Open App`, likes/views/comments e navegação) antes de escolher o título; isso reduz ruído, mas não garante sucesso em todos os layouts.
+## Fluxos
+### Texto e URL compartilhados
+- Entrada por Android Sharesheet/Intent.
+- Normalização e classificação via `CaptureClassifier`.
+- Texto normalizado é deduplicado quando já existe.
+- URL HTTP(S) pode ser enriquecida com título/descrição de metadados HTML; a URL original continua disponível se o enriquecimento falhar.
 
-## Limites conhecidos
-- Sites podem bloquear requisições HTTP, exigir autenticação, depender de JavaScript ou omitir metadados.
-- O reconhecimento de texto não fornece uma garantia universal de peso tipográfico (bold). A heurística usa caixas delimitadoras, altura/largura relativas e posição.
-- A descoberta automática de screenshots em segundo plano não está implementada; o usuário seleciona ou compartilha a imagem explicitamente.
+### Imagem
+- A imagem pode vir do Photo Picker, de um compartilhamento ou da notificação de screenshot.
+- O app tenta copiar a imagem para armazenamento privado e salva a referência em Room.
+- O OCR ML Kit é iniciado automaticamente; o título heurístico é persistido, e a imagem continua como capa.
+- Para referências de imagem, o fluxo atual grava título e mantém `content` vazio; o texto OCR completo não é mostrado no cartão nem persistido como conteúdo dessa referência.
+- Erro ou texto não reconhecido deve preservar a referência e a imagem.
 
-## Tema e organização visual
-- A paleta inspirada na imagem de referência usa azul-marinho, azul oceano, azul-ciano e superfícies claras no tema claro.
-- O usuário pode selecionar Seguir dispositivo, Claro ou Escuro; a preferência é persistida localmente.
-- A seleção manual de imagem permite atribuir uma das categorias existentes antes de criar a referência.
-- Referências e tarefas independentes são apresentadas em uma única tela; não há bottom navigation.
+### Screenshot via notificação
+- O usuário ativa/desativa o monitoramento explicitamente.
+- O serviço foreground observa MediaStore e identifica candidatos por nome/pasta, sem analisar pixels da tela de outros apps.
+- Tocar na notificação abre a Activity com uma URI pendente e exibe confirmação.
+- Confirmar chama `addImageCapture(uri, category = "Referência")`; a imagem vira `CaptureEntity` na biblioteca Referências.
+- Cancelar/fechar não cria uma referência.
+- A detecção é best-effort, limitada por permissões, MediaStore, nomes de arquivos e políticas de bateria/fabricante.
 
+**Inconsistência conhecida:** algumas strings de notificação/modal e a ação interna ainda dizem “tarefa” (`ACTION_CREATE_TASK`), embora o fluxo confirmado agora crie referência. Corrigir a nomenclatura sem reintroduzir aba de tarefas.
 
-## Tela principal simplificada
-- A tela mantém a seleção de imagem, a busca e os filtros por categoria.
-- A seção independente com o título Checklist e o formulário manual de texto/link não são exibidos na tela principal.
-- O campo de busca mostra um botão de limpar (X) somente enquanto há texto digitado.
-- O título do app usa a versão base mais o identificador curto do commit, gerado pelo Gradle para diferenciar cada commit.
+## Cartões e detalhes
+- Cartão nominal de 320 dp, capa de 104 dp e grade de duas colunas.
+- Título, texto secundário, categoria/menu, data/hora, checkbox, progresso de sub-checklist e exclusão.
+- A capa abre detalhes fullscreen; a imagem usa `ContentScale.Fit`.
+- Swipe para esquerda vai à próxima referência; para direita, à anterior. A navegação segue a lista fornecida/filtrada e não faz loop.
+- O rótulo `‹ Deslize para navegar ›` é sobreposto na parte inferior da imagem e não reserva espaço.
+- Atalho no cabeçalho fullscreen abre a sub-checklist da referência atual.
 
+## Sub-checklist
+- Cada item é salvo em `capture_subtasks` e relacionado por `captureId`.
+- Usuário pode adicionar, concluir e excluir itens.
+- Ao excluir referência, seus itens associados são removidos antes da referência.
 
-## Detecção de screenshots — v0.3.2
-- O usuário pode conceder acesso às imagens para ativar a detecção best-effort de screenshots recentes.
-- Com permissão concedida, o app observa o MediaStore apenas enquanto está em primeiro plano e identifica imagens recentes pelo nome do arquivo ou pasta Screenshots.
-- Ao detectar uma captura, abre um diálogo para confirmar o envio ao CaptureFlow e escolher a categoria antes de salvar e executar OCR.
-- O seletor de imagem do sistema e o compartilhamento via Android Sharesheet continuam disponíveis sem habilitar a detecção.
-- O título do app exibe somente a versão semântica numérica (`v0.3.2`), sem hash do commit.
+## Categorias e consistência
+Os filtros atuais são Todas, Ler depois, Ideias, Tarefa, Importante e Mais tarde. `Todas` é apenas filtro. O fluxo de notificação usa categoria `Referência`, ainda não incluída de forma consistente na lista de categorias da UI. Não normalizar isso sem uma decisão de produto.
 
+## Privacidade e limites
+- Dados locais; sem sincronização cloud implementada.
+- OCR local com ML Kit.
+- Requisição de metadados de link faz acesso de rede à URL compartilhada.
+- Cópia de imagem privada é tentada; URI original é fallback.
+- OCR e detecção de screenshot são heurísticos; não garantem título/detecção em todos os layouts/dispositivos.
+- Foreground service `specialUse` exige revisão de política do Google Play antes de distribuição.
 
-## Avisos de screenshots em segundo plano — v0.3.3
-- O usuário ativa/desativa o monitoramento de forma explícita na tela principal.
-- A ativação requer permissão de leitura de imagens e, no Android 13+, permissão para exibir notificações.
-- Enquanto ativo, um serviço em primeiro plano observa novas imagens do MediaStore e mantém uma notificação persistente do CaptureFlow para indicar que está em execução.
-- Ao detectar uma imagem compatível com os padrões de screenshot, envia uma notificação com ações rápidas: `Salvar referência` (abre seleção de categoria) e `Criar tarefa` (salva a imagem como tarefa).
-- A detecção é heurística, depende de metadados/nome/pasta e pode variar por fabricante, armazenamento ou política de bateria. Não há garantia universal.
-- O serviço não usa Accessibility Service nem lê o conteúdo visual de outros apps. O usuário pode interromper o monitoramento no próprio app.
-
-### Requisitos para funcionar
-1. Android com suporte a serviço em primeiro plano (app requer Android 8.0/API 26 ou superior).
-2. Permitir acesso às imagens; acesso limitado/selecionado pode não ser suficiente para encontrar screenshots recentes.
-3. Permitir notificações no Android 13/API 33 ou superior e não bloquear o canal `Screenshots detectadas`.
-4. Ativar `Avisos de screenshot` dentro do CaptureFlow; enquanto ativo, a notificação persistente `Detecção de screenshots ativada` deve estar visível (ou listada nos controles de tarefas ativas do sistema).
-5. O Android e o fabricante precisam permitir que o serviço permaneça ativo. Economia de bateria, força de parada ou restrições do fabricante podem atrasar/interromper a detecção.
-6. A imagem precisa aparecer no MediaStore e ter nome ou pasta reconhecível como screenshot; capturas com nome/pasta personalizados podem não ser detectadas.
+## Validação necessária
+- Build/testes do commit atual.
+- Share intents de texto, URL e imagem; Photo Picker; URI permissions.
+- OCR em imagens variadas, sem texto e com erro de leitura.
+- Notificação, confirmação/cancelamento e persistência.
+- Swipe nas extremidades, filtros e sub-checklist.
+- Permissões e restrições de bateria em dispositivo real.

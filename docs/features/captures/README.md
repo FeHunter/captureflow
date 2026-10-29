@@ -1,15 +1,18 @@
 # Captures — Feature
 
-Feature nativa responsável por receber, classificar, persistir, pesquisar e gerenciar referências e tarefas derivadas de texto, URLs e imagens.
+Feature nativa responsável por receber, classificar, persistir, pesquisar e gerenciar referências e sub-checklists associadas a texto, URLs e imagens.
 
 ## Fonte de verdade
+- Visão geral do produto/UI/fluxos: [../../project-overview.md](../../project-overview.md)
 - Implementação: `android-native/app/src/main/java/com/fehunter/captureflow/`
+- Entrada Android e intents: `MainActivity.kt`
 - Banco e contratos Room: `data/CaptureDatabase.kt`
 - Orquestração/estado: `ui/CaptureViewModel.kt`
 - Interface: `ui/CaptureFlowApp.kt`
 - OCR local: `services/OcrService.kt`
 - Metadados de links: `services/LinkMetadataService.kt`
-- Cópias de imagens: `services/SharedImageStorageService.kt`
+- Armazenamento de imagens: `services/SharedImageStorageService.kt`
+- Monitoramento/notificações de screenshot: `services/ScreenshotMonitor.kt` e `services/ScreenshotNotificationService.kt`
 
 ## Documentos da feature
 - [Contrato funcional](feature.md)
@@ -24,4 +27,4 @@ Feature nativa responsável por receber, classificar, persistir, pesquisar e ger
 - [Plano de testes](testing.md)
 - [Changelog](CHANGELOG.md)
 
-A documentação descreve o código observado. Pontos ainda não verificados em runtime estão identificados como pendentes.
+Os documentos devem descrever o código atual e identificar divergências conhecidas. Em caso de conflito, verificar o código da branch principal e atualizar todos os documentos relacionados antes de concluir a mudança.

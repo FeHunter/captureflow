@@ -1,57 +1,63 @@
 # CaptureFlow
 
-CaptureFlow is an Android-native app that turns shared links, text, and images into organized references and actionable checklists.
+CaptureFlow é um app Android-first para guardar links, textos e imagens como referências organizadas e apoiar a execução com sub-checklists por referência.
 
-## Stack
-- Kotlin + Android SDK + Jetpack Compose
-- MVVM with ViewModel, Coroutines and Flow
-- Room / SQLite for local-first persistence
-- Android Sharesheet / ACTION_SEND for text, URLs and images
-- Google ML Kit for on-device OCR
+## Stack canônica
+
+- Kotlin + Android SDK + Jetpack Compose / Material 3
+- MVVM com Android ViewModel, Coroutines e Flow/StateFlow
+- Room / SQLite para persistência local
+- Android Sharesheet / `ACTION_SEND` para texto, URLs e imagens
+- Android Photo Picker para importar imagens
+- Google ML Kit Text Recognition para OCR on-device
 - Gradle Kotlin DSL
 
-The former Expo/React Native implementation is retained under [legacy-expo/](legacy-expo/) for historical reference only. It is no longer the canonical app.
+A implementação antiga Expo/React Native está em [`legacy-expo/`](legacy-expo/) apenas como histórico. Não desenvolver recursos novos nela.
 
-## Open and build
-Requirements: Android Studio, Android SDK 36, JDK 17+ (JDK 21 is suitable), and network access for Gradle/Maven dependencies.
+## Funcionalidades atuais
 
-1. Clone the repository.
-2. Open `android-native/` in Android Studio.
-3. Allow Gradle sync to finish, then run the `app` configuration on an emulator/device.
+- Capturar texto e links compartilhados de outros apps.
+- Importar imagens via Photo Picker ou compartilhar imagens com CaptureFlow.
+- Persistir referências localmente, com cópia privada da imagem quando possível.
+- Buscar referências e filtrar por categoria.
+- Alterar categoria, concluir e excluir referências.
+- Extrair título de imagens automaticamente usando OCR local.
+- Abrir imagem em tela cheia, navegar entre referências com swipe horizontal e abrir a sub-checklist da referência.
+- Criar, concluir e remover subtarefas persistidas por referência.
+- Monitoramento opcional de screenshots com notificação persistente e confirmação para importar a imagem como referência; detecção heurística, não garantida.
 
-From a terminal:
+## Abrir e compilar
+
+Requisitos: Android Studio, Android SDK 36, JDK 17+ (JDK 21 é adequado) e acesso à rede para baixar dependências Gradle/Maven.
+
+1. Clone o repositório.
+2. Abra `android-native/` no Android Studio.
+3. Aguarde a sincronização do Gradle e execute a configuração `app` em emulador/dispositivo.
+
+No terminal PowerShell:
 ```powershell
 cd android-native
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat assembleDebug
 ```
 
-The debug APK is generated at `android-native/app/build/outputs/apk/debug/app-debug.apk`.
+APK debug esperado: `android-native/app/build/outputs/apk/debug/app-debug.apk`.
 
-## Native MVP baseline
-- Manual text/link capture.
-- Share text, URLs and images from other Android apps.
-- Room persistence for references and checklist tasks.
-- Search and category filters.
-- Complete/delete references and tasks.
-- On-demand, on-device OCR using ML Kit.
+## Documentação
 
-## Documentation
-- [Engineering guidelines](AGENTS.md)
-- [Architecture](docs/architecture.md)
-- [Migration plan/status](docs/migration-plan.md)
+- [Visão geral do projeto, arquitetura, UI e fluxos](docs/project-overview.md)
+- [Diretrizes de engenharia](AGENTS.md)
+- [Arquitetura](docs/architecture.md)
+- [Plano de migração](docs/migration-plan.md)
 - [Roadmap](docs/roadmap.md)
-- [Capture feature](docs/features/captures.md)
-- [Checklist feature](docs/features/checklists.md)
-- [System diagram](docs/SD_captureflow.drawio)
+- [Captures — documentação da feature](docs/features/captures/README.md)
+- [Checklist e sub-checklist](docs/features/checklists.md)
+- [Diagrama do sistema](docs/SD_captureflow.drawio)
 
-## Privacy
-MVP data stays on-device; no cloud sync, account, analytics or upload of captured content is included. Screenshot discovery is not implemented, and invasive cross-app monitoring is out of scope.
+## Privacidade
 
-## Status
-Native code and documentation have been added in the migration branch. Build and device validation are still pending; this is not yet release-ready.
+Referências e imagens são armazenadas localmente; não há conta, analytics nem sincronização cloud implementada. OCR é executado localmente. O serviço de metadados faz requisições HTTP(S) para URLs compartilhadas pelo usuário. O monitoramento de screenshots é opt-in e depende de permissões, MediaStore e restrições do dispositivo.
 
+## Estado de validação
 
-## Feature documentation
-
-- [Captures feature documentation](docs/features/captures/README.md): functional contract, architecture, database contract, data access, integrations, security/privacy, UI/UX, wireframes, tests and changelog.
+A documentação descreve o código observado, mas não substitui a validação em runtime. O PR #25 contém uma correção de imports Kotlin e deve ter CI/build aprovado antes de declarar a versão atual compilável. Consulte [GitHub Actions](https://github.com/FeHunter/captureflow/actions) para o resultado do commit mais recente.
