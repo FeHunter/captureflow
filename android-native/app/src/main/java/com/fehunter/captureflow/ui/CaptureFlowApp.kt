@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.*
@@ -265,7 +266,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.addImageCapture(uri, category = "Referência")
+                    viewModel.addImageCapture(uri, category = "Referência", deleteSourceScreenshotAfterImport = true)
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
                 }) { Text("Adicionar às referências") }
@@ -554,7 +555,7 @@ private fun CaptureCard(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, top = 16.dp, end = 12.dp, bottom = 12.dp),
+                    modifier = Modifier.fillMaxWidth().weight(0.30f).padding(start = 20.dp, top = 12.dp, end = 12.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -594,7 +595,7 @@ private fun CaptureCard(
                 }
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxWidth().weight(1f).background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().weight(0.70f).background(MaterialTheme.colorScheme.surfaceVariant),
                     key = { page -> allCaptures[page].id },
                 ) { page ->
                     FullscreenCapturePage(
@@ -673,6 +674,16 @@ private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Bo
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        // Long titles overlay the image with a dark-to-transparent fade.
+        if (capture.title.length > 72) {
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.48f), Color.Transparent)))
+                    .padding(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 38.dp),
+            ) {
+                Text(text = capture.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 4, overflow = TextOverflow.Ellipsis)
             }
         }
         if (showNavigationHint) {
