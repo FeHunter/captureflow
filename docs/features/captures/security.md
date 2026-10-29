@@ -12,6 +12,12 @@
 - Não documentar monitoramento como garantido ou permanente em todos os dispositivos.
 
 
+## Proveniência da origem em imagens
+- URL recebida em `EXTRA_TEXT` ou `ClipData` é validada como HTTP(S) e associada à imagem compartilhada.
+- URL obtida por OCR é uma sugestão não verificada. A UI solicita confirmação explícita antes de marcar a origem como confirmada e abrir o endereço.
+- Pacote vindo de referrer ou `MediaStore.OWNER_PACKAGE_NAME` é apenas metadado de proveniência; não deve ser tratado como prova da página nem convertido em URL.
+- A URL de origem pode apontar para conteúdo externo; abrir o link sempre é uma ação explícita do usuário.
+
 ## Requisição de metadados de link
 - O app requisita URLs HTTP(S) recebidas via Sharesheet, com timeout de conexão/leitura e limite de 512 KB de HTML.
 - O parser lê HTML como texto; não executa scripts nem JavaScript.
