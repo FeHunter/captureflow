@@ -22,6 +22,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
+data class PendingSharedLink(
+    val id: String,
+    val originalContent: String,
+    val url: String,
+    val title: String,
+    val description: String? = null,
+    val imageUrl: String? = null,
+    val isLoading: Boolean = true,
+    val metadataFound: Boolean = false,
+)
+
 data class OcrUiState(
     val isProcessing: Boolean = false,
     val message: String? = null,
@@ -39,6 +50,9 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     private val _ocrStates = MutableStateFlow<Map<String, OcrUiState>>(emptyMap())
     val ocrStates = _ocrStates.asStateFlow()
+
+    private val _pendingSharedLink = MutableStateFlow<PendingSharedLink?>(null)
+    val pendingSharedLink = _pendingSharedLink.asStateFlow()
 
     val captures = captureDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val tasks = checklistDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -87,23 +101,75 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             addImageCapture(Uri.parse(incoming.imageUri))
             return
         }
+
+        val content = CaptureClassifier.normalize(incoming.content)
+        val url = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
+            .find(content)?.value?.trimEnd('.', ',', ')', ']', '}', ';')
+
+        if (url != null) {
+            prepareSharedLink(content, url)
+            return
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
-            val imageUri = incoming.imageUri?.let { sharedUri ->
-                runCatching {
-                    imageStorageService.copyToPrivateStorage(getApplication(), Uri.parse(sharedUri)).toString()
-                }.getOrElse {
-                    // Keep the original URI as a fallback; OCR will report if the provider
-                    // no longer allows access. The normal path uses the durable private copy.
-                    sharedUri
+            val capture = CaptureClassifier.create(content)
+            if (!captureDao.containsContent(content)) captureDao.insert(capture)
+        }
+    }
+
+    private fun prepareSharedLink(content: String, url: String) {
+        val requestId = UUID.randomUUID().toString()
+        val fallbackTitle = CaptureClassifier.create(content).title
+        _pendingSharedLink.value = PendingSharedLink(
+            id = requestId,
+            originalContent = content,
+            url = url,
+            title = fallbackTitle,
+            isLoading = true,
+        )
+
+        viewModelScope.launch {
+            val metadata = linkMetadataService.fetch(url)
+            val current = _pendingSharedLink.value
+            if (current?.id != requestId) return@launch
+            _pendingSharedLink.value = current.copy(
+                title = metadata?.title?.takeIf(String::isNotBlank) ?: fallbackTitle,
+                description = metadata?.description,
+                imageUrl = metadata?.imageUrl,
+                isLoading = false,
+                metadataFound = metadata != null,
+            )
+        }
+    }
+
+    fun cancelPendingSharedLink() {
+        _pendingSharedLink.value = null
+    }
+
+    fun confirmPendingSharedLink(category: String) {
+        val pending = _pendingSharedLink.value ?: return
+        if (pending.isLoading || category !in listOf("Ler depois", "Verificar", "Salvar", "Importante")) return
+        _pendingSharedLink.value = null
+
+        viewModelScope.launch(Dispatchers.IO) {
+            if (captureDao.containsSourceUrl(pending.url)) return@launch
+
+            val fallback = CaptureClassifier.create(pending.originalContent)
+            val enrichedContent = listOf(
+                pending.originalContent.trim(),
+                pending.description?.takeIf(String::isNotBlank),
+            ).filterNotNull().filter(String::isNotBlank).distinct().joinToString("\\n")
+            val capture = fallback.copy(
+                title = pending.title.trim().takeIf(String::isNotBlank) ?: fallback.title,
+                content = enrichedContent,
+                category = category,
+            )
+            captureDao.insert(capture)
+
+            pending.imageUrl?.let { imageUrl ->
+                imageStorageService.downloadToPrivateStorage(getApplication(), imageUrl)?.let { localImage ->
+                    captureDao.updateImageUri(capture.id, localImage.toString())
                 }
-            }
-            val content = CaptureClassifier.normalize(incoming.content)
-            val capture = CaptureClassifier.create(content, imageUri)
-            // Images use a generic placeholder as content, so content-only deduplication
-            // would incorrectly discard every image after the first one.
-            if (imageUri != null || !captureDao.containsContent(content)) {
-                captureDao.insert(capture)
-                if (imageUri == null) enrichLink(capture.id, content, capture.title)
             }
         }
     }
