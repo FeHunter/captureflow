@@ -10,3 +10,9 @@
 - Monitoramento em segundo plano usa foreground service tipo `specialUse`; antes de publicar, validar política vigente do Google Play, justificativa e declaração/revisão exigidas.
 - Permissões negadas, force-stop, economia de bateria e particularidades OEM podem interromper a detecção.
 - Não documentar monitoramento como garantido ou permanente em todos os dispositivos.
+
+
+- A importação de screenshot pela notificação copia a imagem para armazenamento privado e salva a referência antes de solicitar a exclusão do original.
+- A exclusão usa os mecanismos do Android/MediaStore e pode exigir confirmação explícita do usuário (especialmente nas versões recentes). Se a confirmação for cancelada ou a exclusão falhar, o original não é apagado; a cópia privada já importada permanece disponível.
+- Imagens escolhidas manualmente pelo Photo Picker não são apagadas da galeria.
+- OCR continua local via ML Kit. A seleção do título prioriza a faixa central da imagem, com fallback para outras regiões.
