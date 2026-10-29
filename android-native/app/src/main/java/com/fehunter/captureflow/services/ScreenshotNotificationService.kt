@@ -17,7 +17,6 @@ import android.os.Looper
 import android.provider.MediaStore
 import androidx.core.app.NotificationCompat
 import com.fehunter.captureflow.MainActivity
-import com.fehunter.captureflow.R
 
 /**
  * Optional, user-enabled foreground service that watches MediaStore for recent screenshots.
@@ -110,7 +109,7 @@ class ScreenshotNotificationService : Service() {
         val saveIntent = actionIntent(ACTION_SAVE_REFERENCE, uri, 1)
         val taskIntent = actionIntent(ACTION_CREATE_TASK, uri, 2)
         val notification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setContentTitle("Screenshot detectada")
             .setContentText("Deseja salvar como referência ou criar uma tarefa?")
             .setAutoCancel(true)
