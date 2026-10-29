@@ -247,3 +247,18 @@ Ao tocar na notificação “Screenshot pronta para tarefa”, abrir o CaptureFl
 - Ao trocar de referência, atualizar juntos título, data/hora, tag/categoria, imagem e vínculo da sub-checklist.
 - A imagem usa `ContentScale.Fit`; o gesto não deve mudar o recorte da imagem.
 - A área de swipe é o corpo da imagem, para não conflitar com os botões do cabeçalho.
+
+
+## Correção — confirmação de tarefa e descoberta da navegação por swipe
+
+- A tela principal mantém duas áreas acessíveis pela navegação inferior: **Referências** e **Tarefas**. A tela de tarefas já contém a lista reativa do banco; agora ela fica acessível sem depender de um fluxo alternativo.
+- Ao confirmar **Criar tarefa** no modal de screenshot, a UI chama `CaptureViewModel.addImageTask(uri)`, limpa a intenção pendente e navega para **Tarefas** para que o usuário possa conferir o novo item.
+- `addImageTask` copia a imagem para o armazenamento privado do app quando possível e insere uma `ChecklistTaskEntity` com `imageUri`, título inicial “Revisar screenshot” e categoria “Tarefa”. A lista é alimentada pelo fluxo observado do DAO.
+- A confirmação e a navegação não devem ser confundidas com garantia de cópia da imagem: o caminho de armazenamento precisa continuar protegido por fallback, e a validação em dispositivo deve confirmar que a imagem aparece no cartão da tarefa.
+
+### Indicador minimalista de swipe
+
+- A imagem continua usando toda a área principal disponível e `ContentScale.Fit`; o indicador é uma sobreposição alinhada ao centro inferior do contêiner, não um novo componente no layout vertical.
+- Texto curto: **“‹ Deslize para navegar ›”**, sobre uma superfície translúcida com cantos arredondados.
+- O indicador não muda a medição nem a altura da imagem, não cobre o cabeçalho e não interfere nos botões de fechar/tarefas.
+- O gesto continua limitado à área principal da imagem, com swipe-left para a próxima referência e swipe-right para a anterior.
