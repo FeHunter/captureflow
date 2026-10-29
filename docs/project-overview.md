@@ -183,3 +183,10 @@ Não declarar build ou testes aprovados sem verificar o resultado do commit corr
 ## Atualização de UX — 2026-10-29
 
 O detalhe fullscreen agora usa `HorizontalPager` em vez de detectar manualmente o fim de um arraste. O título principal pode ser corrigido no fullscreen; a atualização passa por `CaptureViewModel.updateCaptureTitle` e `CaptureDao.updateTitle`, sem sobrescrever os demais campos. O atalho de sub-checklist saiu do cabeçalho fullscreen, mas o controle no cartão permanece.
+
+
+## Atualização de OCR, fullscreen e galeria — 2026-10-29
+
+- **OCR centrado:** a heurística de `OcrService` prioriza linhas candidatas na faixa vertical central (30%–72% da imagem) e adiciona pontuação conforme a proximidade do centro. Se a faixa não tiver candidatos adequados, usa o conjunto de fallback existente. Isso reflete o uso esperado: o usuário rola a informação importante para o centro antes de capturar.
+- **Fullscreen com proporção fixa:** o cabeçalho ocupa 30% da altura disponível e a área da imagem 70%. O cabeçalho limita o título a quatro linhas; quando o layout reporta overflow, o título completo é sobreposto no topo da imagem com gradiente escuro que desaparece em direção à parte inferior.
+- **Limpeza de screenshots:** ao confirmar a captura recebida pela notificação, o app primeiro copia a imagem para o armazenamento privado e insere a referência local. Somente após a cópia e o salvamento bem-sucedidos, solicita ao Android a exclusão do original da galeria. Android pode exigir confirmação do usuário; se a exclusão for negada ou falhar, a referência importada continua salva e o original permanece na galeria. O fluxo manual de seleção de imagens não apaga originais.
