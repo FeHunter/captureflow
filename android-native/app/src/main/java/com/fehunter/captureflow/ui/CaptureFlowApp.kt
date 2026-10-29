@@ -47,7 +47,7 @@ import com.fehunter.captureflow.data.ChecklistTaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit) {
+fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -67,13 +67,13 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
         },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            CaptureLibrary(viewModel)
+            CaptureLibrary(viewModel, hasScreenshotAccess, detectedScreenshotUri, onRequestScreenshotAccess, onScreenshotHandled)
         }
     }
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onScreenshotHandled: () -> Unit) {
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
@@ -86,6 +86,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
     )
+    LaunchedEffect(detectedScreenshotUri) {
+        detectedScreenshotUri?.let { selectedImageUri = it }
+    }
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
             (category == "Todas" || it.category == category)
@@ -129,6 +132,14 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
                         Icon(Icons.Default.Image, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Selecionar imagem")
+                    }
+                    if (!hasScreenshotAccess) {
+                        OutlinedButton(onClick = onRequestScreenshotAccess, modifier = Modifier.fillMaxWidth()) {
+                            Text("Ativar detecção de screenshots")
+                        }
+                        Text("Opcional: com acesso às imagens, o app detecta novas capturas enquanto estiver aberto.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    } else {
+                        Text("Detecção ativa enquanto o CaptureFlow estiver aberto.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
                     }
                 }
             }
@@ -183,14 +194,32 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
         }
     }
     selectedImageUri?.let { uri ->
-        AlertDialog(onDismissRequest = { selectedImageUri = null }, title = { Text("Vincular imagem a uma tag") }, text = {
+        AlertDialog(onDismissRequest = {
+            selectedImageUri = null
+            if (uri == detectedScreenshotUri) onScreenshotHandled()
+        }, title = { Text(if (uri == detectedScreenshotUri) "Screenshot detectada" else "Vincular imagem a uma tag") }, text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Escolha a categoria para organizar esta imagem.")
+                Text(if (uri == detectedScreenshotUri) {
+    "Uma nova captura de tela foi encontrada. Deseja enviá-la ao CaptureFlow?"
+} else {
+    "Escolha a categoria para organizar esta imagem."
+})
                 categories.drop(1).forEach { tag ->
                     FilterChip(selected = imageCategory == tag, onClick = { imageCategory = tag }, label = { Text(tag) })
                 }
             }
-        }, confirmButton = { Button(onClick = { viewModel.addImageCapture(uri, imageCategory); selectedImageUri = null }) { Text("Salvar imagem") } }, dismissButton = { TextButton(onClick = { selectedImageUri = null }) { Text("Cancelar") } })
+        }, confirmButton = {
+            Button(onClick = {
+                viewModel.addImageCapture(uri, imageCategory)
+                selectedImageUri = null
+                if (uri == detectedScreenshotUri) onScreenshotHandled()
+            }) { Text("Enviar para o app") }
+        }, dismissButton = {
+            TextButton(onClick = {
+                selectedImageUri = null
+                if (uri == detectedScreenshotUri) onScreenshotHandled()
+            }) { Text("Agora não") }
+        })
     }
 }
 
