@@ -53,6 +53,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel) {
 @Composable
 private fun CaptureLibrary(viewModel: CaptureViewModel) {
     val captures by viewModel.captures.collectAsState()
+    val ocrStates by viewModel.ocrStates.collectAsState()
     var content by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
@@ -84,8 +85,13 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
         } else {
             LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(filtered, key = { it.id }) { capture ->
-                    CaptureCard(capture, { viewModel.setCaptureCompleted(capture.id, it) },
-                        { viewModel.deleteCapture(capture.id) }, { viewModel.extractText(capture) })
+                    CaptureCard(
+                        capture = capture,
+                        ocrState = ocrStates[capture.id] ?: OcrUiState(),
+                        onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
+                        onDelete = { viewModel.deleteCapture(capture.id) },
+                        onOcr = { viewModel.extractText(capture) },
+                    )
                 }
             }
         }
@@ -93,7 +99,13 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
 }
 
 @Composable
-private fun CaptureCard(capture: CaptureEntity, onCompleted: (Boolean) -> Unit, onDelete: () -> Unit, onOcr: () -> Unit) {
+private fun CaptureCard(
+    capture: CaptureEntity,
+    ocrState: OcrUiState,
+    onCompleted: (Boolean) -> Unit,
+    onDelete: () -> Unit,
+    onOcr: () -> Unit,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -106,8 +118,22 @@ private fun CaptureCard(capture: CaptureEntity, onCompleted: (Boolean) -> Unit, 
             }
             Text(capture.content, style = MaterialTheme.typography.bodyMedium, maxLines = 5)
             if (capture.kind == "image" && capture.imageUri != null) {
-                OutlinedButton(onClick = onOcr) {
-                    Icon(Icons.Default.Image, null); Spacer(Modifier.width(6.dp)); Text("Extrair texto da imagem")
+                OutlinedButton(onClick = onOcr, enabled = !ocrState.isProcessing) {
+                    if (ocrState.isProcessing) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Image, null)
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (ocrState.isProcessing) "Lendo imagem…" else "Extrair texto da imagem")
+                }
+                ocrState.message?.let { message ->
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (ocrState.isError) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

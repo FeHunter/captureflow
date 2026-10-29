@@ -12,9 +12,11 @@
 - [ ] Test share/OCR flows on emulator and physical devices.
 
 ## Product hardening
-- [ ] Copy shared image media to app-private storage when URI grants are temporary.
+- [x] Copy shared image media to app-private storage when the shared provider permits access.
+- [ ] Validate URI fallback behavior across gallery apps and real devices.
 - [ ] Add review/edit flow for capture metadata and OCR text.
-- [ ] Show loading/error states for OCR and persistence failures.
+- [x] Show OCR progress and success/empty/error states.
+- [ ] Show explicit feedback for image import and persistence failures.
 - [ ] Associate checklist tasks with references.
 - [ ] Add tests for URL normalization, deduplication and checklist rules.
 - [ ] Improve accessibility, responsive layouts and visual polish.
