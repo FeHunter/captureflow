@@ -88,3 +88,11 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Restaurado `HorizontalPager` no visualizador aberto a partir dos thumbnails de categoria, com swipe-left para avançar e swipe-right para voltar dentro da categoria filtrada, sem loop.
 - Sincronizados os metadados e ações da captura com a página estabilizada; mantidos gradiente, enquadramento e Back nativo.
 - Restaurado o nome do produto para **Capture Flow** na barra superior e no rótulo do aplicativo Android.
+
+
+## 2026-10-29 — Estado atual documentado e confirmação de categoria de links
+- Criado `docs/current-state.md` como inventário funcional do aplicativo, incluindo arquitetura, UI/UX, wireframes, persistência, OCR, imagens, compartilhamento e limitações.
+- O compartilhamento de URL agora abre um diálogo de prévia e exige escolha explícita entre Ler depois, Verificar, Salvar e Importante antes de persistir.
+- `LinkMetadataService` faz requisição HTTP(S) do body HTML com timeout e limite de 512 KB; prioriza H1 para título e imagem de article/main para capa, com metadados Open Graph/Twitter como fallback.
+- Após confirmação, tenta baixar a imagem para armazenamento privado. Se metadados falharem, o link pode ser salvo com título de fallback.
+- Atualizados contratos de arquitetura, UI/UX, wireframes, segurança e teste.
