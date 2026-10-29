@@ -112,3 +112,11 @@ Persistência em `capture_subtasks`; cada item pertence a uma referência via `c
 - O conteúdo principal é um pager horizontal; deslizar à esquerda avança e à direita volta dentro da lista filtrada.
 - O cabeçalho exibe a ação **Editar título**. O diálogo não aparece no cartão/lista e não substitui o controle de sub-checklist do cartão.
 - A dica de navegação fica sobreposta à imagem; a imagem mantém proporção com `ContentScale.Fit`.
+
+
+## Fullscreen details — current behavior
+
+- Horizontal pager: swipe left to next reference, swipe right to previous; filtered ordering, no wrap-around.
+- Header includes **Editar título**, shown only in fullscreen.
+- Sub-checklist remains available from the reference card, not from the fullscreen header.
+- Image uses `ContentScale.Fit`; navigation hint remains an overlay.
