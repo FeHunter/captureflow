@@ -10,3 +10,11 @@
 
 - A detecção de screenshots é opcional e só observa o MediaStore enquanto o app está em primeiro plano; não usa Accessibility Service, não monitora conteúdo de outros apps e não mantém serviço em segundo plano.
 - A detecção é heurística e depende de nomes de arquivo/pastas expostos pelo MediaStore. Capturas com nomes/pastas personalizados ou em dispositivos com restrições de acesso podem não ser reconhecidas.
+
+
+## Monitoramento de screenshots em segundo plano
+- Ativação explícita do usuário; permissão de leitura de imagens e permissão de notificações (Android 13+) são pré-requisitos.
+- O serviço em primeiro plano usa tipo `specialUse`, com subtipo declarado no Manifest. Antes de distribuir pela Google Play, validar as políticas atuais de foreground services e a declaração/revisão exigida para `specialUse`.
+- O monitor consulta apenas metadados recentes do MediaStore e não usa Accessibility Service nem captura o conteúdo de tela de outros apps.
+- As notificações expõem ações rápidas para salvar uma referência ou criar uma tarefa; as imagens são salvas no armazenamento privado ao serem importadas pelo fluxo existente.
+- Restrições de bateria, force-stop, permissões negadas e nomes/pastas não padronizados podem impedir ou atrasar a detecção.
