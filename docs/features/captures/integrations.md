@@ -17,3 +17,10 @@ OCR roda localmente no aparelho. `OcrService` processa blocos/linhas, caixas del
 
 ## Persistência
 Room/SQLite é local. Não há sincronização cloud ou upload de imagem para OCR. O serviço de metadados de link faz uma requisição de rede à URL compartilhada.
+
+
+## OCR e screenshots
+
+`OcrService` agora prioriza candidatos a título entre 30% e 72% da altura da imagem, com pontuação adicional pela proximidade do centro. A heurística volta aos demais candidatos quando não encontra título plausível na região central.
+
+No fluxo de screenshot aberto pela notificação, a imagem é copiada para armazenamento privado e a referência é persistida antes de solicitar a exclusão do original via MediaStore. A exclusão pode exigir confirmação do sistema e não é garantida se o usuário cancelar ou o Android negar acesso. Importações manuais pelo Photo Picker não removem a imagem original.
