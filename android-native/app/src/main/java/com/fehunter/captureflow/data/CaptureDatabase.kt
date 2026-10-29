@@ -28,6 +28,7 @@ data class ChecklistTaskEntity(
     val title: String,
     val isCompleted: Boolean = false,
     val createdAt: Long,
+    val imageUri: String? = null,
 )
 
 @Dao
