@@ -10,3 +10,10 @@
 - Monitoramento em segundo plano usa foreground service tipo `specialUse`; antes de publicar, validar política vigente do Google Play, justificativa e declaração/revisão exigidas.
 - Permissões negadas, force-stop, economia de bateria e particularidades OEM podem interromper a detecção.
 - Não documentar monitoramento como garantido ou permanente em todos os dispositivos.
+
+
+## Requisição de metadados de link
+- O app requisita URLs HTTP(S) recebidas via Sharesheet, com timeout de conexão/leitura e limite de 512 KB de HTML.
+- O parser lê HTML como texto; não executa scripts nem JavaScript.
+- URLs de imagem são validadas como HTTP(S), resolvidas contra a URL final e baixadas após confirmação da categoria.
+- Falha de rede não descarta a URL original; cancelar a confirmação não persiste a referência.
