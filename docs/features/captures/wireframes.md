@@ -79,7 +79,7 @@ Busca e filtro devem funcionar em conjunto: alterar o filtro não limpa a busca,
 
 - Duas colunas simétricas em dispositivos Android de largura comum.
 - Referência para tela de 360 dp: padding lateral de 16 dp, espaçamento de 12 dp e cartões com aproximadamente 164 dp de largura.
-- Altura de referência do cartão: **272 dp**.
+- Altura de referência do cartão: **300 dp**, para acomodar o subtítulo em até duas linhas com espaçamento confortável.
 - Implementação sugerida: LazyVerticalGrid com GridCells.Fixed(2).
 - Espaçamento vertical e horizontal consistente de 12 dp.
 - O conteúdo variável não deve provocar sobreposição.
