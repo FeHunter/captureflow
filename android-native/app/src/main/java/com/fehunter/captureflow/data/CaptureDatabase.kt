@@ -63,7 +63,8 @@ abstract class CaptureDatabase : RoomDatabase() {
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2)\n                .build().also { instance = it }
+                .addMigrations(MIGRATION_1_2)
+                .build().also { instance = it }
         }
     }
 }
