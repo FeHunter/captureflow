@@ -52,11 +52,27 @@ class OcrService {
                     line.bounds.width() >= imageWidth * 0.45)
         }
         val uiProfile = detectUiProfile(lines.map { it.text })
-        val titlePool = if (titleCandidates.isNotEmpty()) titleCandidates else candidateLines.take(3)
+        // When a screenshot contains a lot of UI, users commonly scroll the target
+        // content into the middle before taking the screenshot. Prefer that central
+        // band first; fall back to the full candidate set if it contains no title-like lines.
+        val centerTitleCandidates = titleCandidates.filter { line ->
+            val centerY = line.bounds.centerY().toFloat() / imageHeight
+            centerY in 0.30f..0.72f
+        }
+        val titlePool = when {
+            centerTitleCandidates.isNotEmpty() -> centerTitleCandidates
+            titleCandidates.isNotEmpty() -> titleCandidates
+            else -> candidateLines.filter { line ->
+                val centerY = line.bounds.centerY().toFloat() / imageHeight
+                centerY in 0.30f..0.72f
+            }.ifEmpty { candidateLines.take(3) }
+        }
         val titleAnchor = titlePool.maxByOrNull { line ->
             val heightScore = line.bounds.height().toFloat() / imageHeight
             val widthScore = line.bounds.width().toFloat() / imageWidth
             val y = line.bounds.centerY().toFloat() / imageHeight
+            val centerDistance = kotlin.math.abs(y - 0.51f)
+            val centerFocusScore = (1f - centerDistance / 0.50f).coerceIn(0f, 1f) * 1.15f
             val topPenalty = line.bounds.top.toFloat() / imageHeight
             val lengthScore = when (line.text.length) {
                 in 18..120 -> 0.35f
@@ -72,7 +88,7 @@ class OcrService {
                 UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> 0f
             }
             heightScore * 4f + widthScore * 0.65f - topPenalty * 0.12f +
-                lengthScore + contentScore + profilePositionScore
+                centerFocusScore + lengthScore + contentScore + profilePositionScore
         } ?: candidateLines.first()
 
         // Headline text is commonly split into multiple adjacent lines with similar
