@@ -23,3 +23,10 @@
 - Imagem ausente/inacessível deve degradar para cartão sem capa, sem travar a lista.
 - Layout deve permitir rolagem e evitar overflow em telas estreitas.
 - Status e ações não podem depender exclusivamente de cor.
+
+
+## Atualização de navegação, imagem e tema
+- A tela de Referências é a tela principal única; a checklist independente aparece abaixo da biblioteca, eliminando o bottom navigation.
+- Ao selecionar uma imagem, abrir um diálogo de categoria/tag (Ler depois, Ideias, Tarefas ou Referência) antes de persistir e iniciar OCR.
+- O seletor de tema fica no cabeçalho e oferece Seguir dispositivo, Claro e Escuro.
+- Paleta inspirada na arte Hunter: azul-marinho profundo, azul oceano, azul-ciano e branco; no tema escuro, superfícies azul-marinho em vez de preto puro.
