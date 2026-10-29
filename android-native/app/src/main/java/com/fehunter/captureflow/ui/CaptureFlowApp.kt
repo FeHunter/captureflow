@@ -100,7 +100,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var imageCategory by remember { mutableStateOf("Ler depois") }
-    val categories = listOf("Todas", "Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde")
+    val categories = listOf("Todas", "Ler depois", "Verificar", "Salvar", "Importante")
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
@@ -346,7 +346,7 @@ private fun CaptureCard(
     val modalSubtasks = allSubtasks.filter { it.captureId == fullscreenCapture.id }
 
     Card(
-        modifier = Modifier.fillMaxWidth().height(320.dp),
+        modifier = Modifier.fillMaxWidth().height(272.dp),
         shape = MaterialTheme.shapes.large,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -447,7 +447,7 @@ private fun CaptureCard(
                         }
                     }
                     DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
-                        listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde").forEach { tag ->
+                        listOf("Ler depois", "Verificar", "Salvar", "Importante").forEach { tag ->
                             DropdownMenuItem(text = { Text(tag) }, onClick = {
                                 onCategoryChange(tag)
                                 showCategoryMenu = false
