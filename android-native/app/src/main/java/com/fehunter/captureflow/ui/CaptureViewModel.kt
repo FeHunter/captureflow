@@ -75,7 +75,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     fun receiveSharedIntent(intent: Intent) {
         val incoming = CaptureClassifier.fromIntent(intent) ?: return
         if (incoming.imageUri != null) {
-            addImageTask(Uri.parse(incoming.imageUri))
+            addImageCapture(Uri.parse(incoming.imageUri))
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
