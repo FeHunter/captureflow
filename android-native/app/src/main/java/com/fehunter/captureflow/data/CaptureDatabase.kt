@@ -158,22 +158,44 @@ object CaptureClassifier {
         }
     }
     fun fromIntent(intent: Intent): IncomingCapture? {
-        if (intent.action != Intent.ACTION_SEND) return null
-        val type = intent.type.orEmpty()
-        return when {
-            type.startsWith("image/") -> {
-                val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                } ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
-                uri?.let { IncomingCapture("Imagem compartilhada", it.toString()) }
-            }
-            type == "text/plain" -> intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
-                ?.takeIf(String::isNotBlank)?.let(::IncomingCapture)
-            else -> null
+        if (intent.action != Intent.ACTION_SEND && intent.action != Intent.ACTION_SEND_MULTIPLE) return null
+        val type = intent.type.orEmpty().lowercase()
+        if (type.startsWith("image/")) {
+            val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            } ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+            return uri?.let { IncomingCapture("Imagem compartilhada", it.toString()) }
         }
+
+        // Different apps (including video/social apps) use text/plain, text/html,
+        // text/uri-list or another text/* MIME type for the same shared URL.
+        if (!type.startsWith("text/") && type != "application/x-www-form-urlencoded") return null
+
+        val sharedText = runCatching {
+            intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+        }.getOrNull()
+        val clipText = intent.clipData?.let { clip ->
+            (0 until clip.itemCount).mapNotNull { index ->
+                val item = clip.getItemAt(index)
+                item.text?.toString()?.takeIf(String::isNotBlank)
+                    ?: item.uri?.toString()?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
+            }.joinToString("\n").takeIf(String::isNotBlank)
+        }
+        val dataUrl = intent.data?.takeIf {
+            it.scheme.equals("http", true) || it.scheme.equals("https", true)
+        }?.toString()
+        val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT)?.takeIf(String::isNotBlank)
+
+        val content = sequenceOf(sharedText, clipText, dataUrl, subject)
+            .filterNotNull()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .distinct()
+            .joinToString("\n")
+        return content.takeIf(String::isNotBlank)?.let(::IncomingCapture)
     }
     fun create(content: String, imageUri: String? = null): CaptureEntity {
         val normalized = normalize(content)
