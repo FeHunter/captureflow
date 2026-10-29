@@ -96,10 +96,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 .copy(
                     title = "Imagem selecionada",
                     category = category,
-                    sourceUrl = sourceUrl ?: SourceUrlDetector.extract(sourceUrl.orEmpty()),
+                    sourceUrl = SourceUrlDetector.extract(sourceUrl.orEmpty()),
                     sourceApp = sourceApp,
                     sourceDetectionMethod = sourceDetectionMethod,
-                    sourceVerified = sourceUrl != null && sourceVerified,
+                    sourceVerified = SourceUrlDetector.extract(sourceUrl.orEmpty()) != null && sourceVerified,
                 )
             captureDao.insert(capture)
             // Only notification-driven screenshot imports opt into source cleanup.
