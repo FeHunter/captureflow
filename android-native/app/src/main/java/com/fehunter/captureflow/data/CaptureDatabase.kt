@@ -76,6 +76,7 @@ interface CaptureDao {
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
     @Query("UPDATE captures SET content = :content, title = :title WHERE id = :id") suspend fun updateExtractedText(id: String, content: String, title: String)
     @Query("SELECT EXISTS(SELECT 1 FROM captures WHERE content = :content)") suspend fun containsContent(content: String): Boolean
+    @Query("SELECT EXISTS(SELECT 1 FROM captures WHERE sourceUrl = :sourceUrl)") suspend fun containsSourceUrl(sourceUrl: String): Boolean
 }
 
 @Dao
