@@ -28,7 +28,6 @@ class MainActivity : ComponentActivity() {
     private val captureViewModel: CaptureViewModel by viewModels()
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
     private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
-    private val pendingScreenshotUris = ArrayDeque<Uri>()
     private var hasScreenshotAccess by mutableStateOf(false)
     private var screenshotMonitoringEnabled by mutableStateOf(false)
 
@@ -109,7 +108,12 @@ class MainActivity : ComponentActivity() {
         hasScreenshotAccess = hasScreenshotPermission()
         val preferences = getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE)
         screenshotMonitoringEnabled = preferences.getBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
-        if (hasScreenshotAccess && screenshotMonitoringEnabled) startScreenshotNotificationService()
+        if (hasScreenshotAccess && screenshotMonitoringEnabled) {
+            if (hasNotificationPermission()) startScreenshotNotificationService() else {
+                screenshotMonitoringEnabled = false
+                preferences.edit().putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false).apply()
+            }
+        }
     }
 
     private fun screenshotPermission(): String =
@@ -131,6 +135,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun hasNotificationPermission(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -140,7 +147,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startScreenshotNotificationService() {
-        if (!hasScreenshotPermission()) return
+        if (!hasScreenshotPermission() || !hasNotificationPermission()) return
         getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE).edit()
             .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, true).apply()
         screenshotMonitoringEnabled = true
@@ -173,7 +180,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleScreenshotHandled() {
-        detectedScreenshotUri = if (pendingScreenshotUris.isEmpty()) null else pendingScreenshotUris.removeFirst()
+        detectedScreenshotUri = null
     }
 
     override fun onNewIntent(intent: Intent) {
