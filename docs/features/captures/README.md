@@ -17,6 +17,10 @@ Feature nativa responsável por receber, classificar, persistir, pesquisar e ger
 - [Contrato do banco](database_contract_current.md)
 - [Acesso a dados e ações](data_access_and_actions.md)
 - [Regras UI/UX](uiux_current.md)
+- [Integrações](integrations.md)
+- [Segurança e privacidade](security.md)
+- [Wireframes](wireframes.md)
+- [Auditoria de fonte de verdade](source_of_truth_audit.md)
 - [Plano de testes](testing.md)
 - [Changelog](CHANGELOG.md)
 
