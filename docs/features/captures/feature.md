@@ -9,8 +9,8 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 ## Fluxos funcionais
 1. O usuário cola texto/URL ou compartilha texto com CaptureFlow.
 2. O app salva uma referência local e, para URLs HTTP(S), tenta recuperar título e descrição do HTML público.
-3. O usuário seleciona ou compartilha uma imagem; ela é copiada para o armazenamento privado quando possível.
-4. Na aba Referências, a imagem anexada é exibida como capa do cartão.
+3. O usuário seleciona uma imagem na aba Referências ou compartilha uma imagem/screenshot com o app; ela é salva como referência e copiada para o armazenamento privado quando possível.
+4. Na aba Referências, a imagem anexada é exibida como capa do cartão. Na aba Checklist, o usuário pode selecionar a imagem separadamente para criar uma tarefa com screenshot.
 5. O usuário pode executar OCR local. A análise procura identificar título e texto complementar, mantendo a imagem original.
 6. Na aba Checklist, uma imagem pode ser salva como tarefa com descrição opcional.
 
