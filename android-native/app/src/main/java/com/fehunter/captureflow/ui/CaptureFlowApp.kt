@@ -167,7 +167,6 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
                     ocrState = ocrStates[capture.id] ?: OcrUiState(),
                     onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
                     onDelete = { viewModel.deleteCapture(capture.id) },
-                    onOcr = { viewModel.extractText(capture) },
                 )
             }
         }
@@ -180,10 +179,26 @@ private fun CaptureCard(
     ocrState: OcrUiState,
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
-    onOcr: () -> Unit,
 ) {
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
+                Text(
+                    text = capture.title,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (ocrState.isProcessing) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
+                }
+            }
+
             val context = LocalContext.current
             val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
                 initialValue = null, capture.imageUri,
@@ -197,38 +212,24 @@ private fun CaptureCard(
             cover?.let { bitmap ->
                 Image(
                     bitmap = bitmap,
-                    contentDescription = "Imagem de capa da referência",
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                    contentDescription = "Capa da referência",
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
                     contentScale = ContentScale.Crop,
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
-                Column(Modifier.weight(1f)) {
-                    Text(capture.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(capture.category, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir referência") }
-            }
-            Text(capture.content, style = MaterialTheme.typography.bodyMedium, maxLines = 5)
-            if (capture.kind == "image" && capture.imageUri != null) {
-                OutlinedButton(onClick = onOcr, enabled = !ocrState.isProcessing) {
-                    if (ocrState.isProcessing) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Default.Image, null)
-                    }
-                    Spacer(Modifier.width(6.dp))
-                    Text(if (ocrState.isProcessing) "Lendo imagem…" else "Analisar imagem / extrair texto")
-                }
-                ocrState.message?.let { message ->
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (ocrState.isError) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+
+            if (ocrState.isError) {
+                Text(
+                    text = ocrState.message ?: "Não foi possível analisar esta imagem.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            } else if (ocrState.isProcessing) {
+                Text(
+                    text = "Analisando imagem…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

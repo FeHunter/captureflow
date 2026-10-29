@@ -13,3 +13,9 @@
 - A descrição continua guardando o restante do texto reconhecido, enquanto ruídos comuns de interface são filtrados da seleção do título.
 - O carregamento de capas usa leitura direta para URIs file:// e ContentResolver para outros esquemas.
 - Adicionados critérios de regressão com a manchete da BBC fornecida como exemplo.
+
+## Cartão minimalista e OCR automático
+- Referências com imagem iniciam OCR automaticamente após a cópia e inserção local.
+- Cartões de Referências exibem somente título, capa, checkbox e exclusão, com feedback transitório de carregamento/erro.
+- O texto complementar do OCR deixa de ser gravado no conteúdo da referência; o título extraído é o payload textual persistido para screenshots.
+- O botão manual “Analisar imagem / extrair texto” foi removido dos cartões de Referências.

@@ -11,14 +11,17 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 2. O app salva uma referência local e, para URLs HTTP(S), tenta recuperar título e descrição do HTML público.
 3. O usuário seleciona uma imagem na aba Referências ou compartilha uma imagem/screenshot com o app; ela é salva como referência e copiada para o armazenamento privado quando possível.
 4. Na aba Referências, a imagem anexada é exibida como capa do cartão. Na aba Checklist, o usuário pode selecionar a imagem separadamente para criar uma tarefa com screenshot.
-5. O usuário pode executar OCR local. A análise procura identificar título e texto complementar, mantendo a imagem original.
-6. Na aba Checklist, uma imagem pode ser salva como tarefa com descrição opcional.
+5. Assim que uma imagem é selecionada ou compartilhada para a aba Referências, o app inicia OCR local automaticamente e atualiza o título da referência; o cartão mantém a imagem original como capa.
+6. O cartão de referência exibe apenas título, capa, checkbox de conclusão e botão de exclusão. Durante a análise, pode exibir um indicador de carregamento ou uma mensagem de erro.
+7. Na aba Checklist, uma imagem pode ser salva como tarefa com descrição opcional; esse fluxo é separado do cartão de Referências.
 
 ## Regras
 - O conteúdo persistido não é enviado para um backend ou serviço de analytics.
 - Recuperar metadados de páginas exige conexão de rede; se falhar, a URL original permanece salva.
 - OCR roda localmente com ML Kit.
 - A imagem original permanece vinculada à referência/tarefa, mesmo após o OCR.
+- Para referências baseadas em imagem, o resultado persistido da análise é o título; o texto complementar do OCR não é mostrado nem armazenado no campo de conteúdo da referência.
+- A análise de imagem é iniciada automaticamente após salvar a cópia local; não há botão manual de OCR no cartão de referência.
 - OCR é heurístico; não garante identificar semanticamente o título em todos os layouts.
 - A versão exibida no cabeçalho vem de `BuildConfig.VERSION_NAME`, não de texto duplicado na interface.
 
