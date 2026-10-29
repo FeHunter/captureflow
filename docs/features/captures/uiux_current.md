@@ -48,3 +48,10 @@ Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes s�
 - Cabeçalho sincronizado com a página estabilizada do pager.
 - Ação **Editar título** abre um diálogo apenas no fullscreen. O título é validado como não vazio e persistido no campo `captures.title` sem alterar os demais campos.
 - A sub-checklist permanece acessível pelo botão do cartão; o atalho de sub-checklist no cabeçalho fullscreen foi removido.
+
+
+## Navegação e edição do título
+
+- `HorizontalPager` navega pela lista filtrada, sem wrap-around, e sincroniza o cabeçalho com a página estabilizada.
+- A ação **Editar título** aparece apenas no fullscreen. O diálogo valida texto não vazio e persiste apenas `captures.title`.
+- O atalho de sub-checklist foi removido do cabeçalho fullscreen; o botão de sub-checklist no cartão continua ativo.
