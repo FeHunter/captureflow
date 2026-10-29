@@ -41,6 +41,16 @@ class SharedImageStorageService {
         }
     }
 
+    /**
+     * Best-effort removal of an imported screenshot from shared MediaStore storage.
+     * Android may require explicit user consent to delete media owned by another app;
+     * when blocked, the operation fails safely and the original remains in the gallery.
+     */
+    fun deleteSourceScreenshot(context: Context, source: Uri): Boolean {
+        if (source.scheme != "content") return false
+        return runCatching { context.contentResolver.delete(source, null, null) > 0 }.getOrDefault(false)
+    }
+
     fun deletePrivateImage(context: Context, imageUri: String?) {
         if (imageUri.isNullOrBlank()) return
         val uri = runCatching { Uri.parse(imageUri) }.getOrNull() ?: return
