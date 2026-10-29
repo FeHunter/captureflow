@@ -41,3 +41,14 @@
 - [ ] Migrar banco v1 → v2 → v3 → v4 sem perder referências/tarefas.
 - [ ] Criar, concluir e excluir tarefas sem imagem.
 - [ ] Testar build debug e testes unitários.
+
+
+## Detecção de screenshots — v0.3.2
+- [ ] Sem permissão, o seletor manual de imagens continua funcionando e a detecção permanece desativada.
+- [ ] Ao ativar a detecção, o Android solicita a permissão de leitura de imagens.
+- [ ] Com permissão concedida, tirar uma screenshot com CaptureFlow aberto exibe confirmação para enviá-la ao app.
+- [ ] A confirmação permite selecionar uma categoria, salvar a imagem e iniciar OCR.
+- [ ] Escolher “Agora não” descarta o aviso sem salvar a screenshot.
+- [ ] Ao voltar ao app até 30 segundos após tirar screenshot em segundo plano, verificar a tentativa de detectar a imagem recente.
+- [ ] Ao sair do app, o ContentObserver é removido; não há monitoramento contínuo em segundo plano.
+- [ ] Cabeçalho exibe versão numérica `v0.3.2`, sem hash do commit.
