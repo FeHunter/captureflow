@@ -191,6 +191,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 val lines = extracted.lineSequence()
                     .map(String::trim)
                     .filter(String::isNotBlank)
+                    .filter { it.length > 2 }
                     .filterNot { line ->
                         line.matches(Regex("\\d{1,2}:\\d{2}")) ||
                             line.matches(Regex("\\d{1,2}\\s+(minutes?|hours?|days?)\\s+ago", RegexOption.IGNORE_CASE)) ||
@@ -210,7 +211,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     if (titleLength >= 45) break
                 }
                 val title = titleLines.joinToString(" ").take(150).ifBlank { "Screenshot para revisar" }
-                val description = lines.drop(titleLines.size).joinToString("\\n").take(2_000)
+                val description = lines.drop(titleLines.size).joinToString("\n").take(2_000)
                 withContext(Dispatchers.IO) {
                     checklistDao.updateDetails(task.id, title, description)
                 }
