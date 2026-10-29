@@ -52,3 +52,11 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Substituído o atalho de sub-checklist no cabeçalho fullscreen por **Editar título**.
 - Adicionado salvamento do título manual via ViewModel e atualização específica no DAO, preservando conteúdo e imagem.
 - Sub-checklist segue disponível pelo controle do cartão.
+
+
+## 2026-10-29 — Fullscreen UX
+
+- Replaced manual horizontal drag detection with Compose `HorizontalPager`.
+- Kept filtered-list boundaries and synchronized the fullscreen header with the settled page.
+- Replaced fullscreen sub-checklist shortcut with an **Editar título** action.
+- Added title-only persistence through ViewModel and DAO; the sub-checklist remains available from the card.
