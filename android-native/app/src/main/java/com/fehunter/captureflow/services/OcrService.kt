@@ -83,12 +83,17 @@ class OcrService {
         // example, "to soaring fuel costs") and would otherwise be dropped.
         val anchorHeight = titleAnchor.bounds.height().coerceAtLeast(1)
         val headlineWindow = maxOf(anchorHeight * 5, medianHeight * 8)
+        val maxTitleTop = when (uiProfile) {
+            UiProfile.VIDEO, UiProfile.SOCIAL -> imageHeight * 0.80
+            UiProfile.NEWS, UiProfile.SHOPPING -> imageHeight * 0.74
+            UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> imageHeight * 0.48
+        }
         val titleLines = candidateLines.filter { line ->
             val verticalOffset = line.bounds.top - titleAnchor.bounds.top
             verticalOffset >= -medianHeight &&
                 verticalOffset <= headlineWindow &&
                 line.bounds.height() >= anchorHeight * 0.62 &&
-                line.bounds.top < imageHeight * 0.48
+                line.bounds.top < maxTitleTop
         }.sortedWith(compareBy<OcrLine> { it.bounds.top }.thenBy { it.bounds.left })
             .ifEmpty { listOf(titleAnchor) }
         val titleText = titleLines.joinToString(" ") { it.text }
