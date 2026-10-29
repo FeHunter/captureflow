@@ -82,3 +82,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Reforçado o degradê escuro atrás do título sobre a imagem, preservando dimensões, enquadramento e estrutura do fullscreen.
 - Adicionado tratamento explícito de Back do Android no visualizador de referência e na categoria expandida. A navegação fecha apenas a camada superior, mantendo a categoria aberta quando o usuário volta do visualizador.
 - Mantidos os botões visíveis de fechar/voltar como alternativa acessível.
+
+
+## 2026-10-29 — Swipe no visualizador de categoria e nome do app
+- Restaurado `HorizontalPager` no visualizador aberto a partir dos thumbnails de categoria, com swipe-left para avançar e swipe-right para voltar dentro da categoria filtrada, sem loop.
+- Sincronizados os metadados e ações da captura com a página estabilizada; mantidos gradiente, enquadramento e Back nativo.
+- Restaurado o nome do produto para **Capture Flow** na barra superior e no rótulo do aplicativo Android.
