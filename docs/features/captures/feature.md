@@ -9,13 +9,13 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 ## Fluxos funcionais
 1. O usuário cola texto/URL ou compartilha texto com CaptureFlow.
 2. O app salva uma referência local e, para URLs HTTP(S), tenta recuperar título e descrição do HTML público.
-3. O usuário seleciona uma imagem na aba Referências ou compartilha uma imagem/screenshot com o app; ela é salva como referência e copiada para o armazenamento privado quando possível.
-4. Na aba Referências, a imagem anexada é exibida como capa do cartão. Na aba Checklist, o usuário pode selecionar a imagem separadamente para criar uma tarefa com screenshot.
+3. O usuário seleciona uma imagem na tela principal de Referências ou compartilha uma imagem/screenshot com o app; ao selecionar manualmente, escolhe uma categoria/tag antes de salvar. A imagem é copiada para o armazenamento privado quando possível.
+4. A tela principal reúne referências e checklist, sem bottom navigation. A imagem anexada é exibida como capa do cartão, e tarefas independentes ficam na seção Checklist da mesma tela.
 5. Assim que uma imagem é selecionada ou compartilhada para a aba Referências, o app inicia OCR local automaticamente e atualiza o título da referência; o cartão mantém a imagem original como capa.
 6. O cartão de referência exibe apenas título, capa, checkbox de conclusão e botão de exclusão. Durante a análise, pode exibir um indicador de carregamento ou uma mensagem de erro.
 7. Ao tocar na capa de uma referência, a imagem abre em visualização fullscreen com opção de fechar.
 8. Cada referência pode ter uma sub-checklist persistida, com itens adicionáveis, concluíveis e removíveis.
-9. Na aba Checklist, uma imagem pode ser salva como tarefa com descrição opcional; esse fluxo é separado do cartão de Referências.
+9. Uma imagem pode ser salva como tarefa com descrição opcional; esse fluxo continua separado do cartão de Referências, mas acessível na mesma tela.
 
 ## Regras
 - O conteúdo persistido não é enviado para um backend ou serviço de analytics.
@@ -34,3 +34,9 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 - Sites podem bloquear requisições HTTP, exigir autenticação, depender de JavaScript ou omitir metadados.
 - O reconhecimento de texto não fornece uma garantia universal de peso tipográfico (bold). A heurística usa caixas delimitadoras, altura/largura relativas e posição.
 - A descoberta automática de screenshots em segundo plano não está implementada; o usuário seleciona ou compartilha a imagem explicitamente.
+
+## Tema e organização visual
+- A paleta inspirada na imagem de referência usa azul-marinho, azul oceano, azul-ciano e superfícies claras no tema claro.
+- O usuário pode selecionar Seguir dispositivo, Claro ou Escuro; a preferência é persistida localmente.
+- A seleção manual de imagem permite atribuir uma das categorias existentes antes de criar a referência.
+- Referências e tarefas independentes são apresentadas em uma única tela; não há bottom navigation.
