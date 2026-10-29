@@ -86,9 +86,13 @@ class LinkMetadataService {
             "<main\\b[^>]*>(.*?)</main>",
             setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
         ).find(html)?.groupValues?.getOrNull(1)
-        val contentRegion = article ?: main ?: return null
-        val images = Regex("<img\\b[^>]*>", RegexOption.IGNORE_CASE)
-            .findAll(contentRegion)
+        return firstImage(article) ?: firstImage(main)
+    }
+
+    private fun firstImage(region: String?): String? {
+        if (region.isNullOrBlank()) return null
+        return Regex("<img\\b[^>]*>", RegexOption.IGNORE_CASE)
+            .findAll(region)
             .mapNotNull { match ->
                 val element = match.value
                 val source = attribute(element, "data-src")
@@ -98,8 +102,7 @@ class LinkMetadataService {
                     ?: attribute(element, "srcset")?.substringBefore(',')?.substringBefore(' ')
                 source?.takeIf(String::isNotBlank)
             }
-            .toList()
-        return images.firstOrNull()
+            .firstOrNull()
     }
 
     private fun resolveHttpUrl(base: String, candidate: String): String? =
