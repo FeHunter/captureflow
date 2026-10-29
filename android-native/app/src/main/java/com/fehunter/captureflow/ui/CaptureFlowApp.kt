@@ -202,6 +202,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     ocrState = ocrStates[capture.id] ?: OcrUiState(),
                     onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
                     onDelete = { viewModel.deleteCapture(capture.id) },
+                    onCategoryChange = { viewModel.setCaptureCategory(capture.id, it) },
                     subtasks = allSubtasks.filter { it.captureId == capture.id },
                     onAddSubtask = { viewModel.addCaptureSubtask(capture.id, it) },
                     onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
@@ -250,6 +251,7 @@ private fun CaptureCard(
     ocrState: OcrUiState,
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
+    onCategoryChange: (String) -> Unit,
     subtasks: List<CaptureSubtaskEntity>,
     onAddSubtask: (String) -> Unit,
     onSubtaskCompleted: (String, Boolean) -> Unit,
@@ -357,7 +359,7 @@ private fun CaptureCard(
                     DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
                         listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde").forEach { tag ->
                             DropdownMenuItem(text = { Text(tag) }, onClick = {
-                                // Category changes for captures are not currently exposed by the ViewModel.
+                                onCategoryChange(tag)
                                 showCategoryMenu = false
                             })
                         }
