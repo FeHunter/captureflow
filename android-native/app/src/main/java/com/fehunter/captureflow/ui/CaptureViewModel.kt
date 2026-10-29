@@ -11,6 +11,7 @@ import com.fehunter.captureflow.data.CaptureClassifier
 import com.fehunter.captureflow.data.CaptureDatabase
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.CaptureSubtaskEntity
+import com.fehunter.captureflow.data.SourceUrlDetector
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 import com.fehunter.captureflow.services.LinkMetadataService
 import com.fehunter.captureflow.services.OcrService
