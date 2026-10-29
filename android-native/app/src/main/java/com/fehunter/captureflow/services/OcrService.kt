@@ -51,13 +51,28 @@ class OcrService {
                 (line.bounds.height() >= medianHeight * 1.18 ||
                     line.bounds.width() >= imageWidth * 0.45)
         }
+        val uiProfile = detectUiProfile(lines.map { it.text })
         val titlePool = if (titleCandidates.isNotEmpty()) titleCandidates else candidateLines.take(3)
         val titleAnchor = titlePool.maxByOrNull { line ->
             val heightScore = line.bounds.height().toFloat() / imageHeight
             val widthScore = line.bounds.width().toFloat() / imageWidth
+            val y = line.bounds.centerY().toFloat() / imageHeight
             val topPenalty = line.bounds.top.toFloat() / imageHeight
-            heightScore * 4f + widthScore * 0.8f - topPenalty * 0.7f +
-                if (line.text.length in 12..110) 0.12f else 0f
+            val lengthScore = when (line.text.length) {
+                in 18..120 -> 0.35f
+                in 10..160 -> 0.18f
+                else -> -0.12f
+            }
+            val contentScore = if (looksLikeContentTitle(line.text)) 0.45f else 0f
+            val profilePositionScore = when (uiProfile) {
+                UiProfile.VIDEO -> if (y in 0.30f..0.76f) 0.8f else -0.45f
+                UiProfile.SOCIAL -> if (y in 0.18f..0.78f) 0.35f else -0.2f
+                UiProfile.NEWS -> if (y in 0.16f..0.68f) 0.55f else -0.2f
+                UiProfile.SHOPPING -> if (y in 0.18f..0.72f) 0.35f else -0.15f
+                UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> 0f
+            }
+            heightScore * 4f + widthScore * 0.65f - topPenalty * 0.35f +
+                lengthScore + contentScore + profilePositionScore
         } ?: candidateLines.first()
 
         // Headline text is commonly split into multiple adjacent lines with similar
@@ -89,35 +104,67 @@ class OcrService {
 
     private data class OcrLine(val text: String, val bounds: Rect)
 
+    private enum class UiProfile { VIDEO, SOCIAL, NEWS, SHOPPING, PRODUCTIVITY, GENERIC }
+
+    private fun detectUiProfile(texts: List<String>): UiProfile {
+        val all = texts.joinToString(" ").lowercase()
+        return when {
+            listOf("youtube.com", "tiktok", "reels", "shorts", "subscribe", "views").any(all::contains) ->
+                UiProfile.VIDEO
+            listOf("instagram", "facebook", "threads", "pinterest", "snapchat", "follow").any(all::contains) ->
+                UiProfile.SOCIAL
+            listOf("bbc", "news", "published", "article", "by ").any(all::contains) ->
+                UiProfile.NEWS
+            listOf("add to cart", "shopping", "amazon", "temu", "price", "reviews", "buy now").any(all::contains) ->
+                UiProfile.SHOPPING
+            listOf("gmail", "outlook", "google docs", "notion", "calendar", "chatgpt").any(all::contains) ->
+                UiProfile.PRODUCTIVITY
+            else -> UiProfile.GENERIC
+        }
+    }
+
+    private fun looksLikeContentTitle(text: String): Boolean {
+        val value = text.trim()
+        val normalized = value.lowercase()
+        if (value.length < 10 || value.length > 180) return false
+        if (isInterfaceNoise(value)) return false
+        val words = value.split(Regex("\\s+"))
+        val wordRatio = words.count { it.any(Char::isLetter) }.toFloat() / words.size.coerceAtLeast(1)
+        val hasSentenceLikeContent = value.any(Char::isLetter) &&
+            (words.size >= 3 || value.contains(":") || value.contains("/"))
+        return wordRatio >= 0.55f && hasSentenceLikeContent &&
+            !normalized.matches(Regex(".*\\b\\d+\\s*(likes?|views?|comments?)\\b.*"))
+    }
+
     private fun isInterfaceNoise(text: String): Boolean {
         val value = text.trim()
         val normalized = value.lowercase().replace(Regex("[^a-z0-9@./ ]"), " ")
             .replace(Regex("\\s+"), " ").trim()
+        val compact = normalized.replace(" ", "")
 
-        // Browser chrome and YouTube controls can be merged into one OCR line.
-        val browserOrPlayerChrome =
-            normalized.contains("youtube.com") ||
-                normalized.contains("m.youtube") ||
-                normalized.contains("open app") ||
-                normalized.contains("subscribe") ||
-                normalized.contains("comments") ||
-                normalized.contains("shorts") ||
-                normalized.contains("likes") ||
-                normalized.contains("views") ||
-                (normalized.contains("search") && normalized.contains("menu")) ||
-                Regex("""\b\d+\s*k?\s*views?\b""").containsMatchIn(normalized) ||
-                Regex("""\b\d+\s+likes?\b""").containsMatchIn(normalized) ||
-                normalized.startsWith("@") ||
-                normalized.contains("preferred on google")
+        // The OCR engine may merge the browser URL, page controls and metadata
+        // into a single line. Reject those lines, but don't reject a headline just
+        // because it contains a generic word such as "views" or "share".
+        val browserChrome = compact.contains("youtube.com/watch") ||
+            compact.contains("m.youtube") ||
+            normalized.contains("open app") ||
+            normalized.contains("preferred on google") ||
+            normalized.matches(Regex(".*\\b\\d{1,2}:\\d{2}\\b.*")) && normalized.length < 32 ||
+            normalized.startsWith("http") ||
+            normalized.matches(Regex("[^ ]+\\.(com|org|net|co)(/.*)?", RegexOption.IGNORE_CASE))
+        val socialMetadata = normalized.startsWith("@") ||
+            Regex("""\b\d+(?:\.\d+)?\s*[km]?\s*(likes?|views?|comments?)\b""").containsMatchIn(normalized) ||
+            normalized.matches(Regex(".*\\b\\d+\\s*(followers?|following)\\b.*"))
+        val navigationOnly = listOf(
+            "share", "save", "subscribe", "home", "search", "menu", "more", "watch",
+            "youtube", "open app", "comments", "shorts", "for you", "following",
+            "add to cart", "buy now", "description", "see more",
+        ).any { normalized == it }
 
         return value.length <= 2 ||
             value.matches(Regex("\\d{1,2}:\\d{2}")) ||
             value.matches(Regex("\\d{1,2}\\s+(minutes?|hours?|days?)\\s+ago", RegexOption.IGNORE_CASE)) ||
-            value.startsWith("http", ignoreCase = true) ||
-            value.matches(Regex("[^ ]+\\.(com|org|net|co)(/.*)?", RegexOption.IGNORE_CASE)) ||
-            browserOrPlayerChrome ||
-            listOf("share", "save", "subscribe", "bbc", "home", "search", "menu", "more", "youtube", "watch")
-                .any { normalized == it }
+            browserChrome || socialMetadata || navigationOnly
     }
 
     private suspend fun recognize(context: Context, uri: Uri): Text {
