@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.*
@@ -354,6 +355,7 @@ private fun CaptureCard(
     var showSubtasks by remember(capture.id) { mutableStateOf(false) }
     var showEditTitle by remember(capture.id) { mutableStateOf(false) }
     var editedTitle by remember(capture.id) { mutableStateOf(capture.title) }
+    var titleOverflows by remember(capture.id) { mutableStateOf(false) }
     val context = LocalContext.current
     val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, capture.imageUri,
@@ -573,16 +575,27 @@ private fun CaptureCard(
             onDismissRequest = { showFullscreen = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             ) {
+                val headerHeight = maxHeight * 0.30f
+                val imageHeight = maxHeight * 0.70f
+                Column(Modifier.fillMaxSize()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, top = 16.dp, end = 12.dp, bottom = 12.dp),
+                    modifier = Modifier.fillMaxWidth().height(headerHeight).padding(start = 20.dp, top = 16.dp, end = 12.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(fullscreenCapture.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            fullscreenCapture.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis,
+                            onTextLayout = { titleOverflows = it.hasVisualOverflow },
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(fullscreenCapture.createdAt)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -617,13 +630,15 @@ private fun CaptureCard(
                 }
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxWidth().weight(1f).background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().height(imageHeight).background(MaterialTheme.colorScheme.surfaceVariant),
                     key = { page -> allCaptures[page].id },
                 ) { page ->
                     FullscreenCapturePage(
                         capture = allCaptures[page],
                         showNavigationHint = page == pagerState.currentPage,
+                        overlayTitle = if (page == pagerState.currentPage && titleOverflows) fullscreenCapture.title else null,
                     )
+                }
                 }
             }
         }
@@ -670,7 +685,7 @@ private fun CaptureCard(
 }
 
 @Composable
-private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Boolean) {
+private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Boolean, overlayTitle: String?) {
     val context = LocalContext.current
     val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, capture.imageUri,
@@ -696,6 +711,28 @@ private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Bo
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (!overlayTitle.isNullOrBlank()) {
+            Box(
+                modifier = Modifier.align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .heightIn(max = 280.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Black.copy(alpha = 0.94f), Color.Black.copy(alpha = 0.68f), Color.Transparent),
+                        ),
+                    )
+                    .padding(horizontal = 20.dp, vertical = 18.dp),
+            ) {
+                Text(
+                    text = overlayTitle,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 6,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         if (showNavigationHint) {
