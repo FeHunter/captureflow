@@ -11,8 +11,8 @@ android {
         applicationId = "com.fehunter.captureflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.3.2"
+        versionCode = 5
+        versionName = "0.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
@@ -29,6 +29,7 @@ android {
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.12.00"))
     implementation("androidx.activity:activity-compose:1.12.0")
+    implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")

@@ -45,3 +45,10 @@ The former Expo/React Native app is archived under `legacy-expo/`; do not add ne
 - Use concise conventional commits.
 - Keep changes reviewable and update docs when stack or behavior changes.
 - Keep `docs/SD_captureflow.drawio` aligned with the native architecture.
+
+
+## Background screenshot notifications
+- Keep screenshot monitoring opt-in. Explain image and notification permission requirements before activation.
+- Use a foreground service only while explicitly enabled; expose a clear stop action and persistent notification.
+- Never use Accessibility Services or screen-content capture to infer screenshots. Document OEM battery restrictions and screenshot-name/path heuristic limitations.
+- Verify current Google Play policy for `specialUse` foreground services before any public store release.

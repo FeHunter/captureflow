@@ -47,7 +47,7 @@ import com.fehunter.captureflow.data.ChecklistTaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onScreenshotHandled: () -> Unit) {
+fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -67,13 +67,13 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
         },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            CaptureLibrary(viewModel, hasScreenshotAccess, detectedScreenshotUri, onRequestScreenshotAccess, onScreenshotHandled)
+            CaptureLibrary(viewModel, hasScreenshotAccess, screenshotMonitoringEnabled, detectedScreenshotUri, onRequestScreenshotAccess, onStopScreenshotMonitoring, onScreenshotHandled)
         }
     }
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onScreenshotHandled: () -> Unit) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit) {
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
@@ -133,13 +133,20 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         Spacer(Modifier.width(8.dp))
                         Text("Selecionar imagem")
                     }
-                    if (!hasScreenshotAccess) {
+                    if (!screenshotMonitoringEnabled) {
                         OutlinedButton(onClick = onRequestScreenshotAccess, modifier = Modifier.fillMaxWidth()) {
-                            Text("Ativar detecção de screenshots")
+                            Text(if (hasScreenshotAccess) "Ativar avisos de screenshot" else "Configurar avisos de screenshot")
                         }
-                        Text("Opcional: com acesso às imagens, o app detecta novas capturas enquanto estiver aberto.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text(
+                            "Requisitos: permitir acesso a fotos/imagens e notificações. O Android mantém uma notificação fixa enquanto a detecção estiver ativa. A detecção depende do nome/pasta da captura e pode variar por fabricante.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
                     } else {
-                        Text("Detecção ativa enquanto o CaptureFlow estiver aberto.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text("Detecção ativa em segundo plano. Uma notificação fixa indica que o monitoramento está ligado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        OutlinedButton(onClick = onStopScreenshotMonitoring, modifier = Modifier.fillMaxWidth()) {
+                            Text("Desativar avisos de screenshot")
+                        }
                     }
                 }
             }

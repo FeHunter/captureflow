@@ -1,6 +1,6 @@
 # Contrato funcional — Captures
 
-**Versão do app:** 0.3.2  
+**Versão do app:** 0.3.3  
 **Status:** implementação em validação no emulador.
 
 ## Objetivo
@@ -55,3 +55,20 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 - Ao detectar uma captura, abre um diálogo para confirmar o envio ao CaptureFlow e escolher a categoria antes de salvar e executar OCR.
 - O seletor de imagem do sistema e o compartilhamento via Android Sharesheet continuam disponíveis sem habilitar a detecção.
 - O título do app exibe somente a versão semântica numérica (`v0.3.2`), sem hash do commit.
+
+
+## Avisos de screenshots em segundo plano — v0.3.3
+- O usuário ativa/desativa o monitoramento de forma explícita na tela principal.
+- A ativação requer permissão de leitura de imagens e, no Android 13+, permissão para exibir notificações.
+- Enquanto ativo, um serviço em primeiro plano observa novas imagens do MediaStore e mantém uma notificação persistente do CaptureFlow para indicar que está em execução.
+- Ao detectar uma imagem compatível com os padrões de screenshot, envia uma notificação com ações rápidas: `Salvar referência` (abre seleção de categoria) e `Criar tarefa` (salva a imagem como tarefa).
+- A detecção é heurística, depende de metadados/nome/pasta e pode variar por fabricante, armazenamento ou política de bateria. Não há garantia universal.
+- O serviço não usa Accessibility Service nem lê o conteúdo visual de outros apps. O usuário pode interromper o monitoramento no próprio app.
+
+### Requisitos para funcionar
+1. Android com suporte a serviço em primeiro plano (app requer Android 8.0/API 26 ou superior).
+2. Permitir acesso às imagens; acesso limitado/selecionado pode não ser suficiente para encontrar screenshots recentes.
+3. Permitir notificações no Android 13/API 33 ou superior e não bloquear o canal `Screenshots detectadas`.
+4. Ativar `Avisos de screenshot` dentro do CaptureFlow; enquanto ativo, a notificação persistente `Detecção de screenshots ativada` deve estar visível (ou listada nos controles de tarefas ativas do sistema).
+5. O Android e o fabricante precisam permitir que o serviço permaneça ativo. Economia de bateria, força de parada ou restrições do fabricante podem atrasar/interromper a detecção.
+6. A imagem precisa aparecer no MediaStore e ter nome ou pasta reconhecível como screenshot; capturas com nome/pasta personalizados podem não ser detectadas.
