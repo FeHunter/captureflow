@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.data.CaptureClassifier
 import com.fehunter.captureflow.data.CaptureDatabase
 import com.fehunter.captureflow.data.CaptureEntity
+import com.fehunter.captureflow.data.CaptureSubtaskEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 import com.fehunter.captureflow.services.LinkMetadataService
 import com.fehunter.captureflow.services.OcrService
@@ -31,6 +32,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     private val database = CaptureDatabase.get(application)
     private val captureDao = database.captureDao()
     private val checklistDao = database.checklistDao()
+    private val captureSubtaskDao = database.captureSubtaskDao()
     private val ocrService = OcrService()
     private val linkMetadataService = LinkMetadataService()
     private val imageStorageService = SharedImageStorageService()
@@ -40,6 +42,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     val captures = captureDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val tasks = checklistDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val captureSubtasks = captureSubtaskDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun addCapture(raw: String) {
         val content = CaptureClassifier.normalize(raw)
@@ -108,6 +111,34 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         captureDao.updateExtractedText(id, enrichedContent, metadata.title.ifBlank { fallbackTitle })
     }
 
+    fun addCaptureSubtask(captureId: String, rawTitle: String) {
+        val title = rawTitle.trim()
+        if (title.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            captureSubtaskDao.insert(
+                CaptureSubtaskEntity(
+                    id = UUID.randomUUID().toString(),
+                    captureId = captureId,
+                    title = title,
+                    isCompleted = false,
+                    createdAt = System.currentTimeMillis(),
+                ),
+            )
+        }
+    }
+
+    fun setCaptureSubtaskCompleted(id: String, completed: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            captureSubtaskDao.setCompleted(id, completed)
+        }
+    }
+
+    fun deleteCaptureSubtask(id: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            captureSubtaskDao.delete(id)
+        }
+    }
+
     fun setCaptureCompleted(id: String, completed: Boolean) {
         viewModelScope.launch(Dispatchers.IO) { captureDao.setCompleted(id, completed) }
     }
@@ -116,6 +147,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) {
             val capture = captures.value.firstOrNull { it.id == id }
             imageStorageService.deletePrivateImage(getApplication(), capture?.imageUri)
+            captureSubtaskDao.deleteForCapture(id)
             captureDao.delete(id)
             _ocrStates.value = _ocrStates.value - id
         }
