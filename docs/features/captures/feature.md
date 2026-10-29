@@ -68,3 +68,8 @@ Os filtros atuais são Todas, Ler depois, Ideias, Tarefa, Importante e Mais tard
 - Notificação, confirmação/cancelamento e persistência.
 - Swipe nas extremidades, filtros e sub-checklist.
 - Permissões e restrições de bateria em dispositivo real.
+
+
+### Navegação e correção manual do título
+
+O visualizador fullscreen usa `HorizontalPager` para navegar suavemente pela lista filtrada. A ação **Editar título** está restrita ao detalhe fullscreen e persiste somente o título da referência. O acesso à sub-checklist continua no cartão de referência.
