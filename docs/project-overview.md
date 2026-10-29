@@ -24,7 +24,7 @@ Capture Flow é um app Android para guardar links, textos e imagens compartilhad
 - Não há sincronização cloud implementada.
 
 ## Comportamento atual resumido
-- Uma tela principal de referências, nome do produto **Capture Flow**, sem bottom navigation ou tela independente de tarefas.
+- Uma tela principal de referências, nome do produto **Capture Flow**, sem bottom navigation ou tela independente de tarefas. A biblioteca agrupa referências por categoria em cartões de largura total, com até três thumbnails e ação “Ver todas”; a categoria expandida usa grade de três colunas.
 - Pesquisa por título/conteúdo, filtros `Ler depois`, `Verificar`, `Salvar`, `Importante` e ocultar/mostrar concluídas.
 - Compartilhar URL abre um diálogo de prévia e exige categoria antes de persistir; cancelamento não salva.
 - Texto sem URL é salvo diretamente. Imagens passam por cópia privada e OCR automático.
