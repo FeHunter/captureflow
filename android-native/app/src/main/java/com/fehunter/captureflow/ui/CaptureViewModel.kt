@@ -163,6 +163,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 title = pending.title.trim().takeIf(String::isNotBlank) ?: fallback.title,
                 content = enrichedContent,
                 category = category,
+                sourceUrl = pending.url,
             )
             captureDao.insert(capture)
 
