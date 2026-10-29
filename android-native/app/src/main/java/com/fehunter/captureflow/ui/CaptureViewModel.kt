@@ -9,6 +9,7 @@ import com.fehunter.captureflow.data.CaptureClassifier
 import com.fehunter.captureflow.data.CaptureDatabase
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
+import com.fehunter.captureflow.services.LinkMetadataService
 import com.fehunter.captureflow.services.OcrService
 import com.fehunter.captureflow.services.SharedImageStorageService
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     private val captureDao = database.captureDao()
     private val checklistDao = database.checklistDao()
     private val ocrService = OcrService()
+    private val linkMetadataService = LinkMetadataService()
     private val imageStorageService = SharedImageStorageService()
 
     private val _ocrStates = MutableStateFlow<Map<String, OcrUiState>>(emptyMap())
@@ -43,7 +45,11 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val content = CaptureClassifier.normalize(raw)
         if (content.isBlank()) return
         viewModelScope.launch(Dispatchers.IO) {
-            if (!captureDao.containsContent(content)) captureDao.insert(CaptureClassifier.create(content))
+            if (!captureDao.containsContent(content)) {
+                val capture = CaptureClassifier.create(content)
+                captureDao.insert(capture)
+                enrichLink(capture.id, content, capture.title)
+            }
         }
     }
 
@@ -88,8 +94,17 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             // would incorrectly discard every image after the first one.
             if (imageUri != null || !captureDao.containsContent(content)) {
                 captureDao.insert(capture)
+                if (imageUri == null) enrichLink(capture.id, content, capture.title)
             }
         }
+    }
+
+    private suspend fun enrichLink(id: String, content: String, fallbackTitle: String) {
+        val url = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE).find(content)?.value ?: return
+        val metadata = linkMetadataService.fetch(url) ?: return
+        val description = metadata.description?.takeIf(String::isNotBlank)
+        val enrichedContent = listOf(url, description).filterNotNull().joinToString("\\n")
+        captureDao.updateExtractedText(id, enrichedContent, metadata.title.ifBlank { fallbackTitle })
     }
 
     fun setCaptureCompleted(id: String, completed: Boolean) {
@@ -164,6 +179,45 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     fun setTaskCompleted(id: String, completed: Boolean) {
         viewModelScope.launch(Dispatchers.IO) { checklistDao.setCompleted(id, completed) }
+    }
+
+    fun analyzeTaskScreenshot(task: ChecklistTaskEntity) {
+        val rawUri = task.imageUri ?: return
+        viewModelScope.launch {
+            try {
+                val extracted = withContext(Dispatchers.IO) {
+                    ocrService.extractText(getApplication(), Uri.parse(rawUri))
+                }
+                val lines = extracted.lineSequence()
+                    .map(String::trim)
+                    .filter(String::isNotBlank)
+                    .filterNot { line ->
+                        line.matches(Regex("\\d{1,2}:\\d{2}")) ||
+                            line.matches(Regex("\\d{1,2}\\s+(minutes?|hours?|days?)\\s+ago", RegexOption.IGNORE_CASE)) ||
+                            line.startsWith("http", ignoreCase = true) ||
+                            line.matches(Regex("[^ ]+\\.(com|org|net|co)(/.*)?", RegexOption.IGNORE_CASE)) ||
+                            line.equals("share", true) || line.equals("save", true) ||
+                            line.equals("subscribe", true) || line.equals("bbc", true)
+                    }
+                    .toList()
+                if (lines.isEmpty()) return@launch
+                val titleLines = mutableListOf<String>()
+                var titleLength = 0
+                for (line in lines.take(5)) {
+                    if (titleLength + line.length > 150 && titleLines.isNotEmpty()) break
+                    titleLines += line
+                    titleLength += line.length + 1
+                    if (titleLength >= 45) break
+                }
+                val title = titleLines.joinToString(" ").take(150).ifBlank { "Screenshot para revisar" }
+                val description = lines.drop(titleLines.size).joinToString("\\n").take(2_000)
+                withContext(Dispatchers.IO) {
+                    checklistDao.updateDetails(task.id, title, description)
+                }
+            } catch (_: Exception) {
+                // Keep the original task and screenshot when OCR cannot read the image.
+            }
+        }
     }
 
     fun addImageTask(uri: Uri) {
