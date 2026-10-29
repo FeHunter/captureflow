@@ -54,6 +54,12 @@ abstract class CaptureDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
     companion object {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE checklist_tasks ADD COLUMN imageUri TEXT")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
