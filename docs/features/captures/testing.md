@@ -16,7 +16,9 @@
 - [ ] Excluir referência tenta remover a cópia privada.
 
 ## OCR
-- [ ] Testar screenshot da BBC: título esperado começa por “Luxury cruise passengers stranded in Cambodia due to soaring fuel costs”.
+- [ ] Testar screenshot da BBC: o título deve combinar as três linhas da manchete: “Luxury cruise passengers stranded in Cambodia due to soaring fuel costs”.
+- [ ] Confirmar que a terceira linha, mesmo sendo mais estreita que as duas primeiras, não é descartada.
+- [ ] Confirmar que horário, URL, autoria e ações do navegador não entram no título.
 - [ ] Testar screenshot da Visual Capitalist: título esperado começa por “Mapped: Unemployment Rates Around the World in 2026”.
 - [ ] Descrição mantém texto útil sem transformar horários/domínios em título.
 - [ ] Texto original continua disponível na descrição após análise.
