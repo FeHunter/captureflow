@@ -1,8 +1,13 @@
 package com.fehunter.captureflow
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
@@ -17,10 +22,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.fehunter.captureflow.ui.CaptureFlowApp
 import com.fehunter.captureflow.ui.CaptureViewModel
+import com.fehunter.captureflow.services.ScreenshotMonitor
 
 class MainActivity : ComponentActivity() {
     private val captureViewModel: CaptureViewModel by viewModels()
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
+    private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
+    private var hasScreenshotAccess by mutableStateOf(false)
+    private var screenshotMonitor: ScreenshotMonitor? = null
+
+    private val screenshotPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        hasScreenshotAccess = granted
+        if (granted) startScreenshotMonitor()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,9 +85,51 @@ class MainActivity : ComponentActivity() {
                     viewModel = captureViewModel,
                     themeMode = themeMode,
                     onThemeModeChange = { themeMode = it },
+                    hasScreenshotAccess = hasScreenshotAccess,
+                    detectedScreenshotUri = detectedScreenshotUri,
+                    onRequestScreenshotAccess = ::requestScreenshotAccess,
+                    onScreenshotHandled = { detectedScreenshotUri = null },
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        hasScreenshotAccess = hasScreenshotPermission()
+        if (hasScreenshotAccess) startScreenshotMonitor()
+    }
+
+    override fun onStop() {
+        screenshotMonitor?.close()
+        screenshotMonitor = null
+        super.onStop()
+    }
+
+    private fun screenshotPermission(): String =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+
+    private fun hasScreenshotPermission(): Boolean =
+        checkSelfPermission(screenshotPermission()) == PackageManager.PERMISSION_GRANTED
+
+    private fun requestScreenshotAccess() {
+        if (hasScreenshotPermission()) {
+            hasScreenshotAccess = true
+            startScreenshotMonitor()
+        } else {
+            screenshotPermissionLauncher.launch(screenshotPermission())
+        }
+    }
+
+    private fun startScreenshotMonitor() {
+        if (screenshotMonitor != null || !hasScreenshotPermission()) return
+        screenshotMonitor = ScreenshotMonitor(this) { uri ->
+            if (detectedScreenshotUri == null) detectedScreenshotUri = uri
+        }.also { it.start() }
     }
 
     override fun onNewIntent(intent: Intent) {
