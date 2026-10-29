@@ -103,6 +103,15 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     LaunchedEffect(pendingTaskScreenshotUri) {
         if (pendingTaskScreenshotUri != null) taskScreenshotToConfirm = pendingTaskScreenshotUri
     }
+    val taskScreenshotPreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, taskScreenshotToConfirm,
+    ) {
+        value = taskScreenshotToConfirm?.let { uri ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(LocalContext.current, uri.toString()) }.getOrNull()
+            }
+        }
+    }
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
             (category == "Todas" || it.category == category)
@@ -232,7 +241,19 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 onTaskScreenshotHandled()
             },
             title = { Text("Criar tarefa com screenshot?") },
-            text = { Text("A captura foi aberta pela notificação. Confirme para anexá-la a uma nova tarefa.") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("A captura foi aberta pela notificação. Confirme para anexá-la a uma nova tarefa.")
+                    taskScreenshotPreview?.let { preview ->
+                        Image(
+                            bitmap = preview,
+                            contentDescription = "Prévia da screenshot que será anexada à tarefa",
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 Button(onClick = {
                     viewModel.addImageTask(uri)
