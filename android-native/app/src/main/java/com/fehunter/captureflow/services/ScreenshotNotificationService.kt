@@ -114,8 +114,8 @@ class ScreenshotNotificationService : Service() {
             .setContentText("Deseja salvar como referência ou criar uma tarefa?")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .addAction(0, "Salvar referência", saveIntent)
-            .addAction(0, "Criar tarefa", taskIntent)
+            .addAction(android.R.drawable.ic_menu_save, "Salvar referência", saveIntent)
+            .addAction(android.R.drawable.ic_menu_add, "Criar tarefa", taskIntent)
             .build()
         getSystemService(NotificationManager::class.java).notify(ALERT_NOTIFICATION_ID, notification)
     }
