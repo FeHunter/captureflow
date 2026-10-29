@@ -101,6 +101,23 @@ Os esquemas abaixo registram a estrutura ativa observada no código. Não repres
 - Título prioriza H1; imagem prioriza article/main e depois metadados Open Graph/Twitter.
 - Imagem de capa é baixada após confirmar a categoria. O parser não executa JavaScript.
 
+### Confirmação de URL encontrada por OCR
+Quando a origem foi reconhecida visualmente, mas não veio no payload de compartilhamento, o botão de link abre uma confirmação antes de confiar no endereço:
+
+```text
+┌──────────────────────────────────────────┐
+│ Confirmar link detectado                 │
+│ Este endereço foi identificado por OCR   │
+│ na imagem e ainda não foi confirmado.    │
+│ Deseja marcar como origem e abrir?       │
+│ https://site.example/article             │
+│ [Cancelar]          [Confirmar e abrir]  │
+└──────────────────────────────────────────┘
+```
+
+- URL recebida junto da imagem por compartilhamento não precisa dessa confirmação.
+- Cancelar não confirma nem abre o link.
+
 ## 5. Seleção de imagem e sub-checklist
 - Seleção de imagem: diálogo de categoria antes de importar; imagem é copiada para armazenamento privado quando possível e OCR é iniciado.
 - Sub-checklist: `ModalBottomSheet` com progresso, lista de itens, checkbox, excluir e campo de nova subtarefa.

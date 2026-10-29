@@ -37,8 +37,18 @@
 - [ ] Testar URL que redireciona, exige login ou bloqueia acesso: referência original continua salva.
 - [ ] Sem rede, a referência não é perdida.
 
+## Recuperação da origem em imagens
+- [ ] Compartilhar imagem com URL HTTP(S) em `EXTRA_TEXT`: associar URL automaticamente e gravar `sourceVerified = true`, método `share_extra_text`.
+- [ ] Compartilhar imagem sem URL em `EXTRA_TEXT`, mas com URL em texto de `ClipData`: associar a URL com método `share_clipdata_text`.
+- [ ] Compartilhar imagem sem URL: OCR identifica URL visível e grava como candidata `ocr_candidate`, com `sourceVerified = false`.
+- [ ] Ao tocar no link OCR não confirmado, “Cancelar” não abre nem confirma; “Confirmar e abrir” marca como verificado e abre a URL.
+- [ ] URL inválida, FTP, texto sem URL ou OCR sem URL não criam `sourceUrl`.
+- [ ] Referrer `android-app://` e `OWNER_PACKAGE_NAME` podem preencher `sourceApp`, sem serem confundidos com URL.
+- [ ] Migração de banco v5→v6 mantém capturas e marca URLs antigas como verificadas; itens sem URL continuam sem origem verificada.
+- [ ] Capturas manuais continuam sem exclusão de imagem original; falha de leitura de metadados MediaStore não interrompe a importação.
+
 ## Banco e regressão
-- [ ] Migrar banco v1 → v2 → v3 → v4 sem perder referências/tarefas.
+- [ ] Migrar banco v1 → v2 → v3 → v4 → v5 → v6 sem perder referências/tarefas.
 - [ ] Criar, concluir e excluir tarefas sem imagem.
 - [ ] Testar build debug e testes unitários.
 

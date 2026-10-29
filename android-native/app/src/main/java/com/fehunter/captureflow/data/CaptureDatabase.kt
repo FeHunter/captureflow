@@ -20,6 +20,9 @@ data class CaptureEntity(
     val imageUri: String?,
     val createdAt: Long,
     val isCompleted: Boolean = false,
+    val sourceApp: String? = null,
+    val sourceDetectionMethod: String? = null,
+    @ColumnInfo(defaultValue = "0") val sourceVerified: Boolean = false,
 )
 
 @Entity(tableName = "checklist_tasks")
@@ -72,6 +75,9 @@ interface CaptureDao {
     @Query("UPDATE captures SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
+    @Query("UPDATE captures SET sourceUrl = :sourceUrl, sourceDetectionMethod = :method, sourceVerified = :verified WHERE id = :id AND sourceUrl IS NULL")
+    suspend fun updateSourceUrlIfMissing(id: String, sourceUrl: String, method: String, verified: Boolean)
+    @Query("UPDATE captures SET sourceVerified = 1, sourceDetectionMethod = 'ocr_confirmed' WHERE id = :id") suspend fun confirmSourceUrl(id: String)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
     @Query("UPDATE captures SET content = :content, title = :title WHERE id = :id") suspend fun updateExtractedText(id: String, content: String, title: String)
@@ -89,7 +95,7 @@ interface ChecklistDao {
     @Query("UPDATE checklist_tasks SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class], version = 5, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class], version = 6, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
@@ -122,16 +128,43 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE captures ADD COLUMN sourceApp TEXT")
+                database.execSQL("ALTER TABLE captures ADD COLUMN sourceDetectionMethod TEXT")
+                database.execSQL("ALTER TABLE captures ADD COLUMN sourceVerified INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("UPDATE captures SET sourceVerified = CASE WHEN sourceUrl IS NULL THEN 0 ELSE 1 END")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build().also { instance = it }
         }
     }
 }
 
-data class IncomingCapture(val content: String, val imageUri: String? = null)
+data class IncomingCapture(
+    val content: String,
+    val imageUri: String? = null,
+    val sourceUrl: String? = null,
+    val sourceApp: String? = null,
+    val sourceDetectionMethod: String? = null,
+    val sourceVerified: Boolean = false,
+)
+
+object SourceUrlDetector {
+    private val urlPattern = Regex("https?://[^\\s<>\\\"']+", RegexOption.IGNORE_CASE)
+
+    fun extract(raw: String): String? {
+        val candidate = urlPattern.find(raw)?.value?.trimEnd('.', ',', ')', ']', '}', ';', ':') ?: return null
+        val uri = runCatching { java.net.URI(candidate) }.getOrNull() ?: return null
+        val scheme = uri.scheme?.lowercase()
+        return candidate.takeIf { scheme in setOf("http", "https") && !uri.host.isNullOrBlank() }
+    }
+}
 
 object CaptureClassifier {
     private val urlPattern = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
@@ -160,6 +193,22 @@ object CaptureClassifier {
     fun fromIntent(intent: Intent): IncomingCapture? {
         if (intent.action != Intent.ACTION_SEND) return null
         val type = intent.type.orEmpty()
+        val extraText = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString().orEmpty()
+        val clipText = intent.clipData?.let { clip ->
+            (0 until clip.itemCount).mapNotNull { index ->
+                clip.getItemAt(index).text?.toString()
+            }.joinToString("\n")
+        }.orEmpty()
+        val extraTextUrl = SourceUrlDetector.extract(extraText)
+        val clipTextUrl = SourceUrlDetector.extract(clipText)
+        val referrer = runCatching {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra<Uri>(Intent.EXTRA_REFERRER)
+        }.getOrNull()?.toString() ?: intent.getStringExtra(Intent.EXTRA_REFERRER_NAME)
+        val sourceApp = referrer?.let { value ->
+            runCatching { Uri.parse(value) }.getOrNull()?.takeIf { it.scheme == "android-app" }?.host
+        }
+
         return when {
             type.startsWith("image/") -> {
                 val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -167,11 +216,39 @@ object CaptureClassifier {
                 } else {
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                } ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
-                uri?.let { IncomingCapture("Imagem compartilhada", it.toString()) }
+                } ?: intent.clipData?.let { clip ->
+                    (0 until clip.itemCount).mapNotNull { index -> clip.getItemAt(index).uri }.firstOrNull()
+                }
+                uri?.let {
+                    val sourceUrl = extraTextUrl ?: clipTextUrl
+                    IncomingCapture(
+                        content = extraText.ifBlank { "Imagem compartilhada" },
+                        imageUri = it.toString(),
+                        sourceUrl = sourceUrl,
+                        sourceApp = sourceApp,
+                        sourceDetectionMethod = when {
+                            extraTextUrl != null -> "share_extra_text"
+                            clipTextUrl != null -> "share_clipdata_text"
+                            sourceApp != null -> "share_referrer_app"
+                            else -> null
+                        },
+                        sourceVerified = sourceUrl != null,
+                    )
+                }
             }
-            type == "text/plain" -> intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
-                ?.takeIf(String::isNotBlank)?.let(::IncomingCapture)
+            type == "text/plain" -> extraText.takeIf(String::isNotBlank)?.let {
+                IncomingCapture(
+                    content = it,
+                    sourceUrl = extraTextUrl,
+                    sourceApp = sourceApp,
+                    sourceDetectionMethod = when {
+                        extraTextUrl != null -> "share_extra_text"
+                        sourceApp != null -> "share_referrer_app"
+                        else -> null
+                    },
+                    sourceVerified = extraTextUrl != null,
+                )
+            }
             else -> null
         }
     }
@@ -179,7 +256,17 @@ object CaptureClassifier {
         val normalized = normalize(content)
         val kind = classify(normalized, imageUri)
         val url = urlPattern.find(normalized)?.value
-        return CaptureEntity(UUID.randomUUID().toString(), titleFor(normalized, kind), normalized, kind,
-            categoryFor(normalized, kind), url, imageUri, System.currentTimeMillis())
+        return CaptureEntity(
+            id = UUID.randomUUID().toString(),
+            title = titleFor(normalized, kind),
+            content = normalized,
+            kind = kind,
+            category = categoryFor(normalized, kind),
+            sourceUrl = url,
+            imageUri = imageUri,
+            createdAt = System.currentTimeMillis(),
+            sourceDetectionMethod = if (url != null) "shared_text" else null,
+            sourceVerified = url != null,
+        )
     }
 }

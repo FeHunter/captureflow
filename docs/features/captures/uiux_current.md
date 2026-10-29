@@ -40,6 +40,11 @@
 - Se o fetch falhar, o link pode ser salvo com título fallback. A imagem é baixada após confirmar.
 - Texto compartilhado sem URL continua sendo salvo diretamente; imagem compartilhada usa importação/OCR.
 
+## Origem da imagem e links detectados
+- Ao compartilhar uma imagem acompanhada de URL em `EXTRA_TEXT`, a origem é associada automaticamente. Se o texto do payload não trouxer URL, o app tenta usar texto em `ClipData`.
+- Se a URL for encontrada somente por OCR, o ícone de link no fullscreen abre um diálogo de confirmação com o endereço identificado. “Confirmar e abrir” marca a URL como verificada e abre o app/navegador padrão; “Cancelar” não a confirma nem abre.
+- O ícone de link só aparece quando há URL HTTP(S) válida. A proveniência por pacote de aplicativo é informativa e não garante a página de origem.
+
 ## Seleção de imagem e screenshots
 - Photo Picker retorna uma imagem; a UI pede categoria antes de importar.
 - Monitor de screenshots é opcional e pede permissões apropriadas. Detecção é best-effort via metadados do MediaStore.

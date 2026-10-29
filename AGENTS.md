@@ -101,3 +101,10 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - Do not execute page JavaScript. Metadata failure must not discard the original URL; show a fallback title and allow save after category selection.
 - Download an extracted cover only after the user confirms save, and keep it in app-private storage when possible.
 - Document the flow in `docs/current-state.md`, project overview, architecture, feature contract, UI/UX, wireframes, security and tests.
+
+
+## Recuperação da origem de imagens
+- Ao receber `ACTION_SEND` com imagem, priorizar URL HTTP(S) em `Intent.EXTRA_TEXT`; se ausente, verificar texto em `ClipData`.
+- URLs encontradas por OCR são candidatas não verificadas e precisam de confirmação explícita na UI antes de serem consideradas origem confirmada.
+- `EXTRA_REFERRER` e `MediaStore.MediaColumns.OWNER_PACKAGE_NAME` são apenas indícios de pacote; não inferir URL nem afirmar que representam necessariamente o app/página visível.
+- Manter `sourceUrl`, `sourceApp`, `sourceDetectionMethod` e `sourceVerified` coerentes com o fluxo; ao alterar `CaptureEntity`, criar migração Room e atualizar contrato, arquitetura, UI/UX, segurança, testes e changelog.
