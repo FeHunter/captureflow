@@ -66,6 +66,17 @@ O fluxo mais confiável é usar a ação **Compartilhar** do próprio Android ap
 Um botão flutuante desenhado pelo CaptureFlow sobre qualquer app é tecnicamente possível apenas com permissão especial de sobreposição (`SYSTEM_ALERT_WINDOW`) concedida pelo usuário, mas **não resolve por si só a obtenção do link**: Android isola os apps e não expõe genericamente a URL da página visível. Além disso, sobreposições podem ser bloqueadas por apps sensíveis e geram uma permissão intrusiva. Preferir uma ação clara na notificação de screenshot ou instruir o usuário a usar o compartilhamento nativo do screenshot. Não implementar scraping da tela de outro app nem depender de acessibilidade para inferir URL.
 
 
+## Correção: título OCR e origem real da captura
+O OCR continua ativo para ler a imagem e gerar um título útil, mas o texto reconhecido não deve ser tratado automaticamente como URL original. A barra de endereço do navegador, mensagens como “Not secure”, IPs locais, portas e caminhos podem aparecer no OCR sem representar o conteúdo/post capturado.
+- Nunca preencher `sourceUrl` apenas porque uma URL apareceu nos pixels da screenshot.
+- Não usar título estruturado pelo OCR quando ele for uma URL ou trecho de barra de endereço; procurar uma linha de conteúdo útil como fallback.
+- URLs de origem são associadas quando chegam explicitamente no compartilhamento (`EXTRA_TEXT` ou texto de `ClipData`). Se não vierem, manter a captura como imagem com OCR e sem link de origem presumido.
+
+## Possibilidade de fluxo pós-screenshot
+O fluxo mais confiável é usar a ação **Compartilhar** do próprio Android após a captura e escolher CaptureFlow. O Android documenta que o payload pode conter a imagem em `EXTRA_STREAM` e a URL associada em `EXTRA_TEXT`; quando o app de origem fornece ambos, CaptureFlow consegue associar o link e usar o fluxo atual de metadados. Nem todos os apps/dispositivos fornecem a URL associada, então o fluxo deve continuar funcionando como captura de imagem + OCR quando ela estiver ausente.
+
+Um botão flutuante sobre qualquer app exigiria permissão especial de sobreposição (`SYSTEM_ALERT_WINDOW`) concedida pelo usuário, mas não resolve por si só a obtenção do link: Android não expõe genericamente a URL da página visível a outro app. Preferir o compartilhamento nativo do screenshot ou uma ação na notificação. Não implementar scraping da tela de outro app nem depender de acessibilidade para inferir URL.
+
 ## Recuperação da origem de imagens e screenshots
 A identificação da origem é feita em camadas, sem prometer que toda screenshot terá URL recuperável:
 
