@@ -104,7 +104,7 @@ abstract class CaptureDatabase : RoomDatabase() {
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL(
-                    "CREATE TABLE IF NOT EXISTS capture_subtasks (id TEXT NOT NULL PRIMARY KEY, captureId TEXT NOT NULL, title TEXT NOT NULL, isCompleted INTEGER NOT NULL DEFAULT 0, createdAt INTEGER NOT NULL)"
+                    "CREATE TABLE IF NOT EXISTS capture_subtasks (id TEXT NOT NULL PRIMARY KEY, captureId TEXT NOT NULL, title TEXT NOT NULL, isCompleted INTEGER NOT NULL, createdAt INTEGER NOT NULL)"
                 )
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_capture_subtasks_captureId ON capture_subtasks(captureId)")
             }
