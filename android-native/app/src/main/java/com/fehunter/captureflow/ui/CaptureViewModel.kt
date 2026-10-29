@@ -60,19 +60,27 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
      * Saves an image chosen with Android's system photo picker as a local capture.
      * Copying it immediately avoids relying on the picker URI grant later during OCR.
      */
-    fun addImageCapture(uri: Uri, category: String = "Referência") {
+    fun addImageCapture(
+        uri: Uri,
+        category: String = "Referência",
+        onImported: ((Uri) -> Unit)? = null,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val storedUri = runCatching {
-                imageStorageService.copyToPrivateStorage(getApplication(), uri).toString()
-            }.getOrElse {
-                // Keep the granted URI as a fallback; OCR will show an actionable error if
-                // the provider no longer allows access when the user starts analysis.
-                uri.toString()
+            val copyResult = runCatching {
+                imageStorageService.copyToPrivateStorage(getApplication(), uri)
             }
-            val capture = CaptureClassifier.create("Imagem compartilhada", storedUri)
+            val storedUri = copyResult.getOrElse {
+                // Keep the granted URI as a fallback. Do not offer source deletion unless
+                // a durable private copy was made successfully.
+                uri
+            }
+            val capture = CaptureClassifier.create("Imagem compartilhada", storedUri.toString())
                 .copy(title = "Imagem selecionada", category = category)
             captureDao.insert(capture)
             extractText(capture)
+            if (copyResult.isSuccess && onImported != null) {
+                withContext(Dispatchers.Main) { onImported(uri) }
+            }
         }
     }
 
