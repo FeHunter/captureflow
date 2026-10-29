@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -29,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
@@ -181,13 +184,13 @@ private fun CaptureCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             val context = LocalContext.current
-            val cover = remember(capture.imageUri) {
-                capture.imageUri?.let { raw ->
-                    runCatching {
-                        context.contentResolver.openInputStream(Uri.parse(raw))?.use {
-                            BitmapFactory.decodeStream(it)?.asImageBitmap()
-                        }
-                    }.getOrNull()
+            val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                initialValue = null, capture.imageUri,
+            ) {
+                value = capture.imageUri?.let { raw ->
+                    withContext(Dispatchers.IO) {
+                        runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+                    }
                 }
             }
             cover?.let { bitmap ->
@@ -280,13 +283,13 @@ private fun TaskCard(
     onAnalyze: () -> Unit,
 ) {
     val context = LocalContext.current
-    val cover = remember(task.imageUri) {
-        task.imageUri?.let { raw ->
-            runCatching {
-                context.contentResolver.openInputStream(Uri.parse(raw))?.use {
-                    BitmapFactory.decodeStream(it)?.asImageBitmap()
-                }
-            }.getOrNull()
+    val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, task.imageUri,
+    ) {
+        value = task.imageUri?.let { raw ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            }
         }
     }
     Card(Modifier.fillMaxWidth()) {
@@ -316,5 +319,22 @@ private fun TaskCard(
                 }
             }
         }
+    }
+}
+
+
+private fun loadCoverBitmap(context: Context, rawUri: String): androidx.compose.ui.graphics.ImageBitmap? {
+    val uri = Uri.parse(rawUri)
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        ?: return null
+
+    var sampleSize = 1
+    while (bounds.outWidth / sampleSize > 1200 || bounds.outHeight / sampleSize > 1200) {
+        sampleSize *= 2
+    }
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    return context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
     }
 }
