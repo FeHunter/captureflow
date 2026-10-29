@@ -160,7 +160,7 @@ object SourceUrlDetector {
 
     fun extract(raw: String): String? {
         val candidate = urlPattern.find(raw)?.value?.trimEnd('.', ',', ')', ']', '}', ';', ':') ?: return null
-        val uri = runCatching { Uri.parse(candidate) }.getOrNull() ?: return null
+        val uri = runCatching { java.net.URI(candidate) }.getOrNull() ?: return null
         val scheme = uri.scheme?.lowercase()
         return candidate.takeIf { scheme in setOf("http", "https") && !uri.host.isNullOrBlank() }
     }
