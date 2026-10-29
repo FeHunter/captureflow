@@ -178,3 +178,8 @@ Não declarar build ou testes aprovados sem verificar o resultado do commit corr
 - O título do cabeçalho acompanha a página ativa. A imagem de cada página mantém `ContentScale.Fit` e a dica de navegação continua como overlay.
 - A ação do cabeçalho que abria a sub-checklist foi substituída por **Editar título**. A sub-checklist continua disponível pelo controle do cartão; não foi removida do produto.
 - O diálogo de edição aparece somente no fullscreen e grava apenas o campo `captures.title` via ViewModel/DAO, preservando conteúdo, categoria e imagem.
+
+
+## Atualização de UX — 2026-10-29
+
+O detalhe fullscreen agora usa `HorizontalPager` em vez de detectar manualmente o fim de um arraste. O título principal pode ser corrigido no fullscreen; a atualização passa por `CaptureViewModel.updateCaptureTitle` e `CaptureDao.updateTitle`, sem sobrescrever os demais campos. O atalho de sub-checklist saiu do cabeçalho fullscreen, mas o controle no cartão permanece.
