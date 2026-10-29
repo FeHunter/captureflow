@@ -76,7 +76,7 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 
 ## Tags, links compartilhados e layout
 - Use exclusivamente as tags de captura `Ler depois`, `Verificar`, `Salvar` e `Importante` em filtros e seletores.
-- Links recebidos via `ACTION_SEND` devem ser salvos mesmo quando a extração de metadados falhar. Tente extrair título, descrição e imagem Open Graph/Twitter; baixe imagens para armazenamento privado com timeout e limite de tamanho, sem bloquear o salvamento do link.
+- Links recebidos via `ACTION_SEND` devem abrir uma confirmação de categoria antes da persistência. Faça requisição HTTP(S) com timeout e limite de tamanho; priorize o primeiro `H1` para título e imagem dentro de `article`/ `main` para capa, usando Open Graph/Twitter e `title` como fallback. Se os metadados falharem, mantenha o link salvável com título de fallback; cancelar não persiste.
 - O visualizador fullscreen reserva 20% do espaço ao cabeçalho e 80% à imagem; cartões compactos usam 272 dp de altura.
 
 
@@ -91,3 +91,13 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - The app's visible product name is **Capture Flow** in the main top bar and Android launcher label. Do not replace it with a screen label such as “Biblioteca”.
 - The fullscreen viewer opened from category thumbnails supports horizontal swipe: left advances to the next capture in the same filtered category; right returns to the previous capture. It does not wrap at either end.
 - Keep the current capture metadata/actions synchronized with the settled pager page. Preserve the dark title gradient, image `ContentScale.Fit`, native Back behavior, and existing layout proportions.
+
+
+## Link share confirmation and metadata extraction
+- Do not insert a shared URL into Room before the user explicitly chooses one of `Ler depois`, `Verificar`, `Salvar`, or `Importante` in the confirmation dialog.
+- Keep a pending-link state in the ViewModel; do network work off the main thread and ignore stale metadata responses when a newer share replaces the pending item.
+- Request the HTTP(S) page body with connect/read timeouts and a bounded HTML read. Prefer the first H1 for title, then Open Graph/Twitter/document-title fallbacks.
+- Prefer a content image inside `article`, then `main`, then Open Graph/Twitter image metadata. Resolve relative URLs against the final redirected page URL.
+- Do not execute page JavaScript. Metadata failure must not discard the original URL; show a fallback title and allow save after category selection.
+- Download an extracted cover only after the user confirms save, and keep it in app-private storage when possible.
+- Document the flow in `docs/current-state.md`, project overview, architecture, feature contract, UI/UX, wireframes, security and tests.
