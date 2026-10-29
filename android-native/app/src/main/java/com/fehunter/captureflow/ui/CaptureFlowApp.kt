@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
@@ -273,7 +274,7 @@ private fun CaptureCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth().height(272.dp),
+        modifier = Modifier.fillMaxWidth().height(300.dp),
         shape = MaterialTheme.shapes.large,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -281,15 +282,24 @@ private fun CaptureCard(
         Column(Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(104.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { showFullscreen = true },
             ) {
                 if (cover != null) {
                     Image(
                         bitmap = cover!!,
-                        contentDescription = "Abrir capa em tela cheia",
-                        modifier = Modifier.fillMaxSize().clickable { showFullscreen = true },
+                        contentDescription = "Abrir detalhes em tela cheia",
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                     )
+                    IconButton(
+                        onClick = { showFullscreen = true },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
+                            .background(Color.Black.copy(alpha = 0.58f), MaterialTheme.shapes.medium)
+                            .size(40.dp),
+                    ) {
+                        Icon(Icons.Default.OpenInFull, contentDescription = "Expandir detalhes", tint = Color.White)
+                    }
                 } else {
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -330,15 +340,22 @@ private fun CaptureCard(
                     textDecoration = if (capture.isCompleted) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
                     color = if (capture.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     lineHeight = MaterialTheme.typography.titleSmall.lineHeight,
-                    modifier = Modifier.heightIn(min = 36.dp, max = 38.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 38.dp, max = 42.dp)
+                        .clickable { showFullscreen = true },
                 )
                 Text(
                     text = capture.title,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.height(15.dp),
+                    lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 28.dp, max = 34.dp)
+                        .clickable { showFullscreen = true },
                 )
                 Spacer(Modifier.height(4.dp))
                 Box {
@@ -386,16 +403,12 @@ private fun CaptureCard(
                         modifier = Modifier.size(48.dp),
                     )
                 }
-                if (subtasks.isNotEmpty()) {
-                    TextButton(
-                        onClick = { showSubtasks = true },
-                        modifier = Modifier.height(48.dp),
-                        contentPadding = PaddingValues(horizontal = 4.dp),
-                    ) {
-                        Text("☰ ${subtasks.count { it.isCompleted }}/${subtasks.size}", maxLines = 1, style = MaterialTheme.typography.labelSmall)
-                    }
-                } else {
-                    Spacer(Modifier.width(48.dp))
+                TextButton(
+                    onClick = { showSubtasks = true },
+                    modifier = Modifier.height(48.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                ) {
+                    Text("☰ ${subtasks.count { it.isCompleted }}/${subtasks.size}", maxLines = 1, style = MaterialTheme.typography.labelSmall)
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
@@ -461,29 +474,81 @@ private fun CaptureCard(
         }
     }
 
-    if (showFullscreen && cover != null) {
+    if (showFullscreen) {
         Dialog(
             onDismissRequest = { showFullscreen = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
             Box(
-                modifier = Modifier.fillMaxSize().background(Color.Black),
-                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             ) {
-                Column(Modifier.fillMaxSize().padding(top = 48.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(capture.title, color = Color.White, style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
-                    Text(capture.title, color = Color.White.copy(alpha = 0.82f), style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp))
-                    Image(bitmap = cover!!, contentDescription = "Imagem em tela cheia",
-                        modifier = Modifier.weight(1f).fillMaxWidth(), contentScale = ContentScale.Fit)
+                Column(
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Spacer(Modifier.height(32.dp))
+                    Text(
+                        capture.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(capture.createdAt)),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    cover?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = "Imagem completa da referência",
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                    if (capture.content.isNotBlank() && capture.content != capture.title) {
+                        Text(
+                            "Conteúdo capturado",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            capture.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Text(
+                                capture.category,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
+                        capture.sourceUrl?.takeIf(String::isNotBlank)?.let { source ->
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                source,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
                 IconButton(
                     onClick = { showFullscreen = false },
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
-                        .background(Color.DarkGray.copy(alpha = 0.75f), MaterialTheme.shapes.large),
+                        .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)
+                        .size(48.dp),
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Fechar imagem", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
                 }
             }
         }
