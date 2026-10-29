@@ -85,3 +85,11 @@ O visualizador fullscreen usa `HorizontalPager`. A ação **Editar título** fic
 - O fullscreen usa proporção fixa aproximada de 20% para cabeçalho e 80% para imagem; títulos longos recebem overlay com gradiente escuro que se dissolve para transparente.
 - Screenshots abertas pela notificação e confirmadas para importação podem ser removidas da galeria depois que a cópia privada e a referência forem salvas. A seleção manual de imagens não apaga o original.
 - A exclusão de mídia compartilhada é best-effort: versões recentes do Android podem exigir consentimento do usuário para apagar arquivos criados por outro app; se o sistema bloquear, a captura original permanece.
+
+
+## Tags, links compartilhados e layout v4
+
+- As tags disponíveis nos filtros e seletores são **Ler depois**, **Verificar**, **Salvar** e **Importante**.
+- Ao receber um link pelo compartilhamento do Android, o app busca título, descrição e imagem pelos metadados HTML (`og:title`, `twitter:title`, `<title>`, `og:image` e `twitter:image`). A imagem, quando disponível, é baixada para o armazenamento privado e usada como capa da captura; o link e a descrição permanecem no conteúdo.
+- A extração de imagem é opcional: se a página bloquear o acesso ou não oferecer uma imagem compatível, o link continua salvo normalmente.
+- Os cartões compactos usam altura de 272 dp e o visualizador fullscreen reserva 20% do espaço para o cabeçalho e 80% para a imagem.
