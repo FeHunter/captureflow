@@ -1,7 +1,7 @@
 # Contrato atual do banco — Captures
 
 **Banco:** Room, arquivo local `captureflow.db`.  
-**Versão Room:** 4.
+**Versão Room:** 6.
 
 ## `captures`
 - `id`: chave primária.
@@ -9,8 +9,11 @@
 - `content`: texto extraído ou conteúdo da referência.
 - `kind`: classificação como `image`, `link` ou `text`.
 - `category`: categoria da referência.
-- `sourceUrl`: URL identificada no conteúdo, quando houver.
+- `sourceUrl`: URL HTTP(S) associada à referência, quando houver.
 - `imageUri`: URI da imagem original/cópia privada, quando houver.
+- `sourceApp`: pacote de aplicativo de origem quando o Android fornece um indício; pode ser nulo e não prova qual página estava aberta.
+- `sourceDetectionMethod`: método de recuperação, por exemplo `shared_text`, `share_extra_text`, `share_clipdata_text`, `ocr_candidate`, `share_referrer_app` ou `mediastore_owner_package`.
+- `sourceVerified`: indica se a URL foi recebida explicitamente no payload de compartilhamento ou confirmada pelo usuário. Candidatos de OCR começam como `false`.
 - `createdAt`: instante de criação.
 - `isCompleted`: estado de conclusão.
 
@@ -33,6 +36,8 @@
 - v1 → v2: adiciona `imageUri` às tarefas.
 - v2 → v3: adiciona `description` às tarefas.
 - v3 → v4: cria `capture_subtasks` e índice por `captureId`.
+- v4 → v5: adiciona `category` em `checklist_tasks`.
+- v5 → v6: adiciona `sourceApp`, `sourceDetectionMethod` e `sourceVerified` em `captures`; URLs preexistentes são marcadas como verificadas e registros sem URL como não verificados.
 
 Ao excluir uma referência, o ViewModel remove seus sub-itens antes de excluir a referência.
 
