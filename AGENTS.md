@@ -70,5 +70,5 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 
 ## OCR, fullscreen e screenshots
 - Ao ajustar a extração de título por OCR, considere a região central da tela como sinal prioritário, sem eliminar os sinais de perfil de interface, tamanho e qualidade do texto.
-- No fullscreen, mantenha a proporção aproximada de 30% para cabeçalho e 70% para imagem. Títulos longos podem sobrepor a imagem com gradiente escuro para transparente, sem mudar o espaço reservado à imagem.
+- No fullscreen, mantenha a proporção aproximada de 20% para cabeçalho e 80% para imagem. Títulos longos podem sobrepor a imagem com gradiente escuro para transparente, sem mudar o espaço reservado à imagem.
 - Nunca exclua imagens escolhidas manualmente pelo usuário. A remoção da screenshot original só pode ser habilitada no fluxo de importação confirmado pela notificação, após salvar a referência e a cópia privada; tratar falhas de exclusão como não fatais, pois o Android pode exigir consentimento explícito.

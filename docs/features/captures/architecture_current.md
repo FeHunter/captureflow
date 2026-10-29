@@ -56,6 +56,6 @@ O detalhe fullscreen utiliza `HorizontalPager` com sincronização do cabeçalho
 
 ## Ajustes de OCR e armazenamento de screenshots
 - `OcrService` acrescenta uma pontuação de centralidade vertical ao ranqueamento de candidatos a título; heurísticas de perfil, tamanho e conteúdo continuam ativas.
-- O fullscreen reserva `weight(0.30f)` ao cabeçalho e `weight(0.70f)` ao pager/imagem. Títulos longos são sobrepostos à imagem com `Brush.verticalGradient`, sem redimensionar a área do pager.
+- O fullscreen reserva `weight(0.20f)` ao cabeçalho e `weight(0.80f)` ao pager/imagem. Títulos longos são sobrepostos à imagem com `Brush.verticalGradient`, sem redimensionar a área do pager.
 - `CaptureViewModel.addImageCapture` aceita `deleteSourceScreenshotAfterImport`; somente o fluxo iniciado pela notificação para adicionar a referência habilita esse comportamento. A exclusão da origem acontece após persistir a referência e apenas quando a cópia privada foi criada com sucesso.
 - `SharedImageStorageService.deleteSourceScreenshot` tenta remover a URI `content://` original via `ContentResolver`; a tentativa é tolerante a falhas e não remove a cópia privada usada pelo app.

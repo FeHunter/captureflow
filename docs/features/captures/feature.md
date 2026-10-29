@@ -82,6 +82,6 @@ O visualizador fullscreen usa `HorizontalPager`. A ação **Editar título** fic
 
 ## OCR centralizado, fullscreen e limpeza de screenshots
 - A seleção do título OCR dá peso adicional à região central da imagem, refletindo o comportamento de usuários que rolam o conteúdo relevante para o centro antes de capturar.
-- O fullscreen usa proporção fixa aproximada de 30% para cabeçalho e 70% para imagem; títulos longos recebem overlay com gradiente escuro que se dissolve para transparente.
+- O fullscreen usa proporção fixa aproximada de 20% para cabeçalho e 80% para imagem; títulos longos recebem overlay com gradiente escuro que se dissolve para transparente.
 - Screenshots abertas pela notificação e confirmadas para importação podem ser removidas da galeria depois que a cópia privada e a referência forem salvas. A seleção manual de imagens não apaga o original.
 - A exclusão de mídia compartilhada é best-effort: versões recentes do Android podem exigir consentimento do usuário para apagar arquivos criados por outro app; se o sistema bloquear, a captura original permanece.
