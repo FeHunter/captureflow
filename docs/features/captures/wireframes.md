@@ -60,7 +60,7 @@ Os esquemas abaixo registram a estrutura ativa observada no código. Não repres
 
 ```text
 ┌──────────────────────────────────────────┐
-│ 29/10/2026 · 10:35   [Ler depois] [□][🗑][X]│
+│ 29/10/2026 · 10:35 [Ler depois] [🔗][□][🗑][X]│
 ├──────────────────────────────────────────┤
 │ ████████████████████████████████████████ │
 │ █ Título da referência                  █ │
@@ -75,7 +75,7 @@ Os esquemas abaixo registram a estrutura ativa observada no código. Não repres
 
 - A imagem ocupa a área disponível sem crop. O título e a dica são overlays; não alteram a medição da imagem.
 - Swipe-left: próxima referência na mesma categoria filtrada. Swipe-right: anterior. Sem loop.
-- A barra mostra data, categoria, conclusão, excluir e fechar.
+- A barra mostra data, categoria, abrir link original (ícone 🔗 somente se `sourceUrl` for HTTP(S) válido), conclusão, excluir e fechar.
 - Back fecha apenas o viewer; a categoria expandida permanece por baixo.
 
 ## 4. Compartilhamento de link — confirmação de categoria
