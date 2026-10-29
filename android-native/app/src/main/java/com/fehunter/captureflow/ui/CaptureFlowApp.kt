@@ -412,7 +412,7 @@ private fun CaptureCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 38.dp, max = 42.dp)
-                        .clickable { showFullscreen = true },
+                        .clickable { fullscreenCapture = capture; showFullscreen = true },
                 )
                 Text(
                     text = capture.title,
