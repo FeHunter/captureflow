@@ -51,6 +51,19 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 8. Se metadados falharem, o link permanece salvável com título fallback. URL de origem já existente é ignorada para evitar duplicação.
 9. Texto compartilhado sem URL continua sendo salvo diretamente com deduplicação por conteúdo. Imagem compartilhada segue importação/OCR, não o diálogo de link.
 
+## Recuperação da origem de imagens e screenshots
+A identificação da origem é feita em camadas, sem prometer que toda screenshot terá URL recuperável:
+
+1. **Prioridade 1 — URL recebida junto com a imagem:** ao receber `ACTION_SEND` com MIME de imagem, o app procura uma URL HTTP(S) válida em `Intent.EXTRA_TEXT`. Quando presente, associa-a automaticamente a `sourceUrl`, marca `sourceVerified = true` e registra `sourceDetectionMethod = share_extra_text`. Não é necessário pedir ao usuário para copiar o endereço manualmente.
+2. **Fallback — texto do ClipData:** se `EXTRA_TEXT` não trouxer URL, o app procura texto nos itens de `ClipData`. Uma URL encontrada é associada como origem recebida pelo compartilhamento (`share_clipdata_text`) e marcada como verificada pelo payload explícito.
+3. **OCR da imagem:** se não houver URL compartilhada, o OCR local procura uma URL HTTP(S) no texto reconhecido. A URL é armazenada como candidata (`sourceDetectionMethod = ocr_candidate`, `sourceVerified = false`), nunca tratada silenciosamente como confirmada. Ao tocar no ícone de link do fullscreen, a UI pede confirmação antes de marcar a origem como verificada e abrir o endereço.
+4. **Indício do aplicativo de origem:** quando disponível, `Intent.EXTRA_REFERRER`/`EXTRA_REFERRER_NAME` pode fornecer um pacote `android-app://...`. Para imagens importadas de um URI MediaStore no Android 10+, `OWNER_PACKAGE_NAME` também pode ser registrado como indício. Isso preenche `sourceApp` e o método de detecção, mas **não prova qual página estava aberta e não substitui uma URL**. O valor pode identificar o componente que gravou o arquivo, não necessariamente o app de origem da captura.
+
+Os campos `sourceApp`, `sourceDetectionMethod` e `sourceVerified` são metadados locais de proveniência. URLs recebidas explicitamente por compartilhamento são consideradas verificadas; URLs de OCR exigem confirmação. A migração Room 5→6 adiciona esses campos sem descartar referências existentes. Referências antigas com `sourceUrl` são migradas como verificadas; registros antigos sem URL permanecem sem origem verificada.
+
+**Limite conhecido:** screenshots detectadas automaticamente pelo MediaStore não contêm, por padrão, um campo padronizado com a URL da página. Se não houver URL compartilhada nem URL legível por OCR, o Capture Flow não inventará nem deduzirá uma URL a partir apenas do nome/pasta do arquivo ou do pacote do app.
+
+
 **Limite:** o parser usa regex sobre o HTML recebido e não executa JavaScript. Páginas dinâmicas, autenticadas ou que bloqueiem requisições podem não fornecer H1/imagem. Não é um navegador/DOM completo.
 
 ## Imagens e OCR
@@ -66,13 +79,13 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - **Inconsistência existente:** o serviço de notificação ainda contém nomes e textos históricos de tarefa (`ACTION_CREATE_TASK`, “pronta para tarefa”), embora o app ativo seja a biblioteca de referências. Corrigir as strings sem reintroduzir uma tela independente de tarefas.
 
 ## Banco de dados
-- `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, createdAt e isCompleted.
+- `captures`: id, title, content, kind, category, `sourceUrl` opcional, `imageUri` opcional, createdAt, isCompleted, `sourceApp` opcional, `sourceDetectionMethod` opcional e `sourceVerified` booleano.
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
-- Versão Room no código: **5**. Migrações: 1→2 adiciona imageUri em tarefas; 2→3 description; 3→4 cria capture_subtasks/índice; 4→5 adiciona category em tarefas. Atualizar contrato e testar upgrades ao mudar esquema.
+- Versão Room no código: **6**. Migrações: 1→2 adiciona imageUri em tarefas; 2→3 description; 3→4 cria capture_subtasks/índice; 4→5 adiciona category em tarefas; 5→6 adiciona proveniência de origem em captures e marca URLs antigas existentes como verificadas. Atualizar contrato e testar upgrades ao mudar esquema.
 
 ## Privacidade e validação
 - Dados e imagens permanecem no dispositivo; sem cloud sync.
 - Links acionam requisição ao host fornecido pelo usuário; HTML limitado por timeout/tamanho. Download de capa acontece somente após confirmação de categoria.
 - Validar em CI o commit exato e executar `.\gradlew.bat testDebugUnitTest` e `.\gradlew.bat assembleDebug` em `android-native/`.
-- Testar Sharesheet (URL, texto+URL, texto simples, imagem), H1/metadata fallbacks, imagem relativa, redirects, timeout/offline, cancelamento, quatro categorias, duplicatas, OCR, permissões, screenshot notification, Back nativo e telas estreitas/fonte ampliada.
+- Testar Sharesheet (URL, texto+URL, texto simples, imagem), imagem+URL em EXTRA_TEXT, fallback ClipData, referrer Android, OCR com URL válida/inválida e confirmação de candidato, migração Room 5→6, H1/metadata fallbacks, imagem relativa, redirects, timeout/offline, cancelamento, quatro categorias, duplicatas, permissões, screenshot notification, Back nativo e telas estreitas/fonte ampliada.
