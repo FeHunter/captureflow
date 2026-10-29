@@ -110,3 +110,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - `LinkMetadataService` faz requisição HTTP(S) do body HTML com timeout e limite de 512 KB; prioriza H1 para título e imagem de article/main para capa, com metadados Open Graph/Twitter como fallback.
 - Após confirmação, tenta baixar a imagem para armazenamento privado. Se metadados falharem, o link pode ser salvo com título de fallback.
 - Atualizados contratos de arquitetura, UI/UX, wireframes, segurança e teste.
+
+
+## 2026-10-29 — Correção de título OCR e origem
+- Mantém o OCR para extrair conteúdo/título, mas impede que URL, IP, porta ou barra de endereço virem título.
+- URLs detectadas apenas dentro dos pixels não são mais promovidas a origem; só usar URL explícita no payload de compartilhamento.
+- Documenta o fluxo recomendado via botão Compartilhar do Android e as limitações de um overlay flutuante.
