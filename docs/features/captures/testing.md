@@ -8,7 +8,9 @@
 - [ ] A versão de release e a versão de debug correspondem ao BuildConfig gerado.
 
 ## Imagem e cartão de referência
-- [ ] Selecionar screenshot salva a URI e mostra a imagem como capa na aba Referências.
+- [ ] Selecionar screenshot na aba Referências salva a URI e mostra a imagem como capa.
+- [ ] Compartilhar screenshot de outro app cria referência com capa na aba Referências.
+- [ ] Selecionar screenshot pelo botão da aba Checklist cria tarefa com capa.
 - [ ] A capa persiste após encerrar e reabrir o app.
 - [ ] Imagem indisponível não quebra o cartão.
 - [ ] Excluir referência tenta remover a cópia privada.
