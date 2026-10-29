@@ -47,7 +47,7 @@ class OcrService {
         val medianHeight = candidateLines.map { it.bounds.height().coerceAtLeast(1) }
             .sorted().let { it[it.size / 2] }.coerceAtLeast(1)
         val titleCandidates = candidateLines.filter { line ->
-            line.bounds.top < imageHeight * 0.78 &&
+            line.bounds.top < imageHeight * 0.90 &&
                 (line.bounds.height() >= medianHeight * 1.18 ||
                     line.bounds.width() >= imageWidth * 0.45)
         }
@@ -65,13 +65,13 @@ class OcrService {
             }
             val contentScore = if (looksLikeContentTitle(line.text)) 0.45f else 0f
             val profilePositionScore = when (uiProfile) {
-                UiProfile.VIDEO -> if (y in 0.30f..0.76f) 0.8f else -0.45f
-                UiProfile.SOCIAL -> if (y in 0.18f..0.78f) 0.35f else -0.2f
-                UiProfile.NEWS -> if (y in 0.16f..0.68f) 0.55f else -0.2f
-                UiProfile.SHOPPING -> if (y in 0.18f..0.72f) 0.35f else -0.15f
+                UiProfile.VIDEO -> if (y in 0.20f..0.88f) 0.55f else -0.25f
+                UiProfile.SOCIAL -> if (y in 0.16f..0.90f) 0.45f else -0.25f
+                UiProfile.NEWS -> if (y in 0.12f..0.88f) 0.55f else -0.25f
+                UiProfile.SHOPPING -> if (y in 0.12f..0.88f) 0.4f else -0.2f
                 UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> 0f
             }
-            heightScore * 4f + widthScore * 0.65f - topPenalty * 0.35f +
+            heightScore * 4f + widthScore * 0.65f - topPenalty * 0.12f +
                 lengthScore + contentScore + profilePositionScore
         } ?: candidateLines.first()
 
@@ -84,9 +84,9 @@ class OcrService {
         val anchorHeight = titleAnchor.bounds.height().coerceAtLeast(1)
         val headlineWindow = maxOf(anchorHeight * 5, medianHeight * 8)
         val maxTitleTop = when (uiProfile) {
-            UiProfile.VIDEO, UiProfile.SOCIAL -> imageHeight * 0.80
-            UiProfile.NEWS, UiProfile.SHOPPING -> imageHeight * 0.74
-            UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> imageHeight * 0.48
+            UiProfile.VIDEO, UiProfile.SOCIAL -> imageHeight * 0.90
+            UiProfile.NEWS, UiProfile.SHOPPING -> imageHeight * 0.90
+            UiProfile.PRODUCTIVITY, UiProfile.GENERIC -> imageHeight * 0.88
         }
         val titleLines = candidateLines.filter { line ->
             val verticalOffset = line.bounds.top - titleAnchor.bounds.top
