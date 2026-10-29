@@ -10,7 +10,6 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.math.max
 
 data class OcrTextResult(
     val fullText: String,
@@ -30,7 +29,7 @@ class OcrService {
                 val box = line.boundingBox ?: return@mapNotNull null
                 val text = line.text.trim()
                 if (text.isBlank()) return@mapNotNull null
-                OcrLine(text, box, line.elements.size)
+                OcrLine(text, box)
             }
         }.sortedWith(compareBy<OcrLine> { it.bounds.top }.thenBy { it.bounds.left })
 
@@ -78,7 +77,7 @@ class OcrService {
         return OcrTextResult(result.text, titleText, descriptionText)
     }
 
-    private data class OcrLine(val text: String, val bounds: Rect, val elementCount: Int)
+    private data class OcrLine(val text: String, val bounds: Rect)
 
     private fun isInterfaceNoise(text: String): Boolean {
         val value = text.trim()
