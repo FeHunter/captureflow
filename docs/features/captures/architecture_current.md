@@ -1,28 +1,44 @@
 # Arquitetura atual — Captures
 
 ## Stack
-- Kotlin, Android SDK, Jetpack Compose.
-- MVVM com `CaptureViewModel` e `StateFlow`.
-- Room/SQLite para persistência local.
-- Coroutines para trabalho assíncrono.
-- ML Kit Text Recognition para OCR on-device.
+Kotlin, Android SDK, Jetpack Compose/Material 3, MVVM, Coroutines/Flow, Room/SQLite e ML Kit Text Recognition.
 
-## Fluxo
+## Fluxo e dependências
 ```text
-CaptureFlowApp (Compose View)
-        ↓ eventos / estado coletado
-CaptureViewModel (orquestração e regras)
-        ├── CaptureDao / ChecklistDao → Room / SQLite
-        ├── OcrService → ML Kit local
-        ├── LinkMetadataService → HTML público HTTP(S)
-        └── SharedImageStorageService → arquivos privados do app
+MainActivity (Android Intents)
+        |
+        v
+CaptureFlowApp.kt (Compose UI)
+        |
+        v
+CaptureViewModel.kt
+   |        |          |
+   v        v          v
+Room/DAO  OcrService  LinkMetadataService
+   |       ML Kit      HTTP(S)/HTML
+   v
+SharedImageStorageService
+        ^
+        |
+ScreenshotNotificationService -> MediaStore / notification
+ScreenshotMonitor -> MediaStore while foreground
 ```
 
 ## Responsabilidades
-- **View:** renderiza estado e encaminha ações; não consulta Room diretamente.
-- **ViewModel:** coordena captura, análise OCR, enriquecimento de links e operações CRUD.
-- **Services:** isolam IO de OCR, requisições HTTP e cópia/remoção de imagens.
-- **DAO/Room:** persistem entidades e emitem listas reativas.
+- **MainActivity:** recebe e encaminha payloads de share e URI/action da notificação.
+- **CaptureFlowApp:** UI da tela única Referências, estado de pesquisa/categoria, cartões, seleção de imagem, modal de screenshot, detalhe fullscreen e sub-checklist.
+- **CaptureViewModel:** expõe `captures`, `tasks`, `captureSubtasks` e `ocrStates`; coordena persistência, deduplicação, OCR e metadados.
+- **CaptureDatabase:** entidades e DAOs Room.
+- **OcrService:** reconhecimento local e heurística de título por geometria das linhas/perfis de UI.
+- **LinkMetadataService:** busca metadados HTML de URL HTTP(S) compartilhada.
+- **SharedImageStorageService:** tenta copiar imagens para diretório privado e remove somente arquivos privados reconhecidos.
+- **ScreenshotNotificationService:** foreground service opt-in que observa MediaStore e emite notificação de screenshot.
+- **ScreenshotMonitor:** observador separado de screenshot enquanto o app está visível.
 
-## Diretriz de manutenção
-Manter a lógica fora dos composables sempre que for regra de negócio ou IO. Não introduzir acesso de rede ou banco na View. Novas operações devem ter tratamento explícito de falha e preservar dados já capturados.
+## Diretrizes
+Composables não devem acessar Room nem executar IO. Preservar conteúdo se enriquecimento/OCR falhar. Atualizar testes e documentação junto de mudanças de Intent, esquema Room, heurísticas ou layout.
+
+## Pontos conhecidos
+- Dados e métodos de `ChecklistTaskEntity` permanecem no ViewModel/banco, mas a tela atual não apresenta lista independente de tarefas.
+- O fluxo da notificação salva screenshot como referência; algumas strings/ações internas ainda usam nomenclatura histórica de tarefa.
+- A correção de imports Compose para `KeyboardOptions` e `ImeAction` foi integrada pelo PR #25; validar o CI do commit atual.

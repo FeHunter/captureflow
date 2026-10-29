@@ -1,39 +1,42 @@
 # UI/UX atual — Captures
 
 ## Navegação
-- Barra inferior com as abas **Referências** e **Checklist**.
-- Cabeçalho mostra `CaptureFlow v{versionName}`, proveniente de BuildConfig.
-- A área de referências contém seletor de imagem, entrada manual, busca, filtros e lista.
+- Tela principal única: **Referências**; sem bottom navigation e sem tela independente de tarefas.
+- Top bar com `CaptureFlow v{BuildConfig.VERSION_NAME}` e menu de tema: seguir dispositivo, claro, escuro.
+- Conteúdo em rolagem vertical: seletor/monitoramento de imagem, busca, filtros e grade de referências.
 
-## Cartões de referência
-- Conteúdo persistente visível limitado a: título, capa da imagem, checkbox de conclusão e botão de exclusão.
-- A capa é exibida quando `imageUri` existe e a imagem pode ser carregada; tocar nela abre uma visualização fullscreen com botão de fechar.
-- A análise OCR começa automaticamente quando uma imagem é selecionada ou compartilhada para Referências; não existe botão manual de análise no cartão.
-- Enquanto a análise está em andamento, mostrar spinner e o texto curto `Analisando imagem…`.
-- Se a análise falhar ou não reconhecer texto, mostrar uma mensagem de erro discreta; não exibir descrição, texto OCR bruto ou categoria no cartão.
-- Cada cartão possui uma sub-checklist persistente com campo para adicionar itens, checkbox por item e ação para excluir item.
+## Entrada de conteúdo
+- Não há formulário manual de texto/link; usar compartilhamento Android.
+- Photo Picker permite selecionar uma imagem.
+- Ações de monitoramento explicam/ativam/desativam o serviço opcional de screenshots.
+- O fluxo da notificação abre modal com prévia e confirmação. Confirmar salva a imagem como referência; cancelar não salva.
 
-## Tarefas
-- Título, checkbox de conclusão e exclusão.
-- Capa de screenshot quando houver imagem.
-- Descrição opcional e ação de análise.
+## Busca e filtros
+- Busca por título e conteúdo persistido, aplicada junto com filtro de categoria.
+- X de limpeza aparece apenas quando há texto.
+- Chips horizontais: Todas, Ler depois, Ideias, Tarefa, Importante, Mais tarde.
+- `Referência` é usada como categoria no fluxo de screenshot, mas ainda não está consistente com a lista visível.
 
-## Regras
-- Estados de erro não devem apagar conteúdo original.
-- Imagem ausente/inacessível deve degradar para cartão sem capa, sem travar a lista.
-- Layout deve permitir rolagem e evitar overflow em telas estreitas.
-- Status e ações não podem depender exclusivamente de cor.
+## Cartão
+- Duas colunas, altura fixa nominal de 320 dp.
+- Capa de 104 dp, crop na grade; placeholder se não houver imagem.
+- Título e texto secundário (no código atual ambos renderizam `capture.title`; provavelmente precisa de decisão/correção).
+- Categoria em chip com menu; data/hora `dd/MM/yyyy · HH:mm`.
+- Linha de ações: checkbox de conclusão, botão de sub-checklist com contagem e exclusão.
+- Estado OCR mostra “Analisando imagem…” ou erro em faixa sobre a capa.
+- Cartão concluído tem título atenuado/riscado.
 
+## Detalhe fullscreen
+- Cabeçalho: título, data/hora, categoria, atalho para sub-checklist e botão fechar.
+- Imagem ocupa área restante e usa `ContentScale.Fit`.
+- Swipe horizontal: esquerda próxima referência, direita anterior; sem loop e respeitando a lista fornecida ao cartão.
+- `‹ Deslize para navegar ›` é um Surface sobreposto na parte inferior central da área da imagem, não elemento de layout que reserve espaço.
 
-## Atualização de navegação, imagem e tema
-- A tela de Referências é a tela principal única; a checklist independente aparece abaixo da biblioteca, eliminando o bottom navigation.
-- Ao selecionar uma imagem, abrir um diálogo de categoria/tag (Ler depois, Ideias, Tarefas ou Referência) antes de persistir e iniciar OCR.
-- O seletor de tema fica no cabeçalho e oferece Seguir dispositivo, Claro e Escuro.
-- Paleta inspirada na arte Hunter: azul-marinho profundo, azul oceano, azul-ciano e branco; no tema escuro, superfícies azul-marinho em vez de preto puro.
+## Sub-checklist
+Modal bottom sheet com título/progresso, itens com checkbox, exclusão e campo de nova subtarefa. O atalho fullscreen fecha o diálogo de imagem e abre a sub-checklist da referência corrente.
 
+## Tema
+Paleta atual azul-marinho/oceano/ciano; tema claro/escuro evita preto puro e usa cores do MaterialTheme. A seleção de tema deve manter preferência local e seguir sistema quando escolhido.
 
-## Simplificação da tela principal
-- A tela principal mantém a seleção de imagem, a busca, os filtros e a lista de referências.
-- Não exibir a seção independente Checklist nem o formulário manual de texto/link; compartilhar conteúdo de outros apps continua sendo uma forma de captura.
-- Exibir um ícone X no campo de busca somente quando houver texto, permitindo limpar a consulta com um toque.
-- A versão exibida no cabeçalho usa `BuildConfig.VERSION_NAME`, que recebe a versão base e o hash curto do commit atual no build.
+## Acessibilidade e validação
+Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes só de cor. Validar telas estreitas, fonte ampliada, contraste, gesto e leitura de imagem em dispositivo.
