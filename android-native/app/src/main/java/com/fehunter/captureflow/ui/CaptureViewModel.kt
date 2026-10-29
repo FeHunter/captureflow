@@ -147,6 +147,12 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) { captureDao.updateCategory(id, category) }
     }
 
+    fun updateCaptureTitle(id: String, rawTitle: String) {
+        val title = rawTitle.trim().take(160)
+        if (title.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) { captureDao.updateTitle(id, title) }
+    }
+
     fun deleteCapture(id: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val capture = captures.value.firstOrNull { it.id == id }
