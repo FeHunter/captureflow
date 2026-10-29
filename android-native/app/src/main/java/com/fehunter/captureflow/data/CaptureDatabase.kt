@@ -29,6 +29,7 @@ data class ChecklistTaskEntity(
     val isCompleted: Boolean = false,
     val createdAt: Long,
     val imageUri: String? = null,
+    val description: String? = null,
 )
 
 @Dao
@@ -47,9 +48,10 @@ interface ChecklistDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(task: ChecklistTaskEntity)
     @Query("UPDATE checklist_tasks SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
     @Query("DELETE FROM checklist_tasks WHERE id = :id") suspend fun delete(id: String)
+    @Query("UPDATE checklist_tasks SET title = :title, description = :description WHERE id = :id") suspend fun updateDetails(id: String, title: String, description: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 2, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 3, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
@@ -60,10 +62,16 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE checklist_tasks ADD COLUMN description TEXT")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build().also { instance = it }
         }
     }

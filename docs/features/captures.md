@@ -34,3 +34,13 @@ The feature receives, classifies, persists, searches and manages link, text and 
 - A exclusão da tarefa também tenta excluir a cópia local da imagem.
 - O banco Room migra da versão 1 para a 2 adicionando o campo opcional `imageUri` às tarefas existentes, preservando os dados já salvos.
 - A captura automática de screenshots em segundo plano não faz parte desta implementação. O usuário escolhe a imagem ou usa o menu Compartilhar do aplicativo de origem.
+
+
+## Enriquecimento de screenshots e links
+
+- Ao analisar uma tarefa com screenshot, o OCR ignora linhas comuns de interface (horários, domínios e ações como Share/Save) e usa as primeiras linhas úteis como título; o texto restante fica na descrição.
+- A imagem original permanece anexada e é exibida como capa da tarefa.
+- Ao salvar ou compartilhar uma URL, o app tenta obter título e descrição das tags Open Graph, Twitter Card e metadados HTML padrão.
+- A leitura de metadados usa conexão HTTP(S) com timeout, sem seguir redirecionamentos automaticamente e com limite de leitura do HTML. Se a página bloquear a requisição, exigir login ou não expuser metadados, o link continua salvo com o conteúdo original.
+- A recuperação de metadados requer conexão com a internet; o resultado é armazenado localmente e não é enviado a um serviço externo.
+- O banco Room migra da versão 2 para a 3 adicionando a descrição opcional às tarefas.
