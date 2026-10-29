@@ -45,3 +45,10 @@
 - Removido o formulário manual para adicionar texto/link; o compartilhamento de conteúdo de outros apps continua disponível.
 - Campo de busca ganhou ação X para limpar o texto quando preenchido.
 - Versão base atualizada para 0.3.1 e título identifica automaticamente o commit por um sufixo curto gerado no build.
+
+
+## v0.3.2 — Detecção assistida de screenshots
+- Versão atualizada para `0.3.2`, com versionCode 4; o título permanece no formato numérico `v0.0.0`.
+- Adicionada detecção best-effort de screenshots recentes via MediaStore enquanto o app está em primeiro plano.
+- Adicionado pedido explícito de permissão de leitura de imagens e confirmação para enviar screenshot detectada ao app.
+- Mantidos o seletor de imagem do sistema e o compartilhamento Android como alternativas.
