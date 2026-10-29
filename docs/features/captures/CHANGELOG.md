@@ -52,3 +52,9 @@
 - Adicionada detecção best-effort de screenshots recentes via MediaStore enquanto o app está em primeiro plano.
 - Adicionado pedido explícito de permissão de leitura de imagens e confirmação para enviar screenshot detectada ao app.
 - Mantidos o seletor de imagem do sistema e o compartilhamento Android como alternativas.
+
+
+## v0.3.3 — Notificações de screenshots em segundo plano
+- Atualizada versão numérica para `0.3.3` (versionCode 5).
+- Adicionado serviço em primeiro plano, ativável pelo usuário, para observar screenshots recentes e emitir notificação com ações rápidas `Salvar referência` e `Criar tarefa`.
+- Adicionados requisitos explícitos de permissão de imagens, notificações, persistência do serviço e limitações de detecção na interface e documentação.
