@@ -12,7 +12,7 @@
 - `sourceUrl`: URL HTTP(S) associada à referência, quando houver.
 - `imageUri`: URI da imagem original/cópia privada, quando houver.
 - `sourceApp`: pacote de aplicativo de origem quando o Android fornece um indício; pode ser nulo e não prova qual página estava aberta.
-- `sourceDetectionMethod`: método de recuperação, por exemplo `shared_text`, `share_extra_text`, `share_clipdata_text`, `ocr_candidate`, `share_referrer_app` ou `mediastore_owner_package`.
+- `sourceDetectionMethod`: método de recuperação, por exemplo `shared_text`, `share_extra_text`, `share_clipdata_text`, `ocr_candidate`, `ocr_confirmed`, `share_referrer_app` ou `mediastore_owner_package`.
 - `sourceVerified`: indica se a URL foi recebida explicitamente no payload de compartilhamento ou confirmada pelo usuário. Candidatos de OCR começam como `false`.
 - `createdAt`: instante de criação.
 - `isCompleted`: estado de conclusão.
