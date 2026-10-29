@@ -24,8 +24,9 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Categorias atuais: `Ler depois`, `Verificar`, `Salvar`, `Importante`; `Todas` é somente filtro.
 - Busca combina título/conteúdo com categoria selecionada.
 
-## Cartão de referência
-- Cartões compactos em grade de duas colunas; capa usa `ContentScale.Crop` e tem placeholder quando não há imagem acessível.
+## Grupos e thumbnails de referência
+- A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails e a ação “Ver todas”.
+- Ao expandir uma categoria, as referências aparecem em grade de três colunas. Cada thumbnail usa `ContentScale.Crop` e placeholder quando não há imagem acessível.
 - Título truncado em até duas linhas. O código atual mostra `capture.title` também no texto secundário; não tratar esse segundo campo como descrição independente.
 - Menu de categoria, data/hora local `dd/MM/yyyy · HH:mm`, checkbox de conclusão, botão de sub-checklist com contagem e excluir.
 - Concluídas podem ser ocultadas. Excluir uma referência também remove suas subtarefas e somente arquivos de imagem privados dentro do diretório próprio do app.
