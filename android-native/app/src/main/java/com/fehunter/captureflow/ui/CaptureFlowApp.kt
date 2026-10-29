@@ -69,7 +69,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
     var showCompletedCaptures by remember { mutableStateOf(true) }
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Biblioteca", fontWeight = FontWeight.Bold) }, actions = {
+            TopAppBar(title = { Text("Capture Flow", fontWeight = FontWeight.Bold) }, actions = {
                 IconButton(onClick = { showOptionsMenu = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Opções da biblioteca")
                 }
@@ -300,11 +300,30 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
         }
     }
     selectedCapture?.let { capture ->
+        val viewerCaptures = filtered.filter { it.category == capture.category }
+        val initialPage = viewerCaptures.indexOfFirst { it.id == capture.id }.coerceAtLeast(0)
         Dialog(
             onDismissRequest = { selectedCapture = null },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
             BackHandler { selectedCapture = null }
+            val pagerState = rememberPagerState(
+                initialPage = initialPage,
+                pageCount = { viewerCaptures.size },
+            )
+            LaunchedEffect(capture.id, viewerCaptures) {
+                val targetPage = viewerCaptures.indexOfFirst { it.id == capture.id }
+                if (targetPage in viewerCaptures.indices && pagerState.currentPage != targetPage) {
+                    pagerState.scrollToPage(targetPage)
+                }
+            }
+            LaunchedEffect(pagerState, viewerCaptures) {
+                snapshotFlow { pagerState.settledPage }.collect { page ->
+                    viewerCaptures.getOrNull(page)?.let { pageCapture ->
+                        if (selectedCapture?.id != pageCapture.id) selectedCapture = pageCapture
+                    }
+                }
+            }
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = Color.Black,
@@ -331,8 +350,15 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                             Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        FullscreenCapturePage(capture = capture, showNavigationHint = false)
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        key = { page -> viewerCaptures[page].id },
+                    ) { page ->
+                        FullscreenCapturePage(
+                            capture = viewerCaptures[page],
+                            showNavigationHint = page == pagerState.currentPage,
+                        )
                     }
                 }
             }
