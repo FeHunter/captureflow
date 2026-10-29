@@ -1,10 +1,12 @@
 package com.fehunter.captureflow.services
 
 import android.net.Uri
+import android.text.Html
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.Normalizer
 import java.util.Locale
 
 data class PageMetadata(val title: String, val description: String?, val imageUrl: String?)
@@ -66,7 +68,7 @@ class LinkMetadataService {
                 ?: meta(html, "twitter:description")
 
             PageMetadata(
-                title = clean(title).ifBlank { host.removePrefix("www.") },
+                title = normalizeTitle(title, host),
                 description = description?.takeIf(String::isNotBlank),
                 imageUrl = imageUrl,
             )
@@ -176,19 +178,38 @@ class LinkMetadataService {
                 match.groupValues.drop(1).firstOrNull(String::isNotEmpty)
             }
 
-    private fun clean(value: String): String = value
-        .replace(Regex("<[^>]+>"), " ")
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&#x27;", "'")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&nbsp;", " ")
-        .replace(Regex("\\s+"), " ")
-        .trim()
+    private fun normalizeTitle(raw: String, host: String): String {
+        val decoded = clean(raw)
+            .replace(Regex("[\\u200B-\\u200D\\uFEFF]"), "")
+            .let { Normalizer.normalize(it, Normalizer.Form.NFC) }
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .trim(' ', '|', '-', '–', '—', ':', '·', '"', '\\'', '“', '”')
+
+        // Social platforms often append branding or long context to the page title.
+        val withoutPlatformSuffix = decoded
+            .replace(Regex("(?i)\\s*[|·–—-]\\s*(instagram|youtube|facebook|tiktok)\\s*$"), "")
+            .trim()
+        val words = withoutPlatformSuffix.split(Regex("\\s+")).filter(String::isNotBlank)
+        val boundedWords = words.take(MAX_TITLE_WORDS).joinToString(" ")
+        val boundedChars = if (boundedWords.length > MAX_TITLE_CHARS) {
+            boundedWords.take(MAX_TITLE_CHARS).substringBeforeLast(' ').ifBlank {
+                boundedWords.take(MAX_TITLE_CHARS)
+            }
+        } else boundedWords
+        return boundedChars.trim().ifBlank { host.removePrefix("www.") }
+    }
+
+    private fun clean(value: String): String =
+        Html.fromHtml(value, Html.FROM_HTML_MODE_LEGACY).toString()
+            .replace(Regex("<[^>]+>"), " ")
+            .replace(Regex("[\\u0000-\\u001F\\u007F]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
 
     private companion object {
         const val MAX_HTML_CHARS = 512_000
+        const val MAX_TITLE_WORDS = 12
+        const val MAX_TITLE_CHARS = 110
     }
 }
