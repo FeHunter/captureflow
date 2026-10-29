@@ -1,79 +1,57 @@
-# UI/UX atual — Captures
+# UI/UX atual — Capture Flow
 
-## Navegação
-- Tela principal única: **Referências**; sem bottom navigation e sem tela independente de tarefas.
-- Top bar com `CaptureFlow v{BuildConfig.VERSION_NAME}` e menu de tema: seguir dispositivo, claro, escuro.
-- Conteúdo em rolagem vertical: seletor/monitoramento de imagem, busca, filtros e grade de referências.
+**Fonte de verdade:** `android-native/app/src/main/java/com/fehunter/captureflow/ui/CaptureFlowApp.kt`. Ver também [estado atual completo](../../current-state.md).
 
-## Entrada de conteúdo
-- Não há formulário manual de texto/link; usar compartilhamento Android.
-- Photo Picker permite selecionar uma imagem.
-- Ações de monitoramento explicam/ativam/desativam o serviço opcional de screenshots.
-- O fluxo da notificação abre modal com prévia e confirmação. Confirmar salva a imagem como referência; cancelar não salva.
+## Identidade e navegação
+- Nome do produto: **Capture Flow** (barra superior e launcher).
+- Tela única de referências; sem bottom navigation e sem tela independente de tarefas.
+- Menu superior: mostrar/ocultar concluídas e alterar tema.
+- Tema: seguir sistema, claro ou escuro; paleta azul-marinho/oceano/ciano definida em `MainActivity.kt`.
 
-## Busca e filtros
-- Busca por título e conteúdo persistido, aplicada junto com filtro de categoria.
-- X de limpeza aparece apenas quando há texto.
-- Chips horizontais: Todas, Ler depois, Ideias, Tarefa, Importante, Mais tarde.
-- `Referência` é usada como categoria no fluxo de screenshot, mas ainda não está consistente com a lista visível.
+## Ordem e comportamento da tela principal
+1. Cartão para analisar imagem do dispositivo, selecionar imagem e configurar/ativar/desativar monitoramento de screenshots.
+2. Busca por título e conteúdo, com X para limpar.
+3. Chips horizontais: Todas, Ler depois, Verificar, Salvar, Importante.
+4. Grupos de categoria em cartões de largura total, rolagem vertical. Cada grupo mostra até três thumbnails e “Ver todas”.
+- O filtro e a busca atuam juntos. “Todas” é filtro, não categoria persistida.
+- Categorias usadas em filtros/seletores: Ler depois, Verificar, Salvar, Importante.
 
-## Cartão
-- Duas colunas, altura fixa nominal de 320 dp.
-- Capa de 104 dp, crop na grade; placeholder se não houver imagem.
-- Título e texto secundário (no código atual ambos renderizam `capture.title`; provavelmente precisa de decisão/correção).
-- Categoria em chip com menu; data/hora `dd/MM/yyyy · HH:mm`.
-- Linha de ações: checkbox de conclusão, botão de sub-checklist com contagem e exclusão.
-- Estado OCR mostra “Analisando imagem…” ou erro em faixa sobre a capa.
-- Cartão concluído tem título atenuado/riscado.
+## Thumbnails e categoria expandida
+- Thumbnail quadrado com `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder “Sem imagem” quando não há capa.
+- Estado de OCR pode exibir ícone de processamento/erro.
+- “Ver todas” abre modal fullscreen da categoria, com botão de voltar/fechar, nome da categoria e contagem.
+- Grade expandida usa três colunas, espaçamento uniforme e rolagem vertical.
+- Tocar em thumbnail abre o visualizador fullscreen.
 
-## Detalhe fullscreen
-- Cabeçalho: título, data/hora, categoria, atalho para sub-checklist e botão fechar.
-- Imagem ocupa área restante e usa `ContentScale.Fit`.
-- Swipe horizontal: esquerda próxima referência, direita anterior; sem loop e respeitando a lista fornecida ao cartão.
-- `‹ Deslize para navegar ›` é um Surface sobreposto na parte inferior central da área da imagem, não elemento de layout que reserve espaço.
+## Visualizador fullscreen ativo
+- Barra superior com data/hora, chip de categoria, checkbox de conclusão, excluir e fechar.
+- A imagem usa `ContentScale.Fit` em fundo preto, sem recorte/estiramento.
+- Título fica sobre a região superior da imagem com gradiente preto forte, esmaecendo até transparente.
+- Dica “‹ Deslize para navegar ›” é uma sobreposição na parte inferior central; não reserva altura.
+- Swipe-left avança; swipe-right retorna dentro da mesma categoria filtrada. Não há loop nas extremidades.
+- A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada.
+- Back nativo fecha primeiro o visualizador e mantém a categoria expandida; Back novamente retorna à biblioteca. Botões explícitos continuam disponíveis.
 
-## Sub-checklist
-Modal bottom sheet com título/progresso, itens com checkbox, exclusão e campo de nova subtarefa. O atalho fullscreen fecha o diálogo de imagem e abre a sub-checklist da referência corrente.
+## Captura de link compartilhado
+- Receber URL via Sharesheet inicia busca de metadados no HTML.
+- Diálogo “Salvar link como referência” exibe título, URL, descrição quando disponível e carregamento.
+- Categoria é obrigatória, sem seleção padrão: Ler depois, Verificar, Salvar ou Importante.
+- Salvar fica desabilitado durante o fetch. Cancelar descarta a captura sem persistir.
+- Se o fetch falhar, o link pode ser salvo com título fallback. A imagem é baixada após confirmar.
+- Texto compartilhado sem URL continua sendo salvo diretamente; imagem compartilhada usa importação/OCR.
 
-## Tema
-Paleta atual azul-marinho/oceano/ciano; tema claro/escuro evita preto puro e usa cores do MaterialTheme. A seleção de tema deve manter preferência local e seguir sistema quando escolhido.
+## Seleção de imagem e screenshots
+- Photo Picker retorna uma imagem; a UI pede categoria antes de importar.
+- Monitor de screenshots é opcional e pede permissões apropriadas. Detecção é best-effort via metadados do MediaStore.
+- O modal de screenshot confirma antes de salvar; não excluir imagens selecionadas manualmente.
+- Inconsistência conhecida: algumas strings da notificação ainda dizem “tarefa”, embora a ação atual salve referência.
+
+## Cartão de referência e sub-checklist
+- O código contém um composable `CaptureCard` não referenciado pelo fluxo ativo; o layout ativo é a biblioteca por grupos e thumbnails.
+- A sub-checklist ativa abre em `ModalBottomSheet`, mostra progresso, itens com checkbox, exclusão e campo para adicionar.
+- O banco persiste itens por `captureId`. Não há tela independente de tarefas.
 
 ## Acessibilidade e validação
-Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes só de cor. Validar telas estreitas, fonte ampliada, contraste, gesto e leitura de imagem em dispositivo.
-
-
-## Navegação e título no fullscreen
-
-- Navegação por `HorizontalPager`: swipe-left avança; swipe-right retorna; a lista respeita busca/filtro ativos e não faz loop nas extremidades.
-- Cabeçalho sincronizado com a página estabilizada do pager.
-- Ação **Editar título** abre um diálogo apenas no fullscreen. O título é validado como não vazio e persistido no campo `captures.title` sem alterar os demais campos.
-- A sub-checklist permanece acessível pelo botão do cartão; o atalho de sub-checklist no cabeçalho fullscreen foi removido.
-
-
-## Navegação e edição do título
-
-- `HorizontalPager` navega pela lista filtrada, sem wrap-around, e sincroniza o cabeçalho com a página estabilizada.
-- A ação **Editar título** aparece apenas no fullscreen. O diálogo valida texto não vazio e persiste apenas `captures.title`.
-- O atalho de sub-checklist foi removido do cabeçalho fullscreen; o botão de sub-checklist no cartão continua ativo.
-
-
-## Contraste do título e voltar nativo
-- O título sobre a imagem usa um degradê preto mais opaco na região superior, esmaecendo gradualmente para transparência; não alterar proporção, enquadramento da imagem ou hierarquia visual.
-- O botão/gesto nativo de voltar fecha primeiro o visualizador da referência; ao voltar novamente, fecha a categoria expandida e retorna à biblioteca.
-- Os botões visíveis de fechar/voltar continuam disponíveis.
-
-
-## Navegação fullscreen por cards e nome do app (2026-10-29)
-- O nome visível do produto é **Capture Flow** na barra superior e no rótulo do aplicativo Android; “Biblioteca” não deve substituir o nome do produto.
-- Ao abrir uma captura por um thumbnail, o visualizador permite swipe-left para a próxima captura da mesma categoria filtrada e swipe-right para a anterior, sem loop nas extremidades.
-- A data, categoria, conclusão e imagem acompanham a captura selecionada no pager. A dica de swipe permanece sobre a imagem e o botão/gesto nativo Back continua fechando o visualizador sem fechar a categoria por baixo.
-
-
-## Contrato de compartilhamento de links (2026-10-29)
-- Ao receber URL via Android Sharesheet, o ViewModel prepara uma captura pendente e a UI abre o diálogo **Salvar link como referência**.
-- O diálogo mostra o título extraído, URL, descrição quando encontrada e quatro opções exclusivas: Ler depois, Verificar, Salvar, Importante.
-- Uma categoria precisa estar selecionada e a requisição de metadados precisa terminar para habilitar **Salvar referência**.
-- Cancelar descarta o estado pendente e não persiste a referência. Se o fetch falhar, o usuário ainda pode salvar com o título fallback.
-- O parser HTTP lê até 512 KB do HTML; prioriza H1, depois metadados e title. Para imagem, prioriza img dentro de article/main, depois og:image/Twitter. Não executa JavaScript.
-- Após confirmar, salva título, URL/conteúdo e categoria; a imagem, quando disponível, é baixada para armazenamento privado e usada como capa.
-- Texto compartilhado sem URL continua sendo salvo diretamente; compartilhamento de imagem segue o fluxo de importação/OCR.
+- Alvos de toque de ícone devem permanecer em torno de 48 dp.
+- Manter descrições de ícones, contraste do título e suporte a tema claro/escuro.
+- Validar largura estreita, fonte ampliada, gestos, Back nativo, URLs com falha e permissões em dispositivo real.
