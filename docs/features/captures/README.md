@@ -31,7 +31,7 @@ Os documentos devem descrever o código atual e identificar divergências conhec
 
 
 ## Recuperação da URL de origem em imagens
-A ordem de resolução é: URL em `EXTRA_TEXT` (prioridade máxima), URL em texto de `ClipData`, URL candidata extraída por OCR com confirmação explícita e, por fim, metadado de pacote do app como indício auxiliar. Referrer e `OWNER_PACKAGE_NAME` não garantem a URL nem a página original. Os campos de proveniência e a migração Room 5→6 estão detalhados no [estado atual](../../current-state.md), [contrato do banco](database_contract_current.md) e [testes](testing.md).
+A ordem de resolução é: URL em `EXTRA_TEXT` (prioridade máxima), URL em texto de `ClipData`, OCR para título/texto sem inferir URL e, por fim, metadado de pacote do app como indício auxiliar. Referrer e `OWNER_PACKAGE_NAME` não garantem a URL nem a página original. Os campos de proveniência e a migração Room 5→6 estão detalhados no [estado atual](../../current-state.md), [contrato do banco](database_contract_current.md) e [testes](testing.md).
 
 ## Estado atual e fluxos recentes
 Consulte [Estado atual completo do app](../../current-state.md) para o inventário da arquitetura, layout e comportamento. Links compartilhados agora exigem seleção de categoria antes da persistência; a extração tenta H1 e imagem de article/main antes de usar metadados sociais como fallback.

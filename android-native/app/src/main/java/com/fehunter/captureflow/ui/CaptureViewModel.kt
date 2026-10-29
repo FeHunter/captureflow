@@ -11,7 +11,6 @@ import com.fehunter.captureflow.data.CaptureClassifier
 import com.fehunter.captureflow.data.CaptureDatabase
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.CaptureSubtaskEntity
-import com.fehunter.captureflow.data.SourceUrlDetector
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 import com.fehunter.captureflow.services.LinkMetadataService
 import com.fehunter.captureflow.services.OcrService
@@ -306,18 +305,6 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 }
                 val extracted = analysis.fullText.trim()
 
-                val ocrUrlCandidate = if (capture.sourceUrl == null) SourceUrlDetector.extract(extracted) else null
-                if (ocrUrlCandidate != null) {
-                    withContext(Dispatchers.IO) {
-                        captureDao.updateSourceUrlIfMissing(
-                            capture.id,
-                            ocrUrlCandidate,
-                            "ocr_candidate",
-                            false,
-                        )
-                    }
-                }
-
                 if (extracted.isBlank()) {
                     setOcrState(
                         capture.id,
@@ -326,9 +313,17 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
 
-                val title = analysis.title.ifBlank {
-                    extracted.lineSequence().firstOrNull(String::isNotBlank)?.take(72) ?: "Screenshot analisado"
-                }
+                // OCR may read a browser address bar, local IP, port or unrelated URL.
+                // Never promote text detected in pixels to sourceUrl or use it as the title.
+                val structuredTitle = analysis.title.trim()
+                val title = structuredTitle
+                    .takeUnless(::looksLikeAddressTitle)
+                    ?.takeIf(String::isNotBlank)
+                    ?: extracted.lineSequence()
+                        .map(String::trim)
+                        .firstOrNull { it.isNotBlank() && !looksLikeAddressTitle(it) }
+                        ?.take(72)
+                    ?: "Screenshot analisado"
                 withContext(Dispatchers.IO) {
                     // For image references, keep only the title as the useful payload.
                     // The original screenshot remains available through imageUri as the cover.
@@ -346,6 +341,20 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 )
             }
         }
+    }
+
+    private fun looksLikeAddressTitle(value: String): Boolean {
+        val text = value.trim()
+        if (text.isBlank()) return true
+        if (Regex("https?://", RegexOption.IGNORE_CASE).containsMatchIn(text)) return true
+        if (Regex("^(not secure|não seguro)\\s+", RegexOption.IGNORE_CASE).containsMatchIn(text) &&
+            Regex("[.:/]").containsMatchIn(text)
+        ) return true
+        // Common OCR output for browser host/address-bar fragments, including local IPs and ports.
+        return Regex(
+            "^(?:[\\w-]+\\.)*[\\w-]+(?:\\.\\w{2,})?(?::\\d{2,5})?(?:/[^\\s]*)?$",
+            RegexOption.IGNORE_CASE,
+        ).matches(text) && (text.contains('.') || text.contains(':') || text.contains('/'))
     }
 
     private fun setOcrState(id: String, state: OcrUiState) {

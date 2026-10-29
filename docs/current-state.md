@@ -51,15 +51,30 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 8. Se metadados falharem, o link permanece salvável com título fallback. URL de origem já existente é ignorada para evitar duplicação.
 9. Texto compartilhado sem URL continua sendo salvo diretamente com deduplicação por conteúdo. Imagem compartilhada segue importação/OCR, não o diálogo de link.
 
+
+
+## Correção: título OCR e origem real da captura
+O OCR continua ativo para ler a imagem e gerar um título útil, mas o texto reconhecido não deve ser tratado automaticamente como URL original. A barra de endereço do navegador, mensagens como “Not secure”, IPs locais, portas e caminhos podem aparecer no OCR sem representar o conteúdo/post capturado. Por isso:
+- Nunca preencher `sourceUrl` apenas porque uma URL apareceu nos pixels da screenshot.
+- Não usar título estruturado pelo OCR quando ele for uma URL ou trecho de barra de endereço; procurar uma linha de conteúdo útil como fallback.
+- URLs de origem são associadas quando chegam explicitamente no compartilhamento (`EXTRA_TEXT` ou texto de `ClipData`). Se não vierem, manter a captura como imagem com OCR e sem link de origem presumido.
+- Não solicitar overlay sobre outros aplicativos como solução padrão: além da permissão especial, o overlay não tem acesso confiável à URL/página em primeiro plano.
+
+## Possibilidade de fluxo pós-screenshot
+O fluxo mais confiável é usar a ação **Compartilhar** do próprio Android após a captura de tela e escolher CaptureFlow. O Android documenta que o payload pode conter a imagem em `EXTRA_STREAM` e a URL associada em `EXTRA_TEXT`; quando o app de origem fornece ambos, CaptureFlow consegue associar o link e usar o fluxo atual de metadados. Nem todos os apps/dispositivos fornecem a URL associada, então o fluxo deve continuar funcionando como captura de imagem + OCR quando ela estiver ausente.
+
+Um botão flutuante desenhado pelo CaptureFlow sobre qualquer app é tecnicamente possível apenas com permissão especial de sobreposição (`SYSTEM_ALERT_WINDOW`) concedida pelo usuário, mas **não resolve por si só a obtenção do link**: Android isola os apps e não expõe genericamente a URL da página visível. Além disso, sobreposições podem ser bloqueadas por apps sensíveis e geram uma permissão intrusiva. Preferir uma ação clara na notificação de screenshot ou instruir o usuário a usar o compartilhamento nativo do screenshot. Não implementar scraping da tela de outro app nem depender de acessibilidade para inferir URL.
+
+
 ## Recuperação da origem de imagens e screenshots
 A identificação da origem é feita em camadas, sem prometer que toda screenshot terá URL recuperável:
 
 1. **Prioridade 1 — URL recebida junto com a imagem:** ao receber `ACTION_SEND` com MIME de imagem, o app procura uma URL HTTP(S) válida em `Intent.EXTRA_TEXT`. Quando presente, associa-a automaticamente a `sourceUrl`, marca `sourceVerified = true` e registra `sourceDetectionMethod = share_extra_text`. Não é necessário pedir ao usuário para copiar o endereço manualmente.
 2. **Fallback — texto do ClipData:** se `EXTRA_TEXT` não trouxer URL, o app procura texto nos itens de `ClipData`. Uma URL encontrada é associada como origem recebida pelo compartilhamento (`share_clipdata_text`) e marcada como verificada pelo payload explícito.
-3. **OCR da imagem:** se não houver URL compartilhada, o OCR local procura uma URL HTTP(S) no texto reconhecido. A URL é armazenada como candidata (`sourceDetectionMethod = ocr_candidate`, `sourceVerified = false`), nunca tratada silenciosamente como confirmada. Ao tocar no ícone de link do fullscreen, a UI pede confirmação antes de marcar a origem como verificada e abrir o endereço.
+3. **OCR da imagem:** continua sendo usado para ler o conteúdo e sugerir título. URLs encontradas nos pixels não são associadas como origem, pois podem pertencer à barra do navegador, a um IP local ou a conteúdo não relacionado.
 4. **Indício do aplicativo de origem:** quando disponível, `Intent.EXTRA_REFERRER`/`EXTRA_REFERRER_NAME` pode fornecer um pacote `android-app://...`. Para imagens importadas de um URI MediaStore no Android 10+, `OWNER_PACKAGE_NAME` também pode ser registrado como indício. Isso preenche `sourceApp` e o método de detecção, mas **não prova qual página estava aberta e não substitui uma URL**. O valor pode identificar o componente que gravou o arquivo, não necessariamente o app de origem da captura.
 
-Os campos `sourceApp`, `sourceDetectionMethod` e `sourceVerified` são metadados locais de proveniência. URLs recebidas explicitamente por compartilhamento são consideradas verificadas; URLs de OCR passam de `ocr_candidate` para `ocr_confirmed` após confirmação explícita. A migração Room 5→6 adiciona esses campos sem descartar referências existentes. Referências antigas com `sourceUrl` são migradas como verificadas; registros antigos sem URL permanecem sem origem verificada.
+Os campos `sourceApp`, `sourceDetectionMethod` e `sourceVerified` são metadados locais de proveniência. URLs recebidas explicitamente por compartilhamento são consideradas verificadas; OCR nunca confirma nem cria `sourceUrl`. A migração Room 5→6 adiciona esses campos sem descartar referências existentes. Referências antigas com `sourceUrl` são migradas como verificadas; registros antigos sem URL permanecem sem origem verificada.
 
 **Limite conhecido:** screenshots detectadas automaticamente pelo MediaStore não contêm, por padrão, um campo padronizado com a URL da página. Se não houver URL compartilhada nem URL legível por OCR, o Capture Flow não inventará nem deduzirá uma URL a partir apenas do nome/pasta do arquivo ou do pacote do app.
 
