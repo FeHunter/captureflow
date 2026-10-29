@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -23,11 +24,15 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 
@@ -39,7 +44,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel) {
         topBar = {
             TopAppBar(title = {
                 Column {
-                    Text("CaptureFlow", fontWeight = FontWeight.Bold)
+                    Text("CaptureFlow v${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
                     Text(if (tab == 0) "Suas referências, organizadas" else "Transforme ideias em ação",
                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -178,6 +183,24 @@ private fun CaptureCard(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val context = LocalContext.current
+            val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                initialValue = null, capture.imageUri,
+            ) {
+                value = capture.imageUri?.let { raw ->
+                    withContext(Dispatchers.IO) {
+                        runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+                    }
+                }
+            }
+            cover?.let { bitmap ->
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Imagem de capa da referência",
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
                 Column(Modifier.weight(1f)) {
@@ -259,9 +282,14 @@ private fun TaskCard(
     onDelete: () -> Unit,
     onAnalyze: () -> Unit,
 ) {
-    val cover = remember(task.imageUri) {
-        task.imageUri?.let { raw ->
-            runCatching { BitmapFactory.decodeFile(Uri.parse(raw).path)?.asImageBitmap() }.getOrNull()
+    val context = LocalContext.current
+    val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, task.imageUri,
+    ) {
+        value = task.imageUri?.let { raw ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            }
         }
     }
     Card(Modifier.fillMaxWidth()) {
@@ -291,5 +319,23 @@ private fun TaskCard(
                 }
             }
         }
+    }
+}
+
+
+private fun loadCoverBitmap(context: Context, rawUri: String): androidx.compose.ui.graphics.ImageBitmap? {
+    val uri = Uri.parse(rawUri)
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    val boundsStream = context.contentResolver.openInputStream(uri) ?: return null
+    boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    var sampleSize = 1
+    while (bounds.outWidth / sampleSize > 1200 || bounds.outHeight / sampleSize > 1200) {
+        sampleSize *= 2
+    }
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    return context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
     }
 }

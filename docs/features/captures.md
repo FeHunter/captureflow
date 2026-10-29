@@ -44,3 +44,8 @@ The feature receives, classifies, persists, searches and manages link, text and 
 - A leitura de metadados usa conexão HTTP(S) com timeout, sem seguir redirecionamentos automaticamente e com limite de leitura do HTML. Se a página bloquear a requisição, exigir login ou não expuser metadados, o link continua salvo com o conteúdo original.
 - A recuperação de metadados requer conexão com a internet; o resultado é armazenado localmente e não é enviado a um serviço externo.
 - O banco Room migra da versão 2 para a 3 adicionando a descrição opcional às tarefas.
+
+
+## Documentação da feature
+
+A documentação detalhada foi organizada em [docs/features/captures/README.md](captures/README.md), seguindo o padrão da feature de referência enviada. Consulte ali o contrato funcional, arquitetura atual, contrato do banco, acesso a dados/ações, regras UI/UX, critérios de teste e changelog.
