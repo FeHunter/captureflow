@@ -76,3 +76,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Padronizadas as tags e opções de filtro para Ler depois, Verificar, Salvar e Importante.
 - Links compartilhados agora tentam extrair título, descrição e imagem Open Graph/Twitter; a imagem é salva localmente quando possível.
 - Ajustada a altura dos cartões compactos para 272 dp e a proporção do fullscreen para 20% de cabeçalho e 80% de imagem.
+
+
+## 2026-10-29 — Contraste do título e back nativo
+- Reforçado o degradê escuro atrás do título sobre a imagem, preservando dimensões, enquadramento e estrutura do fullscreen.
+- Adicionado tratamento explícito de Back do Android no visualizador de referência e na categoria expandida. A navegação fecha apenas a camada superior, mantendo a categoria aberta quando o usuário volta do visualizador.
+- Mantidos os botões visíveis de fechar/voltar como alternativa acessível.

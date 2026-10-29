@@ -1,5 +1,6 @@
 package com.fehunter.captureflow.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -255,8 +256,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
         val categoryCaptures = filtered.filter { it.category == tag }
         Dialog(
             onDismissRequest = { expandedCategory = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
+            BackHandler { expandedCategory = null }
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background,
@@ -300,8 +302,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     selectedCapture?.let { capture ->
         Dialog(
             onDismissRequest = { selectedCapture = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
+            BackHandler { selectedCapture = null }
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = Color.Black,
@@ -779,8 +782,9 @@ private fun CaptureCard(
     if (showFullscreen) {
         Dialog(
             onDismissRequest = { showFullscreen = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
+            BackHandler { showFullscreen = false }
             Column(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             ) {
@@ -909,7 +913,7 @@ private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Bo
         // Keep the complete title readable over the image, regardless of its length.
         Box(
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.92f), Color.Black.copy(alpha = 0.52f), Color.Transparent)))
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.99f), Color.Black.copy(alpha = 0.94f), Color.Black.copy(alpha = 0.78f), Color.Black.copy(alpha = 0.42f), Color.Transparent)))
                 .padding(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 38.dp),
         ) {
             Text(text = capture.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
