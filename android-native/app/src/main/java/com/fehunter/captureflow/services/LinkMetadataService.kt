@@ -139,7 +139,7 @@ class LinkMetadataService {
     private fun clean(value: String): String = value
         .replace(Regex("<[^>]+>"), " ")
         .replace("&amp;", "&")
-        .replace("&quot;", "\\\"")
+        .replace("&quot;", "\"")
         .replace("&#39;", "'")
         .replace("&#x27;", "'")
         .replace("&lt;", "<")
