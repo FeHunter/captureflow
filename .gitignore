@@ -1,26 +1,29 @@
-node_modules/
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-android/
-ios/
-*.keystore
+# Gradle / Android
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
 *.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+*.keystore
+
+# Local environment
 .env
 .env.*
 !.env.example
-coverage/
-.nyc_output/
-*.log
+
+# Legacy Expo
+legacy-expo/node_modules/
+legacy-expo/.expo/
+legacy-expo/dist/
+legacy-expo/web-build/
+
+# Editor / OS
 .DS_Store
 Thumbs.db
 .vscode/
-.idea/
-*.apk
-*.aab
-*.ipa

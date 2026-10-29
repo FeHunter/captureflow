@@ -1,30 +1,38 @@
 # Architecture
 
-## Product shape
-CaptureFlow is an Android-first app that collects shared content and turns it into searchable references and user-editable checklists.
-
-## Initial flow
-1. Receive a shared URL, text, or image from Android's native share sheet.
-2. Normalize the payload into a typed capture draft.
-3. Resolve metadata from the received URL or image where possible.
-4. Show a review step so users can correct the title, description, and source.
-5. Save the capture and optionally attach checklist tasks.
+## Stack
+CaptureFlow is Android-native and local-first: Kotlin, Jetpack Compose, ViewModel, Coroutines/Flow, Room/SQLite and Google ML Kit text recognition.
 
 ## Layers
-- app/: Expo Router route composition only.
-- src/features/captures/: capture workflow and domain behavior.
-- src/features/checklists/: task and checklist behavior.
-- src/shared/: reusable types, design tokens, UI, and utilities.
-- modules/: app-owned Expo native modules when required.
-- docs/: architectural decisions, setup, and roadmap.
+- **Platform entry:** `MainActivity` receives launcher and Android Share Intent actions and forwards payloads to the ViewModel.
+- **Presentation:** Compose screens render state; ViewModels coordinate actions and expose Flow state.
+- **Domain rules:** payload classification, title/category suggestions and duplicate policy.
+- **Services:** on-device OCR and future metadata extraction.
+- **Persistence:** Room entities and DAOs over the local `captureflow.db`.
+- **UI:** reference library, search, category filters and checklist.
 
-## Data provenance
-Fields such as title, description, source app, and source URL must carry or otherwise preserve their provenance. A URL received directly through a share intent is different from a URL guessed from OCR or AI inference.
+## Capture flow
+1. Another app shares text, a URL or an image with `ACTION_SEND`.
+2. The activity forwards supported payloads.
+3. The app normalizes and classifies the payload.
+4. Content is saved locally while avoiding exact-content duplicates.
+5. Users can search/filter, mark completion or delete references.
+6. OCR runs only when requested for an image; extracted text is saved locally.
 
-## Persistence
-Start with a local-first approach. Choose the local persistence library after the first capture flow and offline requirements are prototyped. Cloud sync and Supabase are optional future capabilities, not prerequisites for the first milestone.
+## Privacy and resilience
+- No cloud upload or cross-device sync is part of the MVP.
+- Shared image URI permissions may be temporary or provider-specific. Validate on real devices and copy media to app-private storage if durable access is required.
+- Do not scan other apps' private data or use accessibility services to monitor them.
+- Screenshot discovery is not implemented.
 
-## Platform strategy
-- Android: first-class share intent support and later best-effort screenshot discovery.
-- iOS: share extension support should be evaluated separately; do not assume Android behavior maps directly to iOS.
-- EAS Build: use development builds for native module work.
+## Package layout
+```
+android-native/
+  app/src/main/java/com/fehunter/captureflow/
+    MainActivity.kt
+    data/       # Room, DAOs and classification
+    services/   # on-device OCR
+    ui/         # Compose screens and ViewModels
+```
+
+Future synchronization must be opt-in and added behind repository boundaries without changing the local-first default.
