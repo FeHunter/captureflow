@@ -2,7 +2,11 @@ package com.fehunter.captureflow.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import android.app.RecoverableSecurityException
+import android.os.Build
+import android.provider.MediaStore
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -92,6 +96,25 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
 @Composable
 private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
     val context = LocalContext.current
+    val deleteScreenshotLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(),
+    ) { /* Android confirms or cancels deletion; cancellation leaves the gallery item intact. */ }
+    fun requestDeleteScreenshot(uri: Uri) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val request = MediaStore.createDeleteRequest(context.contentResolver, listOf(uri))
+                deleteScreenshotLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
+            } else {
+                context.contentResolver.delete(uri, null, null)
+            }
+        } catch (error: RecoverableSecurityException) {
+            deleteScreenshotLauncher.launch(
+                IntentSenderRequest.Builder(error.userAction.actionIntent.intentSender).build(),
+            )
+        } catch (_: Exception) {
+            // Import is already safe in app-private storage; deletion is best-effort.
+        }
+    }
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
@@ -252,7 +275,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             title = { Text("Adicionar screenshot às referências?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("A captura foi aberta pela notificação. Confirme para anexá-la a uma nova tarefa.")
+                    Text("A captura será salva nas referências do CaptureFlow. Depois da cópia segura, o Android poderá pedir autorização para removê-la da galeria.")
                     taskScreenshotPreview?.let { preview ->
                         Image(
                             bitmap = preview,
@@ -265,7 +288,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.addImageCapture(uri, category = "Referência")
+                    viewModel.addImageCapture(uri, category = "Referência", onImported = ::requestDeleteScreenshot)
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
                 }) { Text("Adicionar às referências") }
