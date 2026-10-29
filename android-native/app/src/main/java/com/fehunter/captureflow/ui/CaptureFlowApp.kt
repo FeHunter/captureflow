@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -179,10 +180,13 @@ private fun CaptureCard(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val context = LocalContext.current
             val cover = remember(capture.imageUri) {
                 capture.imageUri?.let { raw ->
                     runCatching {
-                        BitmapFactory.decodeFile(Uri.parse(raw).path)?.asImageBitmap()
+                        context.contentResolver.openInputStream(Uri.parse(raw))?.use {
+                            BitmapFactory.decodeStream(it)?.asImageBitmap()
+                        }
                     }.getOrNull()
                 }
             }
@@ -275,9 +279,14 @@ private fun TaskCard(
     onDelete: () -> Unit,
     onAnalyze: () -> Unit,
 ) {
+    val context = LocalContext.current
     val cover = remember(task.imageUri) {
         task.imageUri?.let { raw ->
-            runCatching { BitmapFactory.decodeFile(Uri.parse(raw).path)?.asImageBitmap() }.getOrNull()
+            runCatching {
+                context.contentResolver.openInputStream(Uri.parse(raw))?.use {
+                    BitmapFactory.decodeStream(it)?.asImageBitmap()
+                }
+            }.getOrNull()
         }
     }
     Card(Modifier.fillMaxWidth()) {
