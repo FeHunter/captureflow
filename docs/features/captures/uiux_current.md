@@ -55,3 +55,9 @@ Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes s�
 - `HorizontalPager` navega pela lista filtrada, sem wrap-around, e sincroniza o cabeçalho com a página estabilizada.
 - A ação **Editar título** aparece apenas no fullscreen. O diálogo valida texto não vazio e persiste apenas `captures.title`.
 - O atalho de sub-checklist foi removido do cabeçalho fullscreen; o botão de sub-checklist no cartão continua ativo.
+
+
+## Contraste do título e voltar nativo
+- O título sobre a imagem usa um degradê preto mais opaco na região superior, esmaecendo gradualmente para transparência; não alterar proporção, enquadramento da imagem ou hierarquia visual.
+- O botão/gesto nativo de voltar fecha primeiro o visualizador da referência; ao voltar novamente, fecha a categoria expandida e retorna à biblioteca.
+- Os botões visíveis de fechar/voltar continuam disponíveis.

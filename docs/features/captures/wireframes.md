@@ -120,3 +120,8 @@ Persistência em `capture_subtasks`; cada item pertence a uma referência via `c
 - Header includes **Editar título**, shown only in fullscreen.
 - Sub-checklist remains available from the reference card, not from the fullscreen header.
 - Image uses `ContentScale.Fit`; navigation hint remains an overlay.
+
+
+### Contraste do título e navegação nativa (2026-10-29)
+- O título sobre a imagem recebe degradê superior mais escuro para melhorar legibilidade sem reservar espaço adicional nem alterar `ContentScale.Fit`.
+- Back do Android fecha a camada de navegação ativa em ordem inversa: visualizador da referência → categoria expandida → biblioteca. Os controles explícitos de fechar/voltar permanecem.

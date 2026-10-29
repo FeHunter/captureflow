@@ -78,3 +78,10 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - Use exclusivamente as tags de captura `Ler depois`, `Verificar`, `Salvar` e `Importante` em filtros e seletores.
 - Links recebidos via `ACTION_SEND` devem ser salvos mesmo quando a extração de metadados falhar. Tente extrair título, descrição e imagem Open Graph/Twitter; baixe imagens para armazenamento privado com timeout e limite de tamanho, sem bloquear o salvamento do link.
 - O visualizador fullscreen reserva 20% do espaço ao cabeçalho e 80% à imagem; cartões compactos usam 272 dp de altura.
+
+
+## Fullscreen contrast and native back navigation
+- Keep the title overlay on the fullscreen image with a stronger dark gradient (near-opaque black behind the text, fading toward transparency); do not change the fullscreen header/image proportions, image `ContentScale.Fit`, or swipe pager behavior.
+- Handle Android system Back (button or predictive/gesture back) in the active fullscreen layer: close the open capture viewer first, then return from an expanded category to the library. Never close the underlying category when only the viewer is dismissed.
+- Keep the explicit close/back buttons. System Back is an additional native navigation path, not a replacement for visible controls.
+- When a Compose `Dialog` has explicit `BackHandler` navigation, disable automatic `dismissOnBackPress` for that dialog to avoid competing dismissal paths.
