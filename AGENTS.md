@@ -85,3 +85,9 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - Handle Android system Back (button or predictive/gesture back) in the active fullscreen layer: close the open capture viewer first, then return from an expanded category to the library. Never close the underlying category when only the viewer is dismissed.
 - Keep the explicit close/back buttons. System Back is an additional native navigation path, not a replacement for visible controls.
 - When a Compose `Dialog` has explicit `BackHandler` navigation, disable automatic `dismissOnBackPress` for that dialog to avoid competing dismissal paths.
+
+
+## App branding and category fullscreen navigation
+- The app's visible product name is **Capture Flow** in the main top bar and Android launcher label. Do not replace it with a screen label such as “Biblioteca”.
+- The fullscreen viewer opened from category thumbnails supports horizontal swipe: left advances to the next capture in the same filtered category; right returns to the previous capture. It does not wrap at either end.
+- Keep the current capture metadata/actions synchronized with the settled pager page. Preserve the dark title gradient, image `ContentScale.Fit`, native Back behavior, and existing layout proportions.
