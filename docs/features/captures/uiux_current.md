@@ -24,7 +24,7 @@
 - Tocar em thumbnail abre o visualizador fullscreen.
 
 ## Visualizador fullscreen ativo
-- Barra superior com data/hora, chip de categoria, checkbox de conclusão, excluir e fechar.
+- Barra superior com data/hora, chip de categoria, botão de abrir link original quando `sourceUrl` for uma URL HTTP(S) válida, checkbox de conclusão, excluir e fechar.
 - A imagem usa `ContentScale.Fit` em fundo preto, sem recorte/estiramento.
 - Título fica sobre a região superior da imagem com gradiente preto forte, esmaecendo até transparente.
 - Dica “‹ Deslize para navegar ›” é uma sobreposição na parte inferior central; não reserva altura.

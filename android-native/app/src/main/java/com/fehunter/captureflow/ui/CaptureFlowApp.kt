@@ -11,6 +11,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.snapshotFlow
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
@@ -305,6 +306,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     selectedCapture?.let { capture ->
         val viewerCaptures = filtered.filter { it.category == capture.category }
         val initialPage = viewerCaptures.indexOfFirst { it.id == capture.id }.coerceAtLeast(0)
+        val sourceUrl = capture.sourceUrl?.takeIf { url ->
+            Uri.parse(url).scheme?.lowercase()?.let { it == "http" || it == "https" } == true
+        }
         Dialog(
             onDismissRequest = { selectedCapture = null },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
@@ -340,6 +344,22 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                             Text(SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(capture.createdAt)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
                                 Text(capture.category, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        }
+                        sourceUrl?.let { url ->
+                            IconButton(
+                                onClick = {
+                                    runCatching {
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    }
+                                },
+                                modifier = Modifier.size(48.dp),
+                            ) {
+                                Icon(
+                                    Icons.Default.Link,
+                                    contentDescription = "Abrir link original",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
                             }
                         }
                         Checkbox(checked = capture.isCompleted, onCheckedChange = { completed ->

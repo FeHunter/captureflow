@@ -1,5 +1,11 @@
 # Changelog — Captures
 
+## Atualização — botão de link no fullscreen
+- Reaproveita `CaptureEntity.sourceUrl`, já presente no modelo/payload, para manter a URL original sem duplicar campos.
+- Adiciona no header do visualizador fullscreen um botão para abrir o link no app/navegador padrão; aparece apenas quando a URL é HTTP(S) válida.
+- Atualiza contrato funcional, UI/UX e wireframe.
+
+
 Este changelog resume mudanças relevantes da feature. Para o estado atual e pendências, consulte [a visão geral do projeto](../../project-overview.md).
 
 ## v0.3.0 — Versão, OCR visual e capas
