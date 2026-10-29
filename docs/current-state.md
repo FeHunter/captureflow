@@ -32,7 +32,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
-- A barra superior mostra data/hora local, categoria, checkbox de conclusão, excluir e fechar.
+- A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido), checkbox de conclusão, excluir e fechar.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
 - `HorizontalPager`: swipe-left avança e swipe-right retorna dentro das capturas da mesma categoria filtrada, sem loop nas extremidades.
@@ -66,7 +66,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - **Inconsistência existente:** o serviço de notificação ainda contém nomes e textos históricos de tarefa (`ACTION_CREATE_TASK`, “pronta para tarefa”), embora o app ativo seja a biblioteca de referências. Corrigir as strings sem reintroduzir uma tela independente de tarefas.
 
 ## Banco de dados
-- `captures`: id, title, content, kind, category, sourceUrl opcional, imageUri opcional, createdAt e isCompleted.
+- `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, createdAt e isCompleted.
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
 - Versão Room no código: **5**. Migrações: 1→2 adiciona imageUri em tarefas; 2→3 description; 3→4 cria capture_subtasks/índice; 4→5 adiciona category em tarefas. Atualizar contrato e testar upgrades ao mudar esquema.
