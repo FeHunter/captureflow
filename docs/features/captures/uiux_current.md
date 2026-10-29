@@ -42,7 +42,7 @@
 
 ## Origem da imagem e links detectados
 - Ao compartilhar uma imagem acompanhada de URL em `EXTRA_TEXT`, a origem é associada automaticamente. Se o texto do payload não trouxer URL, o app tenta usar texto em `ClipData`.
-- Se a URL for encontrada somente por OCR, o ícone de link no fullscreen abre um diálogo de confirmação com o endereço identificado. “Confirmar e abrir” marca a URL como verificada e abre o app/navegador padrão; “Cancelar” não a confirma nem abre.
+- URLs reconhecidas apenas por OCR não aparecem como link de origem. O OCR continua gerando texto/título; se o compartilhamento não trouxer URL, a referência permanece uma captura de imagem sem origem confirmada.
 - O ícone de link só aparece quando há URL HTTP(S) válida. A proveniência por pacote de aplicativo é informativa e não garante a página de origem.
 
 ## Seleção de imagem e screenshots
