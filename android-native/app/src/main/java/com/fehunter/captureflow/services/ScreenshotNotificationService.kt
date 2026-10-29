@@ -106,16 +106,14 @@ class ScreenshotNotificationService : Service() {
     }
 
     private fun notifyScreenshot(uri: Uri) {
-        val saveIntent = actionIntent(ACTION_SAVE_REFERENCE, uri, 1)
         val taskIntent = actionIntent(ACTION_CREATE_TASK, uri, 2)
         val notification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
-            .setContentTitle("Screenshot detectada")
-            .setContentText("Deseja salvar como referência ou criar uma tarefa?")
+            .setContentTitle("Screenshot pronta para tarefa")
+            .setContentText("Toque para abrir o CaptureFlow e salvar a imagem como tarefa")
+            .setContentIntent(taskIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .addAction(android.R.drawable.ic_menu_save, "Salvar referência", saveIntent)
-            .addAction(android.R.drawable.ic_menu_add, "Criar tarefa", taskIntent)
             .build()
         getSystemService(NotificationManager::class.java).notify(ALERT_NOTIFICATION_ID, notification)
     }

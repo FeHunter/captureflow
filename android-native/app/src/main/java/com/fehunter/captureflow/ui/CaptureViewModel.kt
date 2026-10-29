@@ -207,6 +207,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun setTaskCategory(id: String, category: String) {
+        viewModelScope.launch(Dispatchers.IO) { checklistDao.updateCategory(id, category) }
+    }
+
     fun setTaskCompleted(id: String, completed: Boolean) {
         viewModelScope.launch(Dispatchers.IO) { checklistDao.setCompleted(id, completed) }
     }
@@ -244,6 +248,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     isCompleted = false,
                     createdAt = System.currentTimeMillis(),
                     imageUri = storedUri,
+                    category = "Tarefa",
                 ),
             )
         }

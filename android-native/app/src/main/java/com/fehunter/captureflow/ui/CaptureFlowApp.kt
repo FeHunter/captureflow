@@ -80,8 +80,8 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var imageCategory by remember { mutableStateOf("Referência") }
-    val categories = listOf("Todas", "Ler depois", "Ideias", "Tarefas", "Referência")
+    var imageCategory by remember { mutableStateOf("Ler depois") }
+    val categories = listOf("Todas", "Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde")
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
@@ -186,7 +186,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 )
             }
         } else {
-            items(filtered, key = { it.id }) { capture ->
+            items(filtered.chunked(2), key = { row -> row.first().id }) { captureRow ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    captureRow.forEach { capture ->
+                        Box(Modifier.weight(1f)) {
                 CaptureCard(
                     capture = capture,
                     ocrState = ocrStates[capture.id] ?: OcrUiState(),
@@ -197,6 +200,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
                     onDeleteSubtask = viewModel::deleteCaptureSubtask,
                 )
+                        }
+                    }
+                    if (captureRow.size == 1) Spacer(Modifier.weight(1f))
+                }
             }
         }
     }
@@ -243,6 +250,7 @@ private fun CaptureCard(
 ) {
     var showFullscreen by remember(capture.id) { mutableStateOf(false) }
     var newSubtask by remember(capture.id) { mutableStateOf("") }
+    var showSubtasks by remember(capture.id) { mutableStateOf(false) }
     val context = LocalContext.current
     val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, capture.imageUri,
@@ -255,14 +263,16 @@ private fun CaptureCard(
     }
 
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
                 Text(
                     text = capture.title,
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
                 if (ocrState.isProcessing) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -273,13 +283,19 @@ private fun CaptureCard(
                 }
             }
 
+            Text(
+                text = capture.title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
             cover?.let { bitmap ->
                 Image(
                     bitmap = bitmap,
                     contentDescription = "Abrir capa em tela cheia",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 280.dp)
+                        .heightIn(max = 150.dp)
                         .clickable { showFullscreen = true },
                     contentScale = ContentScale.Crop,
                 )
@@ -300,9 +316,10 @@ private fun CaptureCard(
             }
 
             if (subtasks.isNotEmpty()) {
-                Text("Sub-checklist", style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                subtasks.forEach { subtask ->
+                TextButton(onClick = { showSubtasks = !showSubtasks }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (showSubtasks) "▾ Sub-checklist (${subtasks.count { it.isCompleted }}/${subtasks.size})" else "▸ Sub-checklist (${subtasks.count { it.isCompleted }}/${subtasks.size})")
+                }
+                if (showSubtasks) subtasks.forEach { subtask ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = subtask.isCompleted,
@@ -357,12 +374,14 @@ private fun CaptureCard(
                 modifier = Modifier.fillMaxSize().background(Color.Black),
                 contentAlignment = Alignment.Center,
             ) {
-                Image(
-                    bitmap = cover!!,
-                    contentDescription = "Imagem em tela cheia",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                )
+                Column(Modifier.fillMaxSize().padding(top = 48.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(capture.title, color = Color.White, style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
+                    Text(capture.title, color = Color.White.copy(alpha = 0.82f), style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp))
+                    Image(bitmap = cover!!, contentDescription = "Imagem em tela cheia",
+                        modifier = Modifier.weight(1f).fillMaxWidth(), contentScale = ContentScale.Fit)
+                }
                 IconButton(
                     onClick = { showFullscreen = false },
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
@@ -411,6 +430,7 @@ private fun ChecklistScreen(viewModel: CaptureViewModel) {
                     onCompleted = { viewModel.setTaskCompleted(task.id, it) },
                     onDelete = { viewModel.deleteTask(task.id) },
                     onAnalyze = { viewModel.analyzeTaskScreenshot(task) },
+                    onCategoryChange = { viewModel.setTaskCategory(task.id, it) },
                 )
             }
         }
@@ -423,7 +443,10 @@ private fun TaskCard(
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onAnalyze: () -> Unit,
+    onCategoryChange: (String) -> Unit,
 ) {
+    var showCategoryMenu by remember(task.id) { mutableStateOf(false) }
+    val taskCategories = listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde")
     val context = LocalContext.current
     val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, task.imageUri,
@@ -441,6 +464,17 @@ private fun TaskCard(
                 Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold)
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir tarefa") }
+            }
+            Box {
+                OutlinedButton(onClick = { showCategoryMenu = true }) { Text(task.category) }
+                DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
+                    taskCategories.forEach { tag ->
+                        DropdownMenuItem(text = { Text(tag) }, onClick = {
+                            onCategoryChange(tag)
+                            showCategoryMenu = false
+                        })
+                    }
+                }
             }
             cover?.let { bitmap ->
                 Image(
