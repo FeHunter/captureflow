@@ -6,8 +6,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.snapshotFlow
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.OpenInFull
@@ -231,6 +233,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     onAddSubtask = { captureId, title -> viewModel.addCaptureSubtask(captureId, title) },
                     onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
                     onDeleteSubtask = viewModel::deleteCaptureSubtask,
+                    onTitleChange = { id, title -> viewModel.updateCaptureTitle(id, title) },
                 )
                         }
                     }
@@ -319,11 +322,14 @@ private fun CaptureCard(
     onAddSubtask: (String, String) -> Unit,
     onSubtaskCompleted: (String, Boolean) -> Unit,
     onDeleteSubtask: (String) -> Unit,
+    onTitleChange: (String, String) -> Unit,
 ) {
     var showFullscreen by remember(capture.id) { mutableStateOf(false) }
     var fullscreenCapture by remember(capture.id) { mutableStateOf(capture) }
     var newSubtask by remember(capture.id) { mutableStateOf("") }
     var showSubtasks by remember(capture.id) { mutableStateOf(false) }
+    var showEditTitle by remember(capture.id) { mutableStateOf(false) }
+    var editedTitle by remember(capture.id) { mutableStateOf(capture.title) }
     val context = LocalContext.current
     val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, capture.imageUri,
@@ -335,15 +341,6 @@ private fun CaptureCard(
         }
     }
 
-    val fullscreenCover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null, fullscreenCapture.imageUri,
-    ) {
-        value = fullscreenCapture.imageUri?.let { raw ->
-            withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
-            }
-        }
-    }
     val modalSubtasks = allSubtasks.filter { it.captureId == fullscreenCapture.id }
 
     Card(
@@ -570,62 +567,130 @@ private fun CaptureCard(
                         }
                     }
                     IconButton(onClick = {
-                        showFullscreen = false
-                        showSubtasks = true
-                    }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = "Abrir tarefas deste cartão")
+                        editedTitle = fullscreenCapture.title
+                        showEditTitle = true
+                    }, modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar título da referência")
                     }
                     IconButton(onClick = { showFullscreen = false }, modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)) {
                         Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
                     }
                 }
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f).background(MaterialTheme.colorScheme.surfaceVariant)
-                        .pointerInput(allCaptures, fullscreenCapture.id) {
-                            var totalDrag = 0f
-                            detectHorizontalDragGestures(
-                                onHorizontalDrag = { change, dragAmount ->
-                                    totalDrag += dragAmount
-                                    change.consume()
-                                },
-                                onDragEnd = {
-                                    if (kotlin.math.abs(totalDrag) >= 80f) {
-                                        val currentIndex = allCaptures.indexOfFirst { it.id == fullscreenCapture.id }
-                                        val nextIndex = if (totalDrag < 0) currentIndex + 1 else currentIndex - 1
-                                        if (nextIndex in allCaptures.indices) fullscreenCapture = allCaptures[nextIndex]
-                                    }
-                                    totalDrag = 0f
-                                },
-                            )
-                        },
-                    contentAlignment = Alignment.Center,
+                val initialPage = allCaptures.indexOfFirst { it.id == fullscreenCapture.id }.coerceAtLeast(0)
+                val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { allCaptures.size })
+                LaunchedEffect(fullscreenCapture.id, allCaptures) {
+                    val targetPage = allCaptures.indexOfFirst { it.id == fullscreenCapture.id }
+                    if (targetPage in allCaptures.indices && pagerState.currentPage != targetPage) {
+                        pagerState.scrollToPage(targetPage)
+                    }
+                }
+                LaunchedEffect(pagerState, allCaptures) {
+                    snapshotFlow { pagerState.settledPage }.collect { page ->
+                        allCaptures.getOrNull(page)?.let { pageCapture ->
+                            if (fullscreenCapture.id != pageCapture.id) fullscreenCapture = pageCapture
+                        }
+                    }
+                }
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth().weight(1f).background(MaterialTheme.colorScheme.surfaceVariant),
+                    key = { page -> allCaptures[page].id },
+                ) { page ->
+                    FullscreenCapturePage(
+                        capture = allCaptures[page],
+                        showNavigationHint = page == pagerState.currentPage,
+                    )
+                }
+            }
+        }
+    }
+    
+    if (showEditTitle) {
+        AlertDialog(
+            onDismissRequest = { showEditTitle = false },
+            title = { Text("Editar título") },
+            text = {
+                OutlinedTextField(
+                    value = editedTitle,
+                    onValueChange = { editedTitle = it },
+                    label = { Text("Título principal") },
+                    placeholder = { Text("Digite um título") },
+                    singleLine = false,
+                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        val title = editedTitle.trim()
+                        if (title.isNotBlank()) {
+                            onTitleChange(fullscreenCapture.id, title)
+                            fullscreenCapture = fullscreenCapture.copy(title = title)
+                            showEditTitle = false
+                        }
+                    }),
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val title = editedTitle.trim()
+                    if (title.isNotBlank()) {
+                        onTitleChange(fullscreenCapture.id, title)
+                        fullscreenCapture = fullscreenCapture.copy(title = title)
+                        showEditTitle = false
+                    }
+                }, enabled = editedTitle.isNotBlank()) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditTitle = false }) { Text("Cancelar") }
+            },
+        )
+    }
+}
+
+@Composable
+private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Boolean) {
+    val context = LocalContext.current
+    val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, capture.imageUri,
+    ) {
+        value = capture.imageUri?.let { raw ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            }
+        }
+    }
+    Box(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (image != null) {
+            Image(
+                bitmap = image!!,
+                contentDescription = "Imagem completa da referência",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (showNavigationHint) {
+            // Overlay does not reserve layout space or reduce the image's Fit area.
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                tonalElevation = 2.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    if (fullscreenCover != null) {
-                        Image(bitmap = fullscreenCover!!, contentDescription = "Imagem completa da referência", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                    } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    // Overlay hint: it does not participate in measurement, preserving the image area.
-                    Surface(
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        tonalElevation = 2.dp,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text("‹", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Text("Deslize para navegar", style = MaterialTheme.typography.labelMedium)
-                            Text("›", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        }
-                    }
+                    Text("‹", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Deslize para navegar", style = MaterialTheme.typography.labelMedium)
+                    Text("›", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }
