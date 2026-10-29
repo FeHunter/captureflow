@@ -28,3 +28,7 @@ Feature nativa responsável por receber, classificar, persistir, pesquisar e ger
 - [Changelog](CHANGELOG.md)
 
 Os documentos devem descrever o código atual e identificar divergências conhecidas. Em caso de conflito, verificar o código da branch principal e atualizar todos os documentos relacionados antes de concluir a mudança.
+
+
+## Estado atual e fluxos recentes
+Consulte [Estado atual completo do app](../../current-state.md) para o inventário da arquitetura, layout e comportamento. Links compartilhados agora exigem seleção de categoria antes da persistência; a extração tenta H1 e imagem de article/main antes de usar metadados sociais como fallback.

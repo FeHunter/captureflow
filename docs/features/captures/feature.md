@@ -93,3 +93,10 @@ O visualizador fullscreen usa `HorizontalPager`. A ação **Editar título** fic
 - Ao receber um link pelo compartilhamento do Android, o app busca título, descrição e imagem pelos metadados HTML (`og:title`, `twitter:title`, `<title>`, `og:image` e `twitter:image`). A imagem, quando disponível, é baixada para o armazenamento privado e usada como capa da captura; o link e a descrição permanecem no conteúdo.
 - A extração de imagem é opcional: se a página bloquear o acesso ou não oferecer uma imagem compatível, o link continua salvo normalmente.
 - Os cartões compactos usam altura de 272 dp e o visualizador fullscreen reserva 20% do espaço para o cabeçalho e 80% para a imagem.
+
+
+## Compartilhamento de links — confirmação antes de persistir
+- URL recebida via `ACTION_SEND` entra em estado pendente, não no banco imediatamente.
+- O app requisita o HTML HTTP(S), prioriza H1 para título e imagem em article/main para capa; metadados Open Graph/Twitter são fallback.
+- A UI exige categoria explícita entre Ler depois, Verificar, Salvar e Importante. Cancelar não grava.
+- Após confirmar, persiste referência e tenta baixar imagem para armazenamento privado. Em falha de rede, o link continua salvável com título de fallback.

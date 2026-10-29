@@ -65,3 +65,16 @@
 - [ ] Reiniciar/retomar o app com monitoramento habilitado tenta retomar o serviço sem duplicar notificações de serviço.
 - [ ] Validar no Android 13, Android 14+ e ao menos um dispositivo de fabricante com gestão agressiva de bateria.
 - [ ] Validar política de Google Play para serviço `specialUse` antes de publicação pública.
+
+
+## Checklist de compartilhamento de link
+- [ ] O diálogo aparece antes da persistência.
+- [ ] Nenhuma categoria vem selecionada; salvar fica desabilitado durante o fetch.
+- [ ] As quatro categorias persistem corretamente.
+- [ ] Cancelar antes/depois do fetch não cria referência.
+- [ ] H1, og:title fallback, title fallback e host fallback.
+- [ ] Imagem em article, imagem em main, og:image fallback, URL relativa e redirect.
+- [ ] Timeout, offline, HTTP não-2xx e conteúdo não HTML permitem salvar com fallback.
+- [ ] URL já salva é ignorada por sourceUrl.
+- [ ] Texto sem URL e imagem compartilhada mantêm os fluxos existentes.
+- [ ] Conteúdo renderizado só por JavaScript é tratado como limitação conhecida.

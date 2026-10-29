@@ -17,3 +17,12 @@ OCR roda localmente no aparelho. `OcrService` processa blocos/linhas, caixas del
 
 ## Persistência
 Room/SQLite é local. Não há sincronização cloud ou upload de imagem para OCR. O serviço de metadados de link faz uma requisição de rede à URL compartilhada.
+
+
+## Extração de metadados de link (estado atual)
+- `HttpURLConnection`, redirects habilitados, timeout de 4 s para conexão e leitura, leitura máxima de 512 KB.
+- Título: H1 → og:title → twitter:title → title do documento → host.
+- Imagem: img de article → img de main → og:image/og:image:url/twitter:image.
+- Resolve URL relativa contra a URL final da página.
+- O parser não executa JavaScript; páginas dinâmicas/autenticadas podem não expor conteúdo. O link continua salvável com fallback.
+- Download de imagem ocorre somente após o usuário confirmar a categoria.

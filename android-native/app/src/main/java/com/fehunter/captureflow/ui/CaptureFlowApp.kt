@@ -110,6 +110,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
+    val pendingSharedLink by viewModel.pendingSharedLink.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
@@ -117,6 +118,8 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var imageCategory by remember { mutableStateOf("Ler depois") }
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var selectedCapture by remember { mutableStateOf<CaptureEntity?>(null) }
+    var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas", "Ler depois", "Verificar", "Salvar", "Importante")
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -395,6 +398,65 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 TextButton(onClick = {
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
+                }) { Text("Cancelar") }
+            },
+        )
+    }
+
+    pendingSharedLink?.let { pending ->
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelPendingSharedLink(); sharedLinkCategory = null },
+            title = { Text("Salvar link como referência") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(pending.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(pending.url, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    pending.description?.takeIf(String::isNotBlank)?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (pending.isLoading) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Text("Buscando título e imagem do site…", style = MaterialTheme.typography.bodySmall)
+                        }
+                    } else if (!pending.metadataFound) {
+                        Text(
+                            "Não foi possível ler os metadados do site. Você ainda pode salvar o link com o título disponível.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text("Em qual categoria deseja salvar?", style = MaterialTheme.typography.labelLarge)
+                    categories.drop(1).forEach { tag ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { sharedLinkCategory = tag }.padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = sharedLinkCategory == tag,
+                                onClick = { sharedLinkCategory = tag },
+                            )
+                            Text(tag, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        sharedLinkCategory?.let(viewModel::confirmPendingSharedLink)
+                        sharedLinkCategory = null
+                    },
+                    enabled = !pending.isLoading && sharedLinkCategory != null,
+                ) { Text("Salvar referência") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.cancelPendingSharedLink()
+                    sharedLinkCategory = null
                 }) { Text("Cancelar") }
             },
         )

@@ -1,133 +1,111 @@
-# Wireframes — tela única de Referências
+# Wireframes — Capture Flow atual
 
-Este documento descreve a estrutura funcional observada no código atual. Medidas são referências de implementação, não substituem teste em dispositivo.
+Os esquemas abaixo registram a estrutura ativa observada no código. Não representam pixels exatos; validar dimensões e fonte em dispositivo.
 
 ## 1. Tela principal
 
 ```text
-┌─────────────────────────────────────────┐
-│ Capture Flow                    [tema]│
-│ Suas referências, organizadas           │
-├─────────────────────────────────────────┤
-│ ┌─────────────────────────────────────┐ │
-│ │ Analisar imagem do dispositivo      │ │
-│ │ Escolha foto ou screenshot          │ │
-│ │ [Selecionar imagem]                 │ │
-│ │ [Configurar/Desativar avisos]       │ │
-│ └─────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────┐ │
-│ │ 🔍 Pesquisar…                    [X]│ │
-│ └─────────────────────────────────────┘ │
-│ [Todas] [Ler depois] [Ideias] [Tarefa] →│
-│ ┌────────────────┐ ┌────────────────┐  │
-│ │ Capa 104 dp    │ │ Capa 104 dp    │  │
-│ ├────────────────┤ ├────────────────┤  │
-│ │ Título         │ │ Título         │  │
-│ │ Subtítulo      │ │ Subtítulo      │  │
-│ │ [Categoria ▾]  │ │ [Categoria ▾]  │  │
-│ │ Data · hora    │ │ Data · hora    │  │
-│ │ □  ☰ 0/0   🗑  │ │ □  ☰ 2/3   🗑  │  │
-│ └────────────────┘ └────────────────┘  │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ Capture Flow                         [⋮] │
+├──────────────────────────────────────────┤
+│ ┌──────────────────────────────────────┐ │
+│ │ Analisar imagem do dispositivo       │ │
+│ │ [Selecionar imagem]                  │ │
+│ │ [Configurar/Ativar/Desativar avisos] │ │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ 🔍 Pesquisar…                     [X]│ │
+│ └──────────────────────────────────────┘ │
+│ [Todas] [Ler depois] [Verificar] →       │
+│ ┌──────────────────────────────────────┐ │
+│ │ Ler depois                     12 itens│
+│ │ ┌────────┐ ┌────────┐ ┌────────┐      │
+│ │ │ thumb  │ │ thumb  │ │ thumb  │      │
+│ │ │ título │ │ título │ │ título │      │
+│ │ └────────┘ └────────┘ └────────┘      │
+│ │             [⌄ Ver todas · 12]        │
+│ └──────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────┐ │
+│ │ Verificar                      4 itens│
+│ │ [thumb] [thumb] [thumb]               │
+│ │             [⌄ Ver todas · 4]         │
+│ └──────────────────────────────────────┘ │
+└──────────────────────────────────────────┘
 ```
 
-### Regras observadas
-- Uma tela principal, sem bottom navigation e sem tela independente de Tarefas.
-- A tela rola verticalmente; chips de categoria rolam horizontalmente.
-- Busca e filtro de categoria funcionam juntos; o X aparece quando a busca contém texto.
-- Categorias do filtro: Todas, Ler depois, Ideias, Tarefa, Importante, Mais tarde.
-- O fluxo de screenshot usa a categoria `Referência`, que ainda não está presente na lista padrão de chips/menu.
+- Rolagem vertical para conteúdo; chips de categoria rolam horizontalmente.
+- Grupos de categoria ocupam a largura disponível. Cada um mostra até três thumbnails e a ação “Ver todas”.
+- Menu superior permite ocultar/mostrar concluídas e alterar tema (sistema/claro/escuro).
 
-## 2. Cartão
-
-- Largura: divide a área disponível em duas colunas simétricas.
-- Altura nominal: 320 dp.
-- Capa: 104 dp, recortada com `ContentScale.Crop`; ícone de expandir no canto superior.
-- Título principal e secundário limitados a duas linhas.
-- Categoria selecionável por menu.
-- Data/hora local no formato `dd/MM/yyyy · HH:mm`.
-- Rodapé com checkbox de conclusão, botão de sub-checklist com progresso e excluir.
-- Código atual mostra `capture.title` tanto no título principal quanto no texto secundário; não assumir que o segundo campo já mostra descrição distinta.
-- A sub-checklist abre em bottom sheet e não expande o cartão na grade.
-
-## 3. Modal de confirmação de screenshot
+## 2. Categoria expandida
 
 ```text
-┌───────────────────────────────────────┐
-│ Adicionar screenshot às referências?  │
-│ A captura foi aberta pela notificação.│
-│ [prévia da imagem]                    │
-│ [Cancelar]        [Adicionar às refs] │
-└───────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ [←] Ler depois                           │
+│     12 itens                             │
+│ ┌────────┐ ┌────────┐ ┌────────┐          │
+│ │ thumb  │ │ thumb  │ │ thumb  │          │
+│ └────────┘ └────────┘ └────────┘          │
+│ ┌────────┐ ┌────────┐ ┌────────┐          │
+│ │ thumb  │ │ thumb  │ │ thumb  │          │
+│ └────────┘ └────────┘ └────────┘          │
+└──────────────────────────────────────────┘
 ```
 
-Confirmar chama `addImageCapture(uri, category = "Referência")`; cancelar/fechar não persiste. **Atenção:** o texto explicativo atual ainda menciona anexar a uma nova tarefa; corrigir essa string junto da nomenclatura da notificação.
+- Modal fullscreen, botão voltar/fechar, categoria e contagem.
+- Grade de três colunas; thumbnails quadrados com imagem `ContentScale.Crop`.
+- Back nativo fecha a categoria se nenhum viewer estiver por cima.
 
-## 4. Detalhe fullscreen
+## 3. Visualizador fullscreen da referência
 
 ```text
-┌─────────────────────────────────────────┐
-│ Título completo          [☷ subtarefas]│
-│ Data/hora · [Categoria]             [✕]│
-├─────────────────────────────────────────┤
-│                                         │
-│              IMAGEM INTEGRAL            │
-│             ContentScale.Fit            │
-│                                         │
-│       ‹ Deslize para navegar ›          │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ 29/10/2026 · 10:35   [Ler depois] [□][🗑][X]│
+├──────────────────────────────────────────┤
+│ ████████████████████████████████████████ │
+│ █ Título da referência                  █ │
+│ █ gradiente escuro                      █ │
+│ █                                        █ │
+│ █             IMAGEM INTEGRAL            █
+│ █            ContentScale.Fit            █
+│ █                                        █
+│ █       ‹ Deslize para navegar ›         █
+└──────────────────────────────────────────┘
 ```
 
-- Imagem ocupa o espaço disponível, sem recorte.
-- A dica de swipe é uma camada visual alinhada ao centro inferior sobre a imagem; não participa da medição do layout.
-- Swipe-left navega para a próxima referência; swipe-right para a anterior.
-- Usa a lista de referências recebida pelo cartão; sem loop nas extremidades.
-- Atalho de sub-checklist e botão fechar são controles separados do gesto.
+- A imagem ocupa a área disponível sem crop. O título e a dica são overlays; não alteram a medição da imagem.
+- Swipe-left: próxima referência na mesma categoria filtrada. Swipe-right: anterior. Sem loop.
+- A barra mostra data, categoria, conclusão, excluir e fechar.
+- Back fecha apenas o viewer; a categoria expandida permanece por baixo.
 
-## 5. Sub-checklist
+## 4. Compartilhamento de link — confirmação de categoria
 
 ```text
-┌───────────────────────────────────────┐
-│ Sub-checklist · 2/4 concluídas      [X]│
-├───────────────────────────────────────┤
-│ ☑ Item concluído                   [🗑]│
-│ □ Próximo item                     [🗑]│
-│ ┌─────────────────────────────┐ [+]   │
-│ │ Nova subtarefa              │       │
-│ └─────────────────────────────┘       │
-└───────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│ Salvar link como referência              │
+│ Título encontrado (H1/fallback)           │
+│ https://site.example/article              │
+│ Descrição, se encontrada                  │
+│ Buscando título e imagem do site…         │
+│ Em qual categoria deseja salvar?          │
+│ ○ Ler depois                              │
+│ ○ Verificar                               │
+│ ○ Salvar                                  │
+│ ○ Importante                              │
+│ [Cancelar]             [Salvar referência]│
+└──────────────────────────────────────────┘
 ```
 
-Persistência em `capture_subtasks`; cada item pertence a uma referência via `captureId`.
+- Sem categoria pré-selecionada; salvar desabilitado enquanto a requisição está em andamento.
+- Cancelar não persiste. Se a extração falhar, o link continua salvável com título fallback.
+- Título prioriza H1; imagem prioriza article/main e depois metadados Open Graph/Twitter.
+- Imagem de capa é baixada após confirmar a categoria. O parser não executa JavaScript.
 
-## 6. Tema e estados
-- Tema escolhido: seguir sistema, claro ou escuro.
-- Tema atual usa paleta azul-marinho/oceano/ciano.
-- Estados previstos: sem referências, busca sem resultado, imagem ausente, OCR processando, OCR sem texto/erro, referência concluída.
-- Validar com fontes ampliadas, leitores de tela, largura reduzida e dispositivos reais.
+## 5. Seleção de imagem e sub-checklist
+- Seleção de imagem: diálogo de categoria antes de importar; imagem é copiada para armazenamento privado quando possível e OCR é iniciado.
+- Sub-checklist: `ModalBottomSheet` com progresso, lista de itens, checkbox, excluir e campo de nova subtarefa.
+- O monitor de screenshots é opt-in e best-effort; strings históricas de notificação ainda podem mencionar tarefas.
 
-
-### Detalhe fullscreen (atualização 2026-10-29)
-
-- O conteúdo principal é um pager horizontal; deslizar à esquerda avança e à direita volta dentro da lista filtrada.
-- O cabeçalho exibe a ação **Editar título**. O diálogo não aparece no cartão/lista e não substitui o controle de sub-checklist do cartão.
-- A dica de navegação fica sobreposta à imagem; a imagem mantém proporção com `ContentScale.Fit`.
-
-
-## Fullscreen details — current behavior
-
-- Horizontal pager: swipe left to next reference, swipe right to previous; filtered ordering, no wrap-around.
-- Header includes **Editar título**, shown only in fullscreen.
-- Sub-checklist remains available from the reference card, not from the fullscreen header.
-- Image uses `ContentScale.Fit`; navigation hint remains an overlay.
-
-
-### Contraste do título e navegação nativa (2026-10-29)
-- O título sobre a imagem recebe degradê superior mais escuro para melhorar legibilidade sem reservar espaço adicional nem alterar `ContentScale.Fit`.
-- Back do Android fecha a camada de navegação ativa em ordem inversa: visualizador da referência → categoria expandida → biblioteca. Os controles explícitos de fechar/voltar permanecem.
-
-
-### Atualização — swipe no visualizador de thumbnails e branding (2026-10-29)
-- A abertura de um thumbnail leva a um pager horizontal limitado às capturas da mesma categoria atualmente filtrada.
-- Swipe-left avança e swipe-right retorna; não há loop nas extremidades. A data/categoria e os controles de conclusão/exclusão refletem a página atual.
-- O título do produto permanece **Capture Flow** na barra principal e no launcher Android.
+## 6. Layout e acessibilidade
+- Manter alvo de toque de ícones em 48 dp, rótulos de acessibilidade, contraste e tema claro/escuro.
+- Testar telas estreitas, fontes ampliadas, imagens ausentes, títulos longos, gestos horizontais e Back do Android.

@@ -1,64 +1,67 @@
-# Arquitetura do CaptureFlow
+# Arquitetura do Capture Flow
 
 ## Stack canônica
-Kotlin, Android SDK, Jetpack Compose/Material 3, ViewModel, Coroutines/Flow, Room/SQLite e Google ML Kit Text Recognition. O app canônico está em `android-native/`; `legacy-expo/` é histórico e não recebe novas features.
+Kotlin, Android SDK, Jetpack Compose/Material 3, ViewModel, Coroutines/Flow, Room/SQLite e Google ML Kit Text Recognition. O app ativo está em `android-native/`; `legacy-expo/` é histórico.
 
 ## Camadas e responsabilidades
-- **Entrada Android — `MainActivity.kt`:** recebe intents do launcher, Android Sharesheet e notificação; interpreta texto/URL/URI e encaminha ao ViewModel/UI.
-- **Apresentação — `ui/CaptureFlowApp.kt`:** tela única Referências, estado visual, busca, filtros, cartões, diálogo de importação, fullscreen e sub-checklist.
-- **Orquestração — `ui/CaptureViewModel.kt`:** operações CRUD, Flow/StateFlow, deduplicação, importação de imagens, OCR, enriquecimento de links e subtarefas.
-- **Dados — `data/CaptureDatabase.kt`:** entidades, DAOs, Room/SQLite e classificação/normalização.
-- **Serviços — `services/`:** `OcrService` (ML Kit local), `LinkMetadataService` (HTML HTTP(S)), `SharedImageStorageService` (cópia/remoção de arquivos privados), `ScreenshotMonitor` e `ScreenshotNotificationService` (MediaStore e notificações).
+- **Entrada Android — `MainActivity.kt`:** recebe launcher, `ACTION_SEND` do Sharesheet e intents de notificação; encaminha compartilhamentos ao ViewModel.
+- **Apresentação — `ui/CaptureFlowApp.kt`:** tela única de referências, busca, chips, cartões, diálogo de categoria para links, seleção de imagem, fullscreen e sub-checklist.
+- **Orquestração — `ui/CaptureViewModel.kt`:** estado observável, deduplicação, captura pendente de link, persistência, OCR, enriquecimento de link e subtarefas.
+- **Dados — `data/CaptureDatabase.kt`:** entidades, DAOs, Room, classificação e normalização.
+- **Serviços — `services/LinkMetadataService.kt`:** requisição HTTP(S), leitura limitada de HTML e extração H1/imagem/metadados.
+- **Serviços — `services/OcrService.kt`:** OCR local e heurísticas de título.
+- **Serviços — `services/SharedImageStorageService.kt`:** cópia/download para armazenamento privado e exclusão segura de arquivos privados.
+- **Screenshots — `ScreenshotMonitor.kt` e `ScreenshotNotificationService.kt`:** detecção heurística pelo MediaStore e notificação opt-in.
 
 ```text
-Share sheet / Photo Picker / Screenshot notification
-                        |
-                        v
-                   MainActivity
-                        |
-                        v
-          CaptureFlowApp (Compose UI)
-                        |
-                        v
-                CaptureViewModel
-                  /    |     \
-                 v     v      v
-              Room   OCR    Link metadata
-               |    ML Kit   HTTP(S)
-               v
-     private image storage / MediaStore observer
+Sharesheet / Photo Picker / notification
+                 |
+                 v
+            MainActivity
+                 |
+                 v
+        CaptureFlowApp (Compose)
+                 |
+                 v
+          CaptureViewModel
+          /      |       \
+         v       v        v
+       Room     OCR    LinkMetadataService
+      SQLite   ML Kit  HTTP(S) HTML
+                         |
+                         v
+                SharedImageStorageService
 ```
 
-## Fluxo de captura de texto/link
-1. O Android entrega um Intent de compartilhamento.
-2. `CaptureClassifier` normaliza/classifica o conteúdo.
-3. O ViewModel evita duplicatas de texto normalizado e persiste `CaptureEntity`.
-4. Para URL HTTP(S), `LinkMetadataService` tenta recuperar título/descrição de metadados HTML. Se falhar, mantém-se a referência original.
+## Fluxo de link compartilhado
+1. `MainActivity` recebe `ACTION_SEND` com `text/plain` e chama `receiveSharedIntent`.
+2. O ViewModel extrai a URL HTTP(S), define `PendingSharedLink` e inicia a requisição em coroutine; o banco ainda não recebe uma referência de link.
+3. `LinkMetadataService` baixa o body HTML com timeout e limite de 512 KB. Prioridade de título: primeiro `H1`, `og:title`, `twitter:title`, `title`, host como fallback.
+4. Prioridade de imagem: primeira imagem dentro de `article`, depois `main`, depois metadados Open Graph/Twitter. URLs relativas são resolvidas pela URL final após redirects.
+5. A UI exibe título, URL, descrição quando disponível, estado de carregamento e seleção obrigatória entre quatro categorias.
+6. Cancelar descarta a captura pendente. Confirmar valida categoria, evita duplicata por `sourceUrl`, grava referência e tenta baixar a imagem para armazenamento privado.
+7. Se a requisição falhar, o usuário ainda pode salvar o link com o título de fallback.
 
-## Fluxo de imagem/OCR
-1. Photo Picker ou Sharesheet fornece URI.
-2. `SharedImageStorageService` tenta copiar a imagem para armazenamento privado.
-3. O ViewModel insere a referência em Room.
-4. `OcrService` reconhece texto no dispositivo e heurísticas visuais sugerem o título.
-5. O título é atualizado em Room; a imagem original continua associada à referência. O OCR não deve apagar a referência se falhar.
+A extração é baseada em regex e HTML recebido; não executa JavaScript nem equivale a um browser/DOM completo. Requisição bloqueada, site autenticado ou conteúdo dinâmico podem limitar o resultado.
 
-## Sub-checklist
-`CaptureSubtaskEntity` fica na tabela `capture_subtasks` com `captureId`. O ViewModel oferece inserir, concluir, remover e excluir os itens associados quando a referência é removida. A UI abre um `ModalBottomSheet` a partir do cartão ou do atalho fullscreen.
+## Texto e imagem compartilhados
+- Texto sem URL é normalizado, deduplicado por conteúdo e persistido sem diálogo de categoria de link.
+- Imagem compartilhada usa URI do Intent, tenta copiar para armazenamento privado e inicia OCR. A seleção de imagem do Photo Picker segue fluxo semelhante.
+- Não apagar a imagem original da galeria em importação manual.
 
-## Screenshot notification
-O usuário ativa explicitamente `ScreenshotNotificationService`, que roda como foreground service e observa mudanças no MediaStore. O serviço busca imagens recentes por nome/pasta compatível e emite uma notificação. É detecção heurística e best-effort; não usa Accessibility Service nem captura a tela de outros apps. A confirmação na UI salva a URI como referência, apesar de algumas strings/nomes de ação ainda manterem linguagem histórica de tarefa — ver [visão geral e pendências](project-overview.md).
+## OCR
+ML Kit reconhece texto localmente. Heurísticas analisam caixas delimitadoras, posição, tamanho e sinais aproximados de tipo de UI para sugerir título. Falhas não devem remover a referência nem a imagem.
 
-## Persistência e privacidade
-- Banco local `captureflow.db`, Room; não existe sincronização cloud.
-- Imagens são copiadas para armazenamento privado quando possível; a URI original pode ser fallback.
-- OCR é local. Metadados de links exigem acesso de rede ao URL fornecido pelo usuário.
-- Não adicionar banco/network dentro de Composables.
-- Respeitar URI permissions, falhas de IO e apagar apenas arquivos que pertençam ao diretório privado do app.
+## Dados e privacidade
+- Banco local `captureflow.db`; versão Room 5.
+- `captures` contém referências; `capture_subtasks` guarda subtarefas por `captureId`; `checklist_tasks` permanece como modelo legado/compatibilidade sem tela independente atual.
+- Sem sync cloud.
+- Metadados exigem requisição de rede ao URL compartilhado; imagens extraídas são baixadas localmente quando possível.
+- O monitor de screenshots é opt-in e usa metadados MediaStore; não usa Accessibility Service nem lê pixels de outros apps.
 
 ## Regras de manutenção
-Manter a direção UI → ViewModel → serviços/DAOs. Atualizar documentação e testes com mudanças em entidades, intents, OCR, navegação ou permissões. Nunca declarar build/testes aprovados sem verificar o commit correspondente.
-
-
-## Fullscreen navigation and title editing
-
-The fullscreen viewer uses Compose `HorizontalPager`, advances on swipe-left and returns on swipe-right, follows the filtered reference list, and does not wrap around. Keep the header synchronized with the settled page. The **Editar título** action exists only in fullscreen and updates `captures.title` through the ViewModel and a title-only DAO query. Keep sub-checklist access on the reference card, not in the fullscreen header.
+- Não acessar DAOs diretamente de Composables.
+- Não persistir link compartilhado antes da seleção de categoria.
+- Manter a extração de H1 e imagem best-effort, com fallback e timeouts.
+- Atualizar visão geral, estado atual, feature contract, UI/UX, wireframes, segurança, testes e changelog quando mudar fluxo ou layout.
+- Executar `testDebugUnitTest` e `assembleDebug` quando o ambiente permitir; não declarar sucesso sem resultado verificado.
