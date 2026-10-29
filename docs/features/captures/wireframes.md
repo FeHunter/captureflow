@@ -79,7 +79,7 @@ Busca e filtro devem funcionar em conjunto: alterar o filtro não limpa a busca,
 
 - Duas colunas simétricas em dispositivos Android de largura comum.
 - Referência para tela de 360 dp: padding lateral de 16 dp, espaçamento de 12 dp e cartões com aproximadamente 164 dp de largura.
-- Altura de referência do cartão: **300 dp**, para acomodar o subtítulo em até duas linhas com espaçamento confortável.
+- Altura de referência do cartão: **320 dp**, para acomodar o subtítulo em até duas linhas com espaçamento confortável.
 - Implementação sugerida: LazyVerticalGrid com GridCells.Fixed(2).
 - Espaçamento vertical e horizontal consistente de 12 dp.
 - O conteúdo variável não deve provocar sobreposição.
@@ -105,7 +105,7 @@ Busca e filtro devem funcionar em conjunto: alterar o filtro não limpa a busca,
 |---|---:|---|
 | Miniatura | 104 dp | Imagem com recorte consistente; placeholder equivalente sem imagem; faixa OCR/erro quando necessário |
 | Título principal | 38–42 dp | Até 2 linhas; tocável para abrir detalhes |
-| Texto secundário | 28–34 dp | Até 2 linhas, com folga vertical; tocável para abrir detalhes |
+| Texto secundário | 38–44 dp | Até 2 linhas, com folga vertical; tocável para abrir detalhes |
 | Tag e data/hora | cerca de 44 dp | Chip compacto e data/hora derivada de createdAt |
 | Ações | 48 dp | Alvos de toque de 48 × 48 dp; conclusão, sub-checklist/analisar e excluir |
 
@@ -156,7 +156,7 @@ Abrir como modal bottom sheet ao tocar no botão de sub-checklist. O botão fica
 
 ### Visualização da imagem
 
-Ao tocar na miniatura ou no título, abrir detalhes em tela cheia. Exibir ícone de expansão no canto superior da miniatura. A tela de detalhes mostra título completo, data/hora, categoria, imagem inteira com ajuste fit/contain quando disponível e conteúdo capturado quando houver. O controle de fechar deve ter alvo mínimo de 48 dp.
+Ao tocar na miniatura ou no título, abrir detalhes em tela cheia. Exibir ícone de expansão no canto superior da miniatura. O cabeçalho contém título completo, data/hora e categoria/tag, além do controle de fechar com alvo mínimo de 48 dp. O corpo usa toda a área restante para a imagem, ajustada em fit/contain e sem recorte. Não exibir conteúdo capturado ou URL nesta tela.
 
 ## 7. Temas e paleta
 
@@ -186,5 +186,44 @@ A combinação violeta #F7F5FF / #29213D é apenas referência visual complement
 - [ ] Ações têm alvos de toque adequados e rótulos acessíveis.
 - [ ] O botão de sub-checklist fica entre concluir e excluir e abre modal bottom sheet, inclusive quando ainda não há subtarefas.
 - [ ] Tocar na imagem ou no título abre detalhes em tela cheia com ícone de expansão visível.
-- [ ] O subtítulo recebe altura suficiente para até duas linhas sem ficar comprimido.
+- [ ] O subtítulo recebe altura de 38–44 dp para até duas linhas sem ficar comprimido.
 - [ ] Tema claro e escuro mantêm contraste e usam a paleta atual.
+
+
+## 9. Detalhes em tela cheia — cabeçalho + imagem
+
+```text
+┌──────────────────────────────────────┐
+│ Título completo                 [ ✕ ]│
+│ 29/10/2026 · 14:35   [Categoria/tag] │
+├──────────────────────────────────────┤
+│                                      │
+│                                      │
+│           IMAGEM INTEGRAL            │
+│        ajustada à área restante      │
+│       sem corte (Fit/contain)        │
+│                                      │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+### Regras de layout
+
+- O cabeçalho fica no topo e contém somente título, data/hora, tag/categoria e botão de fechar.
+- O título pode quebrar em múltiplas linhas; não truncar o conteúdo do título no detalhe.
+- A data/hora vem de `createdAt`, formatada como `dd/MM/yyyy · HH:mm` no fuso local.
+- A imagem ocupa toda a altura restante após o cabeçalho, preenchendo a largura disponível e usando `ContentScale.Fit`. Pode haver margens livres ao redor da imagem para preservar sua proporção; não cortar conteúdo para preencher a área.
+- O cabeçalho não rola junto com a imagem. A tela deve usar o espaço disponível, sem scroll vertical do conteúdo da imagem.
+- Se a referência não tiver imagem, manter o corpo com fundo de superfície alternativa e placeholder centralizado.
+- Não mostrar texto OCR/conteúdo capturado nem URL nesta visualização, priorizando a leitura visual da imagem.
+
+### Medidas atualizadas do cartão
+
+| Elemento | Medida |
+|---|---:|
+| Altura total do cartão | 320 dp |
+| Miniatura | 104 dp |
+| Título principal | 38–42 dp |
+| Subtítulo | 38–44 dp |
+| Ações inferiores | 48 dp |
+| Espaçamento entre cartões | 12 dp |
