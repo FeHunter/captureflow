@@ -90,11 +90,10 @@ Busca e filtro devem funcionar em conjunto: alterar o filtro não limpa a busca,
 
 ~~~text
 ┌────────────────────────┐
-│   Miniatura — 104 dp   │
+│ Miniatura + ↗ expandir │
 ├────────────────────────┤
-│ Título principal       │  38 dp / até 2 linhas
-│ Título completo ou     │  15 dp / 1 linha
-│ descrição resumida     │
+│ Título principal       │  38–42 dp / até 2 linhas
+│ Subtítulo              │  28–34 dp / até 2 linhas
 │ [Tag/categoria ▾]      │  chip compacto
 │ 29/10/2026 · 14:35     │  data e hora
 ├────────────────────────┤
@@ -105,8 +104,8 @@ Busca e filtro devem funcionar em conjunto: alterar o filtro não limpa a busca,
 | Área | Referência | Regra |
 |---|---:|---|
 | Miniatura | 104 dp | Imagem com recorte consistente; placeholder equivalente sem imagem; faixa OCR/erro quando necessário |
-| Título principal | 38 dp | Até 2 linhas, 15 sp semibold; reticências |
-| Texto secundário | 15 dp | Uma linha, 11 sp; título completo truncado ou descrição resumida de tarefa |
+| Título principal | 38–42 dp | Até 2 linhas; tocável para abrir detalhes |
+| Texto secundário | 28–34 dp | Até 2 linhas, com folga vertical; tocável para abrir detalhes |
 | Tag e data/hora | cerca de 44 dp | Chip compacto e data/hora derivada de createdAt |
 | Ações | 48 dp | Alvos de toque de 48 × 48 dp; conclusão, sub-checklist/analisar e excluir |
 
@@ -153,11 +152,11 @@ Data e hora devem seguir o formato dd/MM/yyyy · HH:mm, usando o fuso local do d
 └──────────────────────────────────┘
 ~~~
 
-Abrir como bottom sheet ao tocar no progresso. Permitir marcar, excluir e adicionar subtarefas sem alterar a altura do cartão na grade.
+Abrir como modal bottom sheet ao tocar no botão de sub-checklist. O botão fica sempre visível entre concluir e excluir, inclusive quando o progresso é 0/0, permitindo criar a primeira subtarefa. Permitir marcar, excluir e adicionar subtarefas sem alterar a altura do cartão na grade.
 
 ### Visualização da imagem
 
-Ao tocar na miniatura, abrir visualização em tela cheia com título completo, imagem inteira usando ajuste fit/contain e controle de fechar com alvo mínimo de 48 dp.
+Ao tocar na miniatura ou no título, abrir detalhes em tela cheia. Exibir ícone de expansão no canto superior da miniatura. A tela de detalhes mostra título completo, data/hora, categoria, imagem inteira com ajuste fit/contain quando disponível e conteúdo capturado quando houver. O controle de fechar deve ter alvo mínimo de 48 dp.
 
 ## 7. Temas e paleta
 
@@ -185,5 +184,7 @@ A combinação violeta #F7F5FF / #29213D é apenas referência visual complement
 - [ ] Imagem, ausência de imagem, OCR em processamento, erro e conclusão não quebram a grade.
 - [ ] Data/hora vem de createdAt em formato local consistente.
 - [ ] Ações têm alvos de toque adequados e rótulos acessíveis.
-- [ ] Sub-checklist abre em bottom sheet, sem expandir o cartão na grade.
+- [ ] O botão de sub-checklist fica entre concluir e excluir e abre modal bottom sheet, inclusive quando ainda não há subtarefas.
+- [ ] Tocar na imagem ou no título abre detalhes em tela cheia com ícone de expansão visível.
+- [ ] O subtítulo recebe altura suficiente para até duas linhas sem ficar comprimido.
 - [ ] Tema claro e escuro mantêm contraste e usam a paleta atual.
