@@ -44,16 +44,21 @@ Sharesheet / Photo Picker / notification
 
 A extração é baseada em regex e HTML recebido; não executa JavaScript nem equivale a um browser/DOM completo. Requisição bloqueada, site autenticado ou conteúdo dinâmico podem limitar o resultado.
 
-## Texto e imagem compartilhados
+## Texto, imagem compartilhada e recuperação de origem
 - Texto sem URL é normalizado, deduplicado por conteúdo e persistido sem diálogo de categoria de link.
-- Imagem compartilhada usa URI do Intent, tenta copiar para armazenamento privado e inicia OCR. A seleção de imagem do Photo Picker segue fluxo semelhante.
-- Não apagar a imagem original da galeria em importação manual.
+- Para imagem compartilhada, a prioridade é URL HTTP(S) em `EXTRA_TEXT`; o fallback é texto dos itens de `ClipData`. URLs recebidas explicitamente são associadas automaticamente e marcadas como verificadas.
+- Se o payload não trouxer URL, o OCR local tenta encontrar um endereço na imagem. Esse endereço é candidato não verificado; o ícone de link no fullscreen solicita confirmação antes de marcá-lo como origem confirmada e abrir o navegador.
+- `EXTRA_REFERRER`/`EXTRA_REFERRER_NAME` e, no Android 10+, `MediaStore.MediaColumns.OWNER_PACKAGE_NAME` podem fornecer apenas um indício de pacote de aplicativo. Não inferir uma URL a partir desse pacote nem afirmar que ele é necessariamente o app visível na screenshot.
+- A seleção de imagem do Photo Picker segue fluxo semelhante. Não apagar a imagem original da galeria em importação manual.
+
+### Metadados de proveniência
+`CaptureEntity` persiste `sourceUrl`, `sourceApp`, `sourceDetectionMethod` e `sourceVerified`. A migração Room 5→6 mantém os registros existentes; URLs antigas são marcadas como verificadas, registros sem URL permanecem não verificados. A identificação é best-effort: uma screenshot descoberta apenas por nome/pasta no MediaStore não fornece, por si só, a URL da página.
 
 ## OCR
 ML Kit reconhece texto localmente. Heurísticas analisam caixas delimitadoras, posição, tamanho e sinais aproximados de tipo de UI para sugerir título. Falhas não devem remover a referência nem a imagem.
 
 ## Dados e privacidade
-- Banco local `captureflow.db`; versão Room 5.
+- Banco local `captureflow.db`; versão Room 6.
 - `captures` contém referências; `capture_subtasks` guarda subtarefas por `captureId`; `checklist_tasks` permanece como modelo legado/compatibilidade sem tela independente atual.
 - Sem sync cloud.
 - Metadados exigem requisição de rede ao URL compartilhado; imagens extraídas são baixadas localmente quando possível.
