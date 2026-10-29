@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.fehunter.captureflow.BuildConfig
@@ -619,7 +620,7 @@ private fun CaptureCard(
                     maxLines = 3,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
-                        val title = editedTitle.trim()
+                        val title = editedTitle.trim().take(160)
                         if (title.isNotBlank()) {
                             onTitleChange(fullscreenCapture.id, title)
                             fullscreenCapture = fullscreenCapture.copy(title = title)
