@@ -161,8 +161,9 @@ Essas duas cores devem ser tratadas como referência complementar de design, nã
 - [ ] A tag é visível e selecionável sem dominar o cartão.
 - [ ] Data e hora de inserção são exibidas a partir de `createdAt`, em formato local consistente.
 - [ ] Imagens têm miniaturas consistentes sem perder acesso à imagem completa.
-- [ ] A tela cheia mostra título completo e imagem inteira.
-- [ ] A sub-checklist fica recolhida inicialmente e informa o progresso; ao expandir, seus itens continuam utilizáveis.
+- [ ] Tocar na imagem ou no título abre detalhes em tela cheia, com ícone de expansão visível.
+- [ ] A tela de detalhes mostra título completo e imagem inteira quando disponível.
+- [ ] O botão de sub-checklist fica entre concluir e excluir, mesmo com zero subtarefas, e abre um modal com ações de adicionar, concluir e excluir.
 - [ ] Estados de OCR, conclusão, erro e ausência de imagem estão contemplados.
 - [ ] O design funciona nos temas claro e escuro e mantém contraste/acessibilidade.
 - [ ] O design respeita as cinco tags definidas neste documento.
@@ -176,3 +177,13 @@ Essas duas cores devem ser tratadas como referência complementar de design, nã
 - Sub-checklist: `CaptureSubtaskEntity` inclui `title`, `isCompleted` e `createdAt`.
 - Implementação nativa: Kotlin + Jetpack Compose + Material 3; os cartões devem poder ser implementados como componentes reutilizáveis com variantes.
 - Este documento é um briefing de design, não uma afirmação de que a implementação visual já foi aprovada ou validada em dispositivo.
+
+
+## Atualização de interação — detalhes e sub-checklist
+
+- Tocar na miniatura **ou no título** abre uma visualização de detalhes em tela cheia.
+- O ícone de expansão no canto superior da miniatura comunica visualmente que o cartão pode ser aberto.
+- A tela de detalhes mostra o título completo, data/hora, categoria, imagem em proporção integral quando houver e conteúdo capturado quando disponível. O conteúdo longo fica fora da grade para preservar a leitura rápida.
+- O texto secundário do cartão pode ocupar até duas linhas e recebe altura mínima para evitar que a tipografia fique comprimida.
+- A barra inferior mantém a ordem **concluir → sub-checklist/progresso → excluir**. O botão de sub-checklist fica visível mesmo quando o cartão ainda não tem subtarefas, para permitir adicionar a primeira.
+- A sub-checklist abre em modal bottom sheet, onde é possível adicionar, concluir e excluir subtarefas. O progresso usa o formato concluídas/total.
