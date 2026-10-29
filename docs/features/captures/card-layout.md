@@ -251,10 +251,10 @@ Ao tocar na notificação “Screenshot pronta para tarefa”, abrir o CaptureFl
 
 ## Correção — confirmação de tarefa e descoberta da navegação por swipe
 
-- A tela principal mantém duas áreas acessíveis pela navegação inferior: **Referências** e **Tarefas**. A tela de tarefas já contém a lista reativa do banco; agora ela fica acessível sem depender de um fluxo alternativo.
-- Ao confirmar **Criar tarefa** no modal de screenshot, a UI chama `CaptureViewModel.addImageTask(uri)`, limpa a intenção pendente e navega para **Tarefas** para que o usuário possa conferir o novo item.
-- `addImageTask` copia a imagem para o armazenamento privado do app quando possível e insere uma `ChecklistTaskEntity` com `imageUri`, título inicial “Revisar screenshot” e categoria “Tarefa”. A lista é alimentada pelo fluxo observado do DAO.
-- A confirmação e a navegação não devem ser confundidas com garantia de cópia da imagem: o caminho de armazenamento precisa continuar protegido por fallback, e a validação em dispositivo deve confirmar que a imagem aparece no cartão da tarefa.
+- O produto mantém uma única tela principal: **Referências**. Não existe navegação inferior nem aba separada de Tarefas.
+- Ao confirmar **Adicionar às referências** no modal de screenshot, a UI chama `CaptureViewModel.addImageCapture(uri, category = "Referência")` e limpa a intenção pendente. A imagem é persistida como uma referência normal e aparece na biblioteca.
+- `addImageCapture` copia a imagem para o armazenamento privado do app quando possível e cria uma `CaptureEntity` com a URI da imagem; o fluxo existente de OCR pode extrair o texto.
+- A confirmação não deve ser confundida com garantia de cópia da imagem: o caminho de armazenamento mantém fallback para a URI original. A validação em dispositivo deve confirmar que a referência e sua imagem aparecem na biblioteca.
 
 ### Indicador minimalista de swipe
 
@@ -262,3 +262,17 @@ Ao tocar na notificação “Screenshot pronta para tarefa”, abrir o CaptureFl
 - Texto curto: **“‹ Deslize para navegar ›”**, sobre uma superfície translúcida com cantos arredondados.
 - O indicador não muda a medição nem a altura da imagem, não cobre o cabeçalho e não interfere nos botões de fechar/tarefas.
 - O gesto continua limitado à área principal da imagem, com swipe-left para a próxima referência e swipe-right para a anterior.
+
+
+## Decisão de produto — uma única aba de Referências
+
+- O CaptureFlow mantém **uma única tela principal: Referências**. Não existe navegação inferior nem aba separada de Tarefas.
+- A screenshot recebida pela notificação é adicionada à biblioteca por `CaptureViewModel.addImageCapture(uri, category = "Referência")`. Ela passa a ser uma `CaptureEntity`, aparece na lista de referências e pode ser aberta em tela cheia e analisada pelo fluxo de OCR já existente.
+- O modal utiliza a ação **Adicionar às referências**. Confirmar chama o fluxo de captura de imagem; cancelar apenas descarta a intenção pendente.
+- A interface dedicada de checklist independente foi removida. A sub-checklist vinculada a cada referência continua disponível no modo de detalhes em tela cheia.
+
+### Indicador de navegação em tela cheia
+
+- O indicador `‹ Deslize para navegar ›` aparece exclusivamente no modo de detalhes em tela cheia.
+- É desenhado sobre a imagem, alinhado ao centro inferior, com superfície translúcida e cantos arredondados. Como é uma sobreposição, não reserva altura e não reduz a área disponível para a imagem.
+- Swipe-left navega para a próxima referência; swipe-right volta à anterior, respeitando a lista filtrada e sem circular nas extremidades.
