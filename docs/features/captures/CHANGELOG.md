@@ -1,5 +1,12 @@
 # Changelog — Captures
 
+## 2026-10-29 — Compatibilidade de compartilhamento e títulos de links
+- O Android Sharesheet aceita MIME types `text/*`, além de imagens; o app trata `ACTION_SEND` e `ACTION_SEND_MULTIPLE`.
+- A leitura de links compartilhados considera `EXTRA_TEXT`, texto/URI em `ClipData`, `Intent.data` e `EXTRA_SUBJECT`, evitando depender de um único formato de payload.
+- Títulos HTML são decodificados, normalizados em Unicode, limpos de caracteres invisíveis/controle e limitados a 12 palavras e 110 caracteres.
+- Sufixos de marca da plataforma (Instagram, YouTube, Facebook e TikTok) são removidos quando aparecem ao final do título.
+
+
 ## Atualização — botão de link no fullscreen
 - Reaproveita `CaptureEntity.sourceUrl`, já presente no modelo/payload, para manter a URL original sem duplicar campos.
 - Adiciona no header do visualizador fullscreen um botão para abrir o link no app/navegador padrão; aparece apenas quando a URL é HTTP(S) válida.
