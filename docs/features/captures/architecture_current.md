@@ -59,3 +59,10 @@ O detalhe fullscreen utiliza `HorizontalPager` com sincronização do cabeçalho
 - O fullscreen reserva `weight(0.20f)` ao cabeçalho e `weight(0.80f)` ao pager/imagem. Títulos longos são sobrepostos à imagem com `Brush.verticalGradient`, sem redimensionar a área do pager.
 - `CaptureViewModel.addImageCapture` aceita `deleteSourceScreenshotAfterImport`; somente o fluxo iniciado pela notificação para adicionar a referência habilita esse comportamento. A exclusão da origem acontece após persistir a referência e apenas quando a cópia privada foi criada com sucesso.
 - `SharedImageStorageService.deleteSourceScreenshot` tenta remover a URI `content://` original via `ContentResolver`; a tentativa é tolerante a falhas e não remove a cópia privada usada pelo app.
+
+
+## Fluxo de link compartilhado — atualizado 2026-10-29
+- `ACTION_SEND` com URL gera `PendingSharedLink` no ViewModel e inicia a requisição HTTP(S) em coroutine.
+- A persistência aguarda a confirmação explícita de categoria na UI.
+- Título prioriza H1; fallback og:title, twitter:title, title e host. Imagem prioriza article/main e depois metadados sociais.
+- A imagem é baixada para storage privado após confirmar. Falha de metadados não descarta a URL.
