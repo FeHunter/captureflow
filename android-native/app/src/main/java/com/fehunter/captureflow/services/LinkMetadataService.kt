@@ -184,7 +184,7 @@ class LinkMetadataService {
             .let { Normalizer.normalize(it, Normalizer.Form.NFC) }
             .replace(Regex("\\s+"), " ")
             .trim()
-            .trim(' ', '|', '-', '–', '—', ':', '·', '"', '\\'', '“', '”')
+            .trim { it in " |-–—:·\"'“”" }
 
         // Social platforms often append branding or long context to the page title.
         val withoutPlatformSuffix = decoded
