@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
@@ -325,8 +326,14 @@ private fun TaskCard(
 
 private fun loadCoverBitmap(context: Context, rawUri: String): androidx.compose.ui.graphics.ImageBitmap? {
     val uri = Uri.parse(rawUri)
+    fun openImage() = if (uri.scheme == "file") {
+        uri.path?.let(::File)?.takeIf(File::isFile)?.inputStream()
+    } else {
+        context.contentResolver.openInputStream(uri)
+    }
+
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    val boundsStream = context.contentResolver.openInputStream(uri) ?: return null
+    val boundsStream = openImage() ?: return null
     boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
@@ -335,7 +342,7 @@ private fun loadCoverBitmap(context: Context, rawUri: String): androidx.compose.
         sampleSize *= 2
     }
     val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-    return context.contentResolver.openInputStream(uri)?.use {
+    return openImage()?.use {
         BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
     }
 }

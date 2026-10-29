@@ -7,3 +7,9 @@
 - Cartões de referência exibem a imagem anexada como capa.
 - Documentação da feature organizada em arquivos dedicados seguindo o padrão da feature de referência fornecida.
 - Validação visual/build ainda pendente.
+
+## Correção OCR — manchetes em múltiplas linhas
+- A seleção do título usa uma linha-âncora visualmente proeminente e inclui linhas vizinhas com altura semelhante, mesmo quando uma linha é mais estreita.
+- A descrição continua guardando o restante do texto reconhecido, enquanto ruídos comuns de interface são filtrados da seleção do título.
+- O carregamento de capas usa leitura direta para URIs file:// e ContentResolver para outros esquemas.
+- Adicionados critérios de regressão com a manchete da BBC fornecida como exemplo.
