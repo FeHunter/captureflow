@@ -15,6 +15,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.ui.text.style.TextOverflow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -97,7 +103,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(key = "image-picker") {
             Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
@@ -156,7 +162,8 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Buscar referências") },
+                placeholder = { Text("Pesquisar…") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Pesquisar") },
                 singleLine = true,
                 trailingIcon = {
                     if (query.isNotEmpty()) {
@@ -187,7 +194,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             }
         } else {
             items(filtered.chunked(2), key = { row -> row.first().id }) { captureRow ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     captureRow.forEach { capture ->
                         Box(Modifier.weight(1f)) {
                 CaptureCard(
@@ -195,6 +202,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     ocrState = ocrStates[capture.id] ?: OcrUiState(),
                     onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
                     onDelete = { viewModel.deleteCapture(capture.id) },
+                    onCategoryChange = { viewModel.setCaptureCategory(capture.id, it) },
                     subtasks = allSubtasks.filter { it.captureId == capture.id },
                     onAddSubtask = { viewModel.addCaptureSubtask(capture.id, it) },
                     onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
@@ -243,6 +251,7 @@ private fun CaptureCard(
     ocrState: OcrUiState,
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
+    onCategoryChange: (String) -> Unit,
     subtasks: List<CaptureSubtaskEntity>,
     onAddSubtask: (String) -> Unit,
     onSubtaskCompleted: (String, Boolean) -> Unit,
@@ -262,104 +271,190 @@ private fun CaptureCard(
         }
     }
 
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
+    Card(
+        modifier = Modifier.fillMaxWidth().height(272.dp),
+        shape = MaterialTheme.shapes.large,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(104.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                if (cover != null) {
+                    Image(
+                        bitmap = cover!!,
+                        contentDescription = "Abrir capa em tela cheia",
+                        modifier = Modifier.fillMaxSize().clickable { showFullscreen = true },
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                val status = when {
+                    ocrState.isError -> ocrState.message ?: "Erro ao analisar"
+                    ocrState.isProcessing -> "Analisando imagem…"
+                    else -> null
+                }
+                if (status != null) {
+                    Text(
+                        status,
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)).padding(horizontal = 8.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (ocrState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalArrangement = Arrangement.Top,
+            ) {
                 Text(
                     text = capture.title,
-                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (capture.isCompleted) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                    color = if (capture.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    lineHeight = MaterialTheme.typography.titleSmall.lineHeight,
+                    modifier = Modifier.heightIn(min = 36.dp, max = 38.dp),
                 )
-                if (ocrState.isProcessing) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
-                }
-            }
-
-            Text(
-                text = capture.title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            cover?.let { bitmap ->
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = "Abrir capa em tela cheia",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 150.dp)
-                        .clickable { showFullscreen = true },
-                    contentScale = ContentScale.Crop,
-                )
-            }
-
-            if (ocrState.isError) {
                 Text(
-                    text = ocrState.message ?: "Não foi possível analisar esta imagem.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            } else if (ocrState.isProcessing) {
-                Text(
-                    text = "Analisando imagem…",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = capture.title,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.height(15.dp),
                 )
-            }
-
-            if (subtasks.isNotEmpty()) {
-                TextButton(onClick = { showSubtasks = !showSubtasks }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (showSubtasks) "▾ Sub-checklist (${subtasks.count { it.isCompleted }}/${subtasks.size})" else "▸ Sub-checklist (${subtasks.count { it.isCompleted }}/${subtasks.size})")
-                }
-                if (showSubtasks) subtasks.forEach { subtask ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = subtask.isCompleted,
-                            onCheckedChange = { onSubtaskCompleted(subtask.id, it) },
-                        )
-                        Text(
-                            text = subtask.title,
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (subtask.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
-                                else MaterialTheme.colorScheme.onSurface,
-                        )
-                        IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Excluir subtarefa")
+                Spacer(Modifier.height(4.dp))
+                Box {
+                    var showCategoryMenu by remember(capture.id) { mutableStateOf(false) }
+                    Surface(
+                        onClick = { showCategoryMenu = true },
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.height(24.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(capture.category, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Icon(Icons.Default.ExpandMore, contentDescription = "Alterar categoria", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
+                        listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde").forEach { tag ->
+                            DropdownMenuItem(text = { Text(tag) }, onClick = {
+                                onCategoryChange(tag)
+                                showCategoryMenu = false
+                            })
                         }
                     }
                 }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(
-                    value = newSubtask,
-                    onValueChange = { newSubtask = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Adicionar sub-tarefa") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        onAddSubtask(newSubtask)
-                        newSubtask = ""
-                    }),
+                Text(
+                    text = SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(capture.createdAt)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 3.dp),
                 )
-                IconButton(
-                    onClick = {
-                        onAddSubtask(newSubtask)
-                        newSubtask = ""
-                    },
-                    enabled = newSubtask.isNotBlank(),
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Adicionar sub-tarefa")
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    Checkbox(
+                        checked = capture.isCompleted,
+                        onCheckedChange = onCompleted,
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
+                if (subtasks.isNotEmpty()) {
+                    TextButton(
+                        onClick = { showSubtasks = true },
+                        modifier = Modifier.height(48.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp),
+                    ) {
+                        Text("☰ ${subtasks.count { it.isCompleted }}/${subtasks.size}", maxLines = 1, style = MaterialTheme.typography.labelSmall)
+                    }
+                } else {
+                    Spacer(Modifier.width(48.dp))
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
+                }
+            }
+        }
+    }
+
+    if (showSubtasks) {
+        ModalBottomSheet(onDismissRequest = { showSubtasks = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Sub-checklist · ${subtasks.count { it.isCompleted }}/${subtasks.size} concluídas",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    IconButton(onClick = { showSubtasks = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Fechar sub-checklist")
+                    }
+                }
+                subtasks.forEach { subtask ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Checkbox(checked = subtask.isCompleted, onCheckedChange = { onSubtaskCompleted(subtask.id, it) })
+                        Text(
+                            subtask.title,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (subtask.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        )
+                        IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir subtarefa")
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newSubtask,
+                        onValueChange = { newSubtask = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Nova subtarefa") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            onAddSubtask(newSubtask)
+                            newSubtask = ""
+                        }),
+                    )
+                    IconButton(
+                        onClick = {
+                            onAddSubtask(newSubtask)
+                            newSubtask = ""
+                        },
+                        enabled = newSubtask.isNotBlank(),
+                    ) { Icon(Icons.Default.Add, contentDescription = "Adicionar subtarefa") }
                 }
             }
         }

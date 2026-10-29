@@ -143,6 +143,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) { captureDao.setCompleted(id, completed) }
     }
 
+    fun setCaptureCategory(id: String, category: String) {
+        viewModelScope.launch(Dispatchers.IO) { captureDao.updateCategory(id, category) }
+    }
+
     fun deleteCapture(id: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val capture = captures.value.firstOrNull { it.id == id }
