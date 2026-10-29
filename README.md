@@ -1,46 +1,52 @@
 # CaptureFlow
 
-CaptureFlow is an Android-first mobile app that turns screenshots and shared content into organized references and actionable checklists.
-
-## Project status
-
-Early scaffold. The initial focus is a reliable native share flow for URLs, text, and images. Screenshot detection will be explored as a complementary Android capability, with clear permission and platform limitations.
+CaptureFlow is an Android-native app that turns shared links, text, and images into organized references and actionable checklists.
 
 ## Stack
+- Kotlin + Android SDK + Jetpack Compose
+- MVVM with ViewModel, Coroutines and Flow
+- Room / SQLite for local-first persistence
+- Android Sharesheet / ACTION_SEND for text, URLs and images
+- Google ML Kit for on-device OCR
+- Gradle Kotlin DSL
 
-- React Native + Expo + TypeScript
-- Expo Router
-- Android-first development, with room for iOS support
-- Native Android modules where platform APIs require them
-- EAS Build for cloud builds
+The former Expo/React Native implementation is retained under [legacy-expo/](legacy-expo/) for historical reference only. It is no longer the canonical app.
 
-## Getting started
+## Open and build
+Requirements: Android Studio, Android SDK 36, JDK 17+ (JDK 21 is suitable), and network access for Gradle/Maven dependencies.
 
-Requirements: Node.js LTS, npm, and an Expo account for EAS cloud builds.
+1. Clone the repository.
+2. Open `android-native/` in Android Studio.
+3. Allow Gradle sync to finish, then run the `app` configuration on an emulator/device.
 
-1. Clone this repository.
-2. Install dependencies with `npm install`.
-3. Run `npx expo install --check` to check SDK dependency compatibility.
-4. Start the development server with `npx expo start`.
-5. Run `npm run typecheck` and `npm run lint`.
+From a terminal:
+```powershell
+cd android-native
+.\gradlew.bat testDebugUnitTest
+.\gradlew.bat assembleDebug
+```
 
-For native Android integrations, use a development build rather than relying on Expo Go. Before the first EAS build, sign in with `eas login` and configure the project with `eas build:configure`. The EAS project ID will be added after the project is linked to an Expo account.
+The debug APK is generated at `android-native/app/build/outputs/apk/debug/app-debug.apk`.
+
+## Native MVP baseline
+- Manual text/link capture.
+- Share text, URLs and images from other Android apps.
+- Room persistence for references and checklist tasks.
+- Search and category filters.
+- Complete/delete references and tasks.
+- On-demand, on-device OCR using ML Kit.
 
 ## Documentation
-
 - [Engineering guidelines](AGENTS.md)
 - [Architecture](docs/architecture.md)
+- [Migration plan/status](docs/migration-plan.md)
 - [Roadmap](docs/roadmap.md)
-- [Captures feature](src/features/captures/README.md)
-- [Checklists feature](src/features/checklists/README.md)
+- [Capture feature](docs/features/captures.md)
+- [Checklist feature](docs/features/checklists.md)
+- [System diagram](docs/SD_captureflow.drawio)
 
-## Privacy principles
+## Privacy
+MVP data stays on-device; no cloud sync, account, analytics or upload of captured content is included. Screenshot discovery is not implemented, and invasive cross-app monitoring is out of scope.
 
-- Process content on-device where practical.
-- Never silently upload captured images.
-- Make source URLs and inferred metadata distinguishable.
-- Ask for explicit consent before enabling cloud AI or external integrations.
-
-## License
-
-To be decided before public release.
+## Status
+Native code and documentation have been added in the migration branch. Build and device validation are still pending; this is not yet release-ready.

@@ -1,22 +1,24 @@
-name: CI
+name: Android CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "migration/**"]
   pull_request:
     branches: [main]
 
 jobs:
-  typecheck:
+  android:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
-          node-version: 22
-      - name: Install dependencies
-        run: npm ci
-      - name: Typecheck
-        run: npm run typecheck
+          distribution: temurin
+          java-version: "21"
+      - name: Run unit tests
+        working-directory: android-native
+        run: ./gradlew testDebugUnitTest
+      - name: Assemble debug APK
+        working-directory: android-native
+        run: ./gradlew assembleDebug
