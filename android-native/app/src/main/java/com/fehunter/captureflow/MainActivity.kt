@@ -47,7 +47,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        pendingShareIntent = if (intent.action == Intent.ACTION_SEND) intent else null
+        pendingShareIntent = intent.takeIf {
+            it.action == Intent.ACTION_SEND || it.action == Intent.ACTION_SEND_MULTIPLE
+        }
         handleScreenshotAction(intent)
         setContent {
             val preferences = remember { getSharedPreferences("captureflow_preferences", MODE_PRIVATE) }
@@ -84,7 +86,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme(colorScheme = scheme) {
                 val shared = pendingShareIntent
                 LaunchedEffect(shared) {
-                    if (shared?.action == Intent.ACTION_SEND) {
+                    if (shared?.action == Intent.ACTION_SEND || shared?.action == Intent.ACTION_SEND_MULTIPLE) {
                         captureViewModel.receiveSharedIntent(shared)
                         pendingShareIntent = null
                     }
@@ -189,7 +191,9 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.action == Intent.ACTION_SEND) pendingShareIntent = intent
+        if (intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE) {
+            pendingShareIntent = intent
+        }
         handleScreenshotAction(intent)
     }
 }
