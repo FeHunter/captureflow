@@ -103,7 +103,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val url = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE).find(content)?.value ?: return
         val metadata = linkMetadataService.fetch(url) ?: return
         val description = metadata.description?.takeIf(String::isNotBlank)
-        val enrichedContent = listOf(url, description).filterNotNull().joinToString("\\n")
+        val enrichedContent = listOf(url, description).filterNotNull().joinToString("\n")
         captureDao.updateExtractedText(id, enrichedContent, metadata.title.ifBlank { fallbackTitle })
     }
 
