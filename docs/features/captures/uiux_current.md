@@ -61,3 +61,9 @@ Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes s�
 - O título sobre a imagem usa um degradê preto mais opaco na região superior, esmaecendo gradualmente para transparência; não alterar proporção, enquadramento da imagem ou hierarquia visual.
 - O botão/gesto nativo de voltar fecha primeiro o visualizador da referência; ao voltar novamente, fecha a categoria expandida e retorna à biblioteca.
 - Os botões visíveis de fechar/voltar continuam disponíveis.
+
+
+## Navegação fullscreen por cards e nome do app (2026-10-29)
+- O nome visível do produto é **Capture Flow** na barra superior e no rótulo do aplicativo Android; “Biblioteca” não deve substituir o nome do produto.
+- Ao abrir uma captura por um thumbnail, o visualizador permite swipe-left para a próxima captura da mesma categoria filtrada e swipe-right para a anterior, sem loop nas extremidades.
+- A data, categoria, conclusão e imagem acompanham a captura selecionada no pager. A dica de swipe permanece sobre a imagem e o botão/gesto nativo Back continua fechando o visualizador sem fechar a categoria por baixo.
