@@ -32,7 +32,7 @@ The former Expo/React Native app is archived under `legacy-expo/`; do not add ne
 - OCR runs on demand and on-device.
 - Persist captures and checklist tasks locally. Cloud sync is out of MVP.
 - Do not upload captured content without explicit consent.
-- Screenshot discovery is not implemented; if explored later it must be best-effort and privacy-preserving.
+- Screenshot discovery is optional, best-effort and privacy-preserving: observe MediaStore only while the app is foregrounded, request image-read permission explicitly, never use Accessibility Services, and do not run a background foreground-service solely for screenshot monitoring.
 - Never use accessibility services to surveil other apps.
 
 ## Quality

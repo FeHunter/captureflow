@@ -1,6 +1,6 @@
 # Contrato funcional — Captures
 
-**Versão base do app:** 0.3.1 (o sufixo do commit é gerado automaticamente no build)  
+**Versão do app:** 0.3.2  
 **Status:** implementação em validação no emulador.
 
 ## Objetivo
@@ -47,3 +47,11 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 - A seção independente com o título Checklist e o formulário manual de texto/link não são exibidos na tela principal.
 - O campo de busca mostra um botão de limpar (X) somente enquanto há texto digitado.
 - O título do app usa a versão base mais o identificador curto do commit, gerado pelo Gradle para diferenciar cada commit.
+
+
+## Detecção de screenshots — v0.3.2
+- O usuário pode conceder acesso às imagens para ativar a detecção best-effort de screenshots recentes.
+- Com permissão concedida, o app observa o MediaStore apenas enquanto está em primeiro plano e identifica imagens recentes pelo nome do arquivo ou pasta Screenshots.
+- Ao detectar uma captura, abre um diálogo para confirmar o envio ao CaptureFlow e escolher a categoria antes de salvar e executar OCR.
+- O seletor de imagem do sistema e o compartilhamento via Android Sharesheet continuam disponíveis sem habilitar a detecção.
+- O título do app exibe somente a versão semântica numérica (`v0.3.2`), sem hash do commit.

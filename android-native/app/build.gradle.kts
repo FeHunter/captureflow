@@ -11,15 +11,8 @@ android {
         applicationId = "com.fehunter.captureflow"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        // Append the current commit hash so the in-app title identifies every commit automatically.
-        val commitId = runCatching {
-            ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-                .directory(rootProject.projectDir)
-                .start()
-                .inputStream.bufferedReader().readText().trim()
-        }.getOrDefault("local")
-        versionName = "0.3.1-$commitId"
+        versionCode = 4
+        versionName = "0.3.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
