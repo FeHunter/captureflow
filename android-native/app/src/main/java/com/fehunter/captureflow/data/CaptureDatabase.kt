@@ -32,6 +32,38 @@ data class ChecklistTaskEntity(
     val description: String? = null,
 )
 
+@Entity(
+    tableName = "capture_subtasks",
+    indices = [Index("captureId")],
+)
+data class CaptureSubtaskEntity(
+    @PrimaryKey val id: String,
+    val captureId: String,
+    val title: String,
+    val isCompleted: Boolean = false,
+    val createdAt: Long,
+)
+
+@Dao
+interface CaptureSubtaskDao {
+    @Query("SELECT * FROM capture_subtasks WHERE captureId = :captureId ORDER BY createdAt ASC")
+    fun observeForCapture(captureId: String): Flow<List<CaptureSubtaskEntity>>
+
+    @Query("SELECT * FROM capture_subtasks ORDER BY createdAt ASC")
+    fun observeAll(): Flow<List<CaptureSubtaskEntity>>
+
+    @Insert suspend fun insert(item: CaptureSubtaskEntity)
+
+    @Query("UPDATE capture_subtasks SET isCompleted = :completed WHERE id = :id")
+    suspend fun setCompleted(id: String, completed: Boolean)
+
+    @Query("DELETE FROM capture_subtasks WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("DELETE FROM capture_subtasks WHERE captureId = :captureId")
+    suspend fun deleteForCapture(captureId: String)
+}
+
 @Dao
 interface CaptureDao {
     @Query("SELECT * FROM captures ORDER BY createdAt DESC") fun observeAll(): Flow<List<CaptureEntity>>
@@ -51,10 +83,11 @@ interface ChecklistDao {
     @Query("UPDATE checklist_tasks SET title = :title, description = :description WHERE id = :id") suspend fun updateDetails(id: String, title: String, description: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 3, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class], version = 4, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
+    abstract fun captureSubtaskDao(): CaptureSubtaskDao
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -68,10 +101,19 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS capture_subtasks (id TEXT NOT NULL PRIMARY KEY, captureId TEXT NOT NULL, title TEXT NOT NULL, isCompleted INTEGER NOT NULL, createdAt INTEGER NOT NULL)"
+                )
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_capture_subtasks_captureId ON capture_subtasks(captureId)")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build().also { instance = it }
         }
     }

@@ -3,6 +3,8 @@ package com.fehunter.captureflow.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import android.content.Context
 import android.graphics.BitmapFactory
@@ -19,10 +21,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
@@ -35,6 +41,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.data.CaptureEntity
+import com.fehunter.captureflow.data.CaptureSubtaskEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +77,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel) {
 private fun CaptureLibrary(viewModel: CaptureViewModel) {
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
+    val allSubtasks by viewModel.captureSubtasks.collectAsState()
     var content by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
@@ -167,6 +175,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
                     ocrState = ocrStates[capture.id] ?: OcrUiState(),
                     onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
                     onDelete = { viewModel.deleteCapture(capture.id) },
+                    subtasks = allSubtasks.filter { it.captureId == capture.id },
+                    onAddSubtask = { viewModel.addCaptureSubtask(capture.id, it) },
+                    onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
+                    onDeleteSubtask = viewModel::deleteCaptureSubtask,
                 )
             }
         }
@@ -179,7 +191,24 @@ private fun CaptureCard(
     ocrState: OcrUiState,
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
+    subtasks: List<CaptureSubtaskEntity>,
+    onAddSubtask: (String) -> Unit,
+    onSubtaskCompleted: (String, Boolean) -> Unit,
+    onDeleteSubtask: (String) -> Unit,
 ) {
+    var showFullscreen by remember(capture.id) { mutableStateOf(false) }
+    var newSubtask by remember(capture.id) { mutableStateOf("") }
+    val context = LocalContext.current
+    val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, capture.imageUri,
+    ) {
+        value = capture.imageUri?.let { raw ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            }
+        }
+    }
+
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -199,21 +228,14 @@ private fun CaptureCard(
                 }
             }
 
-            val context = LocalContext.current
-            val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-                initialValue = null, capture.imageUri,
-            ) {
-                value = capture.imageUri?.let { raw ->
-                    withContext(Dispatchers.IO) {
-                        runCatching { loadCoverBitmap(context, raw) }.getOrNull()
-                    }
-                }
-            }
             cover?.let { bitmap ->
                 Image(
                     bitmap = bitmap,
-                    contentDescription = "Capa da referência",
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                    contentDescription = "Abrir capa em tela cheia",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 280.dp)
+                        .clickable { showFullscreen = true },
                     contentScale = ContentScale.Crop,
                 )
             }
@@ -230,6 +252,79 @@ private fun CaptureCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            if (subtasks.isNotEmpty()) {
+                Text("Sub-checklist", style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                subtasks.forEach { subtask ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = subtask.isCompleted,
+                            onCheckedChange = { onSubtaskCompleted(subtask.id, it) },
+                        )
+                        Text(
+                            text = subtask.title,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (subtask.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurface,
+                        )
+                        IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Excluir subtarefa")
+                        }
+                    }
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(
+                    value = newSubtask,
+                    onValueChange = { newSubtask = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Adicionar sub-tarefa") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        onAddSubtask(newSubtask)
+                        newSubtask = ""
+                    }),
+                )
+                IconButton(
+                    onClick = {
+                        onAddSubtask(newSubtask)
+                        newSubtask = ""
+                    },
+                    enabled = newSubtask.isNotBlank(),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Adicionar sub-tarefa")
+                }
+            }
+        }
+    }
+
+    if (showFullscreen && cover != null) {
+        Dialog(
+            onDismissRequest = { showFullscreen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.Black),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    bitmap = cover!!,
+                    contentDescription = "Imagem em tela cheia",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                )
+                IconButton(
+                    onClick = { showFullscreen = false },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
+                        .background(Color.DarkGray.copy(alpha = 0.75f), MaterialTheme.shapes.large),
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Fechar imagem", tint = Color.White)
+                }
             }
         }
     }

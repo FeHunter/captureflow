@@ -13,7 +13,9 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 4. Na aba Referências, a imagem anexada é exibida como capa do cartão. Na aba Checklist, o usuário pode selecionar a imagem separadamente para criar uma tarefa com screenshot.
 5. Assim que uma imagem é selecionada ou compartilhada para a aba Referências, o app inicia OCR local automaticamente e atualiza o título da referência; o cartão mantém a imagem original como capa.
 6. O cartão de referência exibe apenas título, capa, checkbox de conclusão e botão de exclusão. Durante a análise, pode exibir um indicador de carregamento ou uma mensagem de erro.
-7. Na aba Checklist, uma imagem pode ser salva como tarefa com descrição opcional; esse fluxo é separado do cartão de Referências.
+7. Ao tocar na capa de uma referência, a imagem abre em visualização fullscreen com opção de fechar.
+8. Cada referência pode ter uma sub-checklist persistida, com itens adicionáveis, concluíveis e removíveis.
+9. Na aba Checklist, uma imagem pode ser salva como tarefa com descrição opcional; esse fluxo é separado do cartão de Referências.
 
 ## Regras
 - O conteúdo persistido não é enviado para um backend ou serviço de analytics.
@@ -24,6 +26,8 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 - A análise de imagem é iniciada automaticamente após salvar a cópia local; não há botão manual de OCR no cartão de referência.
 - OCR é heurístico; não garante identificar semanticamente o título em todos os layouts.
 - A versão exibida no cabeçalho vem de `BuildConfig.VERSION_NAME`, não de texto duplicado na interface.
+- A sub-checklist de uma referência é armazenada em uma tabela Room separada e é removida quando a referência é excluída.
+- A heurística de OCR filtra linhas de interface do YouTube/navegador (URL `youtube.com`, `Open App`, likes/views/comments e navegação) antes de escolher o título; isso reduz ruído, mas não garante sucesso em todos os layouts.
 
 ## Limites conhecidos
 - Sites podem bloquear requisições HTTP, exigir autenticação, depender de JavaScript ou omitir metadados.

@@ -19,3 +19,10 @@
 - Cartões de Referências exibem somente título, capa, checkbox e exclusão, com feedback transitório de carregamento/erro.
 - O texto complementar do OCR deixa de ser gravado no conteúdo da referência; o título extraído é o payload textual persistido para screenshots.
 - O botão manual “Analisar imagem / extrair texto” foi removido dos cartões de Referências.
+
+## OCR YouTube, fullscreen e sub-checklist
+- O filtro de ruído do OCR identifica linhas misturadas com domínio do YouTube, “Open App”, controles e metadados de engajamento como likes/views/comments.
+- Tocar na capa da referência abre uma visualização fullscreen com a imagem ajustada à tela e ação para fechar.
+- Referências aceitam sub-checklists persistentes com inclusão, conclusão e remoção de itens.
+- Room migra da versão 3 para 4 criando a tabela `capture_subtasks`; excluir uma referência remove os sub-itens associados.
+- Adicionados critérios de teste para a screenshot do YouTube mobile, fullscreen, persistência e exclusão de sub-itens.

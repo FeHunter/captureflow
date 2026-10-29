@@ -91,13 +91,33 @@ class OcrService {
 
     private fun isInterfaceNoise(text: String): Boolean {
         val value = text.trim()
+        val normalized = value.lowercase().replace(Regex("[^a-z0-9@./ ]"), " ")
+            .replace(Regex("\\s+"), " ").trim()
+
+        // Browser chrome and YouTube controls can be merged into one OCR line.
+        val browserOrPlayerChrome =
+            normalized.contains("youtube.com") ||
+                normalized.contains("m.youtube") ||
+                normalized.contains("open app") ||
+                normalized.contains("subscribe") ||
+                normalized.contains("comments") ||
+                normalized.contains("shorts") ||
+                normalized.contains("likes") ||
+                normalized.contains("views") ||
+                (normalized.contains("search") && normalized.contains("menu")) ||
+                Regex("""\b\d+\s*k?\s*views?\b""").containsMatchIn(normalized) ||
+                Regex("""\b\d+\s+likes?\b""").containsMatchIn(normalized) ||
+                normalized.startsWith("@") ||
+                normalized.contains("preferred on google")
+
         return value.length <= 2 ||
             value.matches(Regex("\\d{1,2}:\\d{2}")) ||
             value.matches(Regex("\\d{1,2}\\s+(minutes?|hours?|days?)\\s+ago", RegexOption.IGNORE_CASE)) ||
             value.startsWith("http", ignoreCase = true) ||
             value.matches(Regex("[^ ]+\\.(com|org|net|co)(/.*)?", RegexOption.IGNORE_CASE)) ||
-            listOf("share", "save", "subscribe", "bbc", "home", "search", "menu")
-                .any { value.equals(it, ignoreCase = true) }
+            browserOrPlayerChrome ||
+            listOf("share", "save", "subscribe", "bbc", "home", "search", "menu", "more", "youtube", "watch")
+                .any { normalized == it }
     }
 
     private suspend fun recognize(context: Context, uri: Uri): Text {

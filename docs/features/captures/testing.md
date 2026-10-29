@@ -12,6 +12,9 @@
 - [ ] Compartilhar screenshot de outro app cria referência com capa na aba Referências e inicia OCR automaticamente.
 - [ ] Selecionar screenshot pelo botão da aba Checklist cria tarefa com capa.
 - [ ] A capa persiste após encerrar e reabrir o app.
+- [ ] Tocar na capa abre fullscreen, mantém proporção da imagem e permite fechar.
+- [ ] Adicionar sub-item, marcar/desmarcar e excluir sub-item; confirmar persistência após reiniciar.
+- [ ] Excluir uma referência também remove seus sub-itens.
 - [ ] Imagem indisponível não quebra o cartão.
 - [ ] Excluir referência tenta remover a cópia privada.
 
@@ -20,6 +23,8 @@
 - [ ] Confirmar que a terceira linha, mesmo sendo mais estreita que as duas primeiras, não é descartada.
 - [ ] Confirmar que horário, URL, autoria e ações do navegador não entram no título.
 - [ ] Testar screenshot da Visual Capitalist: título esperado começa por “Mapped: Unemployment Rates Around the World in 2026”.
+- [ ] Testar screenshot do YouTube mobile: título esperado começa por “10 Easy craft ideas / miniature craft / Paper”; não usar `m.youtube.com/watch` ou `Open App` como título.
+- [ ] Confirmar que texto de likes/views/comments e navegação do player é filtrado do título.
 - [ ] Título da referência contém a manchete completa sem horários, URL, autoria ou ações do navegador.
 - [ ] O cartão mostra somente título, capa, checkbox e excluir; descrição/categoria/texto OCR bruto não aparecem.
 - [ ] Enquanto OCR roda, o cartão mostra indicador de carregamento; em falha, mostra mensagem discreta.
@@ -31,6 +36,6 @@
 - [ ] Sem rede, a referência não é perdida.
 
 ## Banco e regressão
-- [ ] Migrar banco v1 → v2 → v3 sem perder referências/tarefas.
+- [ ] Migrar banco v1 → v2 → v3 → v4 sem perder referências/tarefas.
 - [ ] Criar, concluir e excluir tarefas sem imagem.
 - [ ] Testar build debug e testes unitários.
