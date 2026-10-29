@@ -60,3 +60,12 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Kept filtered-list boundaries and synchronized the fullscreen header with the settled page.
 - Replaced fullscreen sub-checklist shortcut with an **Editar título** action.
 - Added title-only persistence through ViewModel and DAO; the sub-checklist remains available from the card.
+
+
+## 2026-10-29 — OCR central, fullscreen e limpeza da galeria
+
+- Priorizada a faixa central da imagem na escolha do título OCR, com pontuação por proximidade ao centro e fallback para outras regiões.
+- Definidas áreas fixas no fullscreen: 30% para cabeçalho e 70% para imagem.
+- Título longo: cabeçalho limitado a quatro linhas; em caso de overflow, o título é sobreposto no topo da imagem com gradiente escuro que termina transparente.
+- Após importar com sucesso screenshot recebido pela notificação, solicita exclusão do original via MediaStore; a confirmação do Android é respeitada e falhas não desfazem a importação.
+- Importação manual pelo Photo Picker mantém o original.
