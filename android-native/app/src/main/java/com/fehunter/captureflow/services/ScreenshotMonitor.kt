@@ -20,7 +20,7 @@ class ScreenshotMonitor(
 ) : Closeable {
     private val resolver = context.applicationContext.contentResolver
     private val handler = Handler(Looper.getMainLooper())
-    private val startedAtSeconds = System.currentTimeMillis() / 1_000L
+    private val startedAtSeconds = System.currentTimeMillis() / 1_000L - RECENT_SCREENSHOT_WINDOW_SECONDS
     private var lastEmittedUri: Uri? = null
     private var isRegistered = false
     private val scanRunnable = Runnable { findLatestScreenshot() }
@@ -37,6 +37,7 @@ class ScreenshotMonitor(
         if (isRegistered) return
         resolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, observer)
         isRegistered = true
+        handler.postDelayed(scanRunnable, SCAN_DEBOUNCE_MS)
     }
 
     private fun findLatestScreenshot() {
@@ -105,5 +106,6 @@ class ScreenshotMonitor(
         const val SCAN_DEBOUNCE_MS = 650L
         const val MAX_RECENT_IMAGES_TO_CHECK = 50
         const val CREATION_GRACE_SECONDS = 2L
+        const val RECENT_SCREENSHOT_WINDOW_SECONDS = 30L
     }
 }
