@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import java.io.File
 import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.UUID
 
 /**
@@ -38,6 +40,53 @@ class SharedImageStorageService {
         } catch (error: Exception) {
             destination.delete()
             throw error
+        }
+    }
+
+    /** Downloads a webpage preview image into app-private storage. */
+    fun downloadToPrivateStorage(context: Context, rawUrl: String): Uri? {
+        val parsed = runCatching { Uri.parse(rawUrl) }.getOrNull() ?: return null
+        if (parsed.scheme !in setOf("http", "https") || parsed.host.isNullOrBlank()) return null
+        val connection = runCatching { URL(rawUrl).openConnection() as? HttpURLConnection }.getOrNull() ?: return null
+        return try {
+            connection.connectTimeout = 4_000
+            connection.readTimeout = 5_000
+            connection.instanceFollowRedirects = true
+            connection.setRequestProperty("User-Agent", "CaptureFlow/0.4 (Android)")
+            connection.setRequestProperty("Accept", "image/*")
+            connection.connect()
+            val contentType = connection.contentType.orEmpty().substringBefore(";").lowercase()
+            if (connection.responseCode !in 200..299 || !contentType.startsWith("image/")) return null
+            val extension = when (contentType) {
+                "image/png" -> "png"
+                "image/webp" -> "webp"
+                "image/gif" -> "gif"
+                "image/jpeg", "image/jpg" -> "jpg"
+                else -> return null
+            }
+            val directory = File(context.filesDir, "captures").apply { mkdirs() }
+            val destination = File(directory, "link-preview-${UUID.randomUUID()}.$extension")
+            connection.inputStream.use { input ->
+                destination.outputStream().use { output ->
+                    val buffer = ByteArray(8_192)
+                    var total = 0L
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        if (total > 8L * 1024 * 1024) throw IOException("A imagem de prévia excede o limite permitido.")
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+            if (destination.length() == 0L) {
+                destination.delete()
+                null
+            } else Uri.fromFile(destination)
+        } catch (_: Exception) {
+            null
+        } finally {
+            connection.disconnect()
         }
     }
 

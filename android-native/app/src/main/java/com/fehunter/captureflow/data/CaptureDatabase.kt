@@ -30,7 +30,7 @@ data class ChecklistTaskEntity(
     val createdAt: Long,
     val imageUri: String? = null,
     val description: String? = null,
-    val category: String = "Tarefa",
+    val category: String = "Verificar",
 )
 
 @Entity(
@@ -71,6 +71,7 @@ interface CaptureDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
     @Query("UPDATE captures SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
+    @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
     @Query("UPDATE captures SET content = :content, title = :title WHERE id = :id") suspend fun updateExtractedText(id: String, content: String, title: String)
@@ -149,10 +150,10 @@ object CaptureClassifier {
     fun categoryFor(content: String, kind: String): String {
         val value = content.lowercase()
         return when {
+            listOf("importante", "urgente", "prazo", "prioridade").any(value::contains) -> "Importante"
+            listOf("verificar", "conferir", "checar", "revisar").any(value::contains) -> "Verificar"
             kind == "link" -> "Ler depois"
-            listOf("checklist", "preciso", "lembrar", "comprar", "fazer", "[ ]").any(value::contains) -> "Tarefas"
-            listOf("ideia", "inspir", "design", "projeto").any(value::contains) -> "Ideias"
-            else -> "Referência"
+            else -> "Salvar"
         }
     }
     fun fromIntent(intent: Intent): IncomingCapture? {

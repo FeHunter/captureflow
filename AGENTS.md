@@ -72,3 +72,9 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - Ao ajustar a extração de título por OCR, considere a região central da tela como sinal prioritário, sem eliminar os sinais de perfil de interface, tamanho e qualidade do texto.
 - No fullscreen, mantenha a proporção aproximada de 20% para cabeçalho e 80% para imagem. Títulos longos podem sobrepor a imagem com gradiente escuro para transparente, sem mudar o espaço reservado à imagem.
 - Nunca exclua imagens escolhidas manualmente pelo usuário. A remoção da screenshot original só pode ser habilitada no fluxo de importação confirmado pela notificação, após salvar a referência e a cópia privada; tratar falhas de exclusão como não fatais, pois o Android pode exigir consentimento explícito.
+
+
+## Tags, links compartilhados e layout
+- Use exclusivamente as tags de captura `Ler depois`, `Verificar`, `Salvar` e `Importante` em filtros e seletores.
+- Links recebidos via `ACTION_SEND` devem ser salvos mesmo quando a extração de metadados falhar. Tente extrair título, descrição e imagem Open Graph/Twitter; baixe imagens para armazenamento privado com timeout e limite de tamanho, sem bloquear o salvamento do link.
+- O visualizador fullscreen reserva 20% do espaço ao cabeçalho e 80% à imagem; cartões compactos usam 272 dp de altura.

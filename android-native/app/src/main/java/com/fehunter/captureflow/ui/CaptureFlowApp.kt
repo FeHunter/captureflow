@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
@@ -62,15 +64,27 @@ import com.fehunter.captureflow.data.CaptureSubtaskEntity
 @Composable
 fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, pendingTaskScreenshotUri: Uri?, onTaskScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
+    var showOptionsMenu by remember { mutableStateOf(false) }
+    var showCompletedCaptures by remember { mutableStateOf(true) }
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Column {
-                    Text("CaptureFlow v${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
-                    Text("Suas referências, organizadas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TopAppBar(title = { Text("Biblioteca", fontWeight = FontWeight.Bold) }, actions = {
+                IconButton(onClick = { showOptionsMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Opções da biblioteca")
                 }
-            }, actions = {
-                IconButton(onClick = { showThemeMenu = true }) { Icon(Icons.Default.Palette, contentDescription = "Alterar tema") }
+                DropdownMenu(expanded = showOptionsMenu, onDismissRequest = { showOptionsMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if (showCompletedCaptures) "Ocultar concluídos" else "Mostrar concluídos") },
+                        onClick = {
+                            showCompletedCaptures = !showCompletedCaptures
+                            showOptionsMenu = false
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Alterar tema") },
+                        onClick = { showOptionsMenu = false; showThemeMenu = true },
+                    )
+                }
                 DropdownMenu(expanded = showThemeMenu, onDismissRequest = { showThemeMenu = false }) {
                     listOf("system" to "Seguir dispositivo", "light" to "Claro", "dark" to "Escuro").forEach { (mode, label) ->
                         DropdownMenuItem(text = { Text(if (themeMode == mode) "✓ $label" else label) }, onClick = { onThemeModeChange(mode); showThemeMenu = false })
@@ -81,7 +95,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
             CaptureLibrary(
-                viewModel, hasScreenshotAccess, screenshotMonitoringEnabled,
+                viewModel, hasScreenshotAccess, screenshotMonitoringEnabled, showCompletedCaptures,
                 detectedScreenshotUri, pendingTaskScreenshotUri,
                 onRequestScreenshotAccess, onStopScreenshotMonitoring,
                 onScreenshotHandled, onTaskScreenshotHandled,
@@ -91,7 +105,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
@@ -100,7 +114,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var imageCategory by remember { mutableStateOf("Ler depois") }
-    val categories = listOf("Todas", "Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde")
+    var expandedCategory by remember { mutableStateOf<String?>(null) }
+    var selectedCapture by remember { mutableStateOf<CaptureEntity?>(null) }
+    val categories = listOf("Todas", "Ler depois", "Verificar", "Salvar", "Importante")
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
@@ -123,6 +139,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     }
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
+            (showCompletedCaptures || !it.isCompleted) &&
             (category == "Todas" || it.category == category)
     }
 
@@ -219,27 +236,101 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 )
             }
         } else {
-            items(filtered.chunked(2), key = { row -> row.first().id }) { captureRow ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    captureRow.forEach { capture ->
-                        Box(Modifier.weight(1f)) {
-                CaptureCard(
-                    capture = capture,
-                    ocrState = ocrStates[capture.id] ?: OcrUiState(),
-                    onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
-                    onDelete = { viewModel.deleteCapture(capture.id) },
-                    onCategoryChange = { viewModel.setCaptureCategory(capture.id, it) },
-                    allCaptures = filtered,
-                    subtasks = allSubtasks.filter { it.captureId == capture.id },
-                    allSubtasks = allSubtasks,
-                    onAddSubtask = { captureId, title -> viewModel.addCaptureSubtask(captureId, title) },
-                    onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
-                    onDeleteSubtask = viewModel::deleteCaptureSubtask,
-                    onTitleChange = { id, title -> viewModel.updateCaptureTitle(id, title) },
-                )
+            val visibleCategories = if (category == "Todas") categories.drop(1) else listOf(category)
+            items(visibleCategories, key = { "category-$it" }) { tag ->
+                val categoryCaptures = filtered.filter { it.category == tag }
+                if (categoryCaptures.isNotEmpty()) {
+                    CategoryCard(
+                        title = tag,
+                        captures = categoryCaptures,
+                        ocrStates = ocrStates,
+                        onExpand = { expandedCategory = tag },
+                        onOpenCapture = { selectedCapture = it },
+                    )
+                }
+            }
+        }
+    }
+    expandedCategory?.let { tag ->
+        val categoryCaptures = filtered.filter { it.category == tag }
+        Dialog(
+            onDismissRequest = { expandedCategory = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+            ) {
+                Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = { expandedCategory = null }, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Voltar à biblioteca")
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(tag, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                            Text("${categoryCaptures.size} itens", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    if (captureRow.size == 1) Spacer(Modifier.weight(1f))
+                    if (categoryCaptures.isEmpty()) {
+                        Text("Nenhum item nesta categoria.", modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                            columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(3),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(categoryCaptures, key = { it.id }) { capture ->
+                                CategoryThumbnail(
+                                    capture = capture,
+                                    ocrState = ocrStates[capture.id] ?: OcrUiState(),
+                                    onClick = { selectedCapture = capture },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    selectedCapture?.let { capture ->
+        Dialog(
+            onDismissRequest = { selectedCapture = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color.Black,
+            ) {
+                Column(Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                            Text(SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(capture.createdAt)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
+                                Text(capture.category, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        }
+                        Checkbox(checked = capture.isCompleted, onCheckedChange = { completed ->
+                            viewModel.setCaptureCompleted(capture.id, completed)
+                            selectedCapture = capture.copy(isCompleted = completed)
+                        }, modifier = Modifier.size(48.dp))
+                        IconButton(onClick = { viewModel.deleteCapture(capture.id); selectedCapture = null }, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                        IconButton(onClick = { selectedCapture = null }, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        FullscreenCapturePage(capture = capture, showNavigationHint = false)
+                    }
                 }
             }
         }
@@ -266,7 +357,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.addImageCapture(uri, category = "Referência", deleteSourceScreenshotAfterImport = true)
+                    viewModel.addImageCapture(uri, category = "Salvar", deleteSourceScreenshotAfterImport = true)
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
                 }) { Text("Adicionar às referências") }
@@ -310,6 +401,145 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     }
 }
 
+@Composable
+private fun CategoryThumbnail(
+    capture: CaptureEntity,
+    ocrState: OcrUiState,
+    onClick: () -> Unit,
+) {
+    val context = LocalContext.current
+    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, capture.imageUri,
+    ) {
+        value = capture.imageUri?.let { raw ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            }
+        }
+    }
+    Box(
+        modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick),
+    ) {
+        if (bitmap != null) {
+            Image(bitmap = bitmap!!, contentDescription = capture.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Column(
+                Modifier.fillMaxSize().padding(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (ocrState.isProcessing || ocrState.isError) {
+            Surface(
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+            ) {
+                Text(if (ocrState.isError) "⚠" else "◌", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f))))
+                .padding(horizontal = 5.dp, vertical = 5.dp),
+        ) {
+            Text(capture.title, style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun CategoryCard(
+    title: String,
+    captures: List<CaptureEntity>,
+    ocrStates: Map<String, OcrUiState>,
+    onExpand: () -> Unit,
+    onOpenCapture: (CaptureEntity) -> Unit,
+) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("${captures.size} itens", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                captures.take(3).forEach { capture ->
+                    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                        initialValue = null, capture.imageUri,
+                    ) {
+                        value = capture.imageUri?.let { raw ->
+                            withContext(Dispatchers.IO) {
+                                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+                            }
+                        }
+                    }
+                    Box(
+                        modifier = Modifier.weight(1f).aspectRatio(1f)
+                            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
+                            .clickable { onOpenCapture(capture) },
+                    ) {
+                        if (bitmap != null) {
+                            Image(bitmap = bitmap!!, contentDescription = capture.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        } else {
+                            Column(
+                                Modifier.fillMaxSize().padding(6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                        if (ocrStates[capture.id]?.isProcessing == true || ocrStates[capture.id]?.isError == true) {
+                            Surface(
+                                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                            ) {
+                                Text(if (ocrStates[capture.id]?.isError == true) "⚠" else "◌", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        Box(
+                            Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f))))
+                                .padding(horizontal = 6.dp, vertical = 5.dp),
+                        ) {
+                            Text(capture.title, style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) {
+                    Spacer(Modifier.weight(1f).aspectRatio(1f))
+                }
+            }
+            Surface(
+                onClick = onExpand,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                color = Color.Transparent,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    Icon(Icons.Default.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text("Ver todas · ${captures.size}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CaptureCard(
@@ -346,7 +576,7 @@ private fun CaptureCard(
     val modalSubtasks = allSubtasks.filter { it.captureId == fullscreenCapture.id }
 
     Card(
-        modifier = Modifier.fillMaxWidth().height(320.dp),
+        modifier = Modifier.fillMaxWidth().height(272.dp),
         shape = MaterialTheme.shapes.large,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -447,7 +677,7 @@ private fun CaptureCard(
                         }
                     }
                     DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
-                        listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde").forEach { tag ->
+                        listOf("Ler depois", "Verificar", "Salvar", "Importante").forEach { tag ->
                             DropdownMenuItem(text = { Text(tag) }, onClick = {
                                 onCategoryChange(tag)
                                 showCategoryMenu = false
@@ -660,7 +890,7 @@ private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Bo
         }
     }
     Box(
-        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
         if (image != null) {
@@ -676,15 +906,13 @@ private fun FullscreenCapturePage(capture: CaptureEntity, showNavigationHint: Bo
                 Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        // Long titles overlay the image with a dark-to-transparent fade.
-        if (capture.title.length > 72) {
-            Box(
-                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.48f), Color.Transparent)))
-                    .padding(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 38.dp),
-            ) {
-                Text(text = capture.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 4, overflow = TextOverflow.Ellipsis)
-            }
+        // Keep the complete title readable over the image, regardless of its length.
+        Box(
+            modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.92f), Color.Black.copy(alpha = 0.52f), Color.Transparent)))
+                .padding(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 38.dp),
+        ) {
+            Text(text = capture.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
         }
         if (showNavigationHint) {
             // Overlay does not reserve layout space or reduce the image's Fit area.

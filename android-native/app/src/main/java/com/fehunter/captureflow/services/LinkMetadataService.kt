@@ -7,7 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 
-data class PageMetadata(val title: String, val description: String?)
+data class PageMetadata(val title: String, val description: String?, val imageUrl: String?)
 
 class LinkMetadataService {
     suspend fun fetch(rawUrl: String): PageMetadata? = withContext(Dispatchers.IO) {
@@ -25,7 +25,7 @@ class LinkMetadataService {
         try {
             connection.connectTimeout = 4_000
             connection.readTimeout = 4_000
-            connection.instanceFollowRedirects = false
+            connection.instanceFollowRedirects = true
             connection.setRequestProperty("User-Agent", "CaptureFlow/0.3 (Android)")
             connection.setRequestProperty("Accept", "text/html,application/xhtml+xml")
             connection.connect()
@@ -49,7 +49,17 @@ class LinkMetadataService {
             val description = meta(html, "og:description")
                 ?: meta(html, "description")
                 ?: meta(html, "twitter:description")
-            title?.takeIf(String::isNotBlank)?.let { PageMetadata(it, description) }
+            val rawImage = meta(html, "og:image")
+                ?: meta(html, "twitter:image")
+                ?: meta(html, "twitter:image:src")
+            val imageUrl = rawImage?.let { runCatching { URL(URL(connection.url.toString()), it).toString() }.getOrNull() }
+                ?.takeIf { candidate ->
+                    runCatching {
+                        val imageUri = Uri.parse(candidate)
+                        imageUri.scheme in setOf("http", "https") && !imageUri.host.isNullOrBlank()
+                    }.getOrDefault(false)
+                }
+            title?.takeIf(String::isNotBlank)?.let { PageMetadata(it, description, imageUrl) }
         } catch (_: Exception) {
             null
         } finally {

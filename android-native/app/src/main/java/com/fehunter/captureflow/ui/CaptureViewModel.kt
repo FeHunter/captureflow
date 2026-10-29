@@ -114,6 +114,11 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val description = metadata.description?.takeIf(String::isNotBlank)
         val enrichedContent = listOf(url, description).filterNotNull().joinToString("\n")
         captureDao.updateExtractedText(id, enrichedContent, metadata.title.ifBlank { fallbackTitle })
+        metadata.imageUrl?.let { imageUrl ->
+            imageStorageService.downloadToPrivateStorage(getApplication(), imageUrl)?.let { localImage ->
+                captureDao.updateImageUri(id, localImage.toString())
+            }
+        }
     }
 
     fun addCaptureSubtask(captureId: String, rawTitle: String) {
