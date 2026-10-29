@@ -6,7 +6,7 @@ Este documento descreve a estrutura funcional observada no código atual. Medida
 
 ```text
 ┌─────────────────────────────────────────┐
-│ CaptureFlow v{versão}             [tema]│
+│ Capture Flow                    [tema]│
 │ Suas referências, organizadas           │
 ├─────────────────────────────────────────┤
 │ ┌─────────────────────────────────────┐ │
@@ -125,3 +125,9 @@ Persistência em `capture_subtasks`; cada item pertence a uma referência via `c
 ### Contraste do título e navegação nativa (2026-10-29)
 - O título sobre a imagem recebe degradê superior mais escuro para melhorar legibilidade sem reservar espaço adicional nem alterar `ContentScale.Fit`.
 - Back do Android fecha a camada de navegação ativa em ordem inversa: visualizador da referência → categoria expandida → biblioteca. Os controles explícitos de fechar/voltar permanecem.
+
+
+### Atualização — swipe no visualizador de thumbnails e branding (2026-10-29)
+- A abertura de um thumbnail leva a um pager horizontal limitado às capturas da mesma categoria atualmente filtrada.
+- Swipe-left avança e swipe-right retorna; não há loop nas extremidades. A data/categoria e os controles de conclusão/exclusão refletem a página atual.
+- O título do produto permanece **Capture Flow** na barra principal e no launcher Android.
