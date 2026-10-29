@@ -68,6 +68,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     fun receiveSharedIntent(intent: Intent) {
         val incoming = CaptureClassifier.fromIntent(intent) ?: return
+        if (incoming.imageUri != null) {
+            addImageTask(Uri.parse(incoming.imageUri))
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             val imageUri = incoming.imageUri?.let { sharedUri ->
                 runCatching {
@@ -162,7 +166,30 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) { checklistDao.setCompleted(id, completed) }
     }
 
+    fun addImageTask(uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val storedUri = runCatching {
+                imageStorageService.copyToPrivateStorage(getApplication(), uri).toString()
+            }.getOrElse {
+                uri.toString()
+            }
+            checklistDao.insert(
+                ChecklistTaskEntity(
+                    id = UUID.randomUUID().toString(),
+                    title = "Revisar screenshot",
+                    isCompleted = false,
+                    createdAt = System.currentTimeMillis(),
+                    imageUri = storedUri,
+                ),
+            )
+        }
+    }
+
     fun deleteTask(id: String) {
-        viewModelScope.launch(Dispatchers.IO) { checklistDao.delete(id) }
+        viewModelScope.launch(Dispatchers.IO) {
+            val task = tasks.value.firstOrNull { it.id == id }
+            imageStorageService.deletePrivateImage(getApplication(), task?.imageUri)
+            checklistDao.delete(id)
+        }
     }
 }

@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -26,6 +28,7 @@ data class ChecklistTaskEntity(
     val title: String,
     val isCompleted: Boolean = false,
     val createdAt: Long,
+    val imageUri: String? = null,
 )
 
 @Dao
@@ -46,14 +49,21 @@ interface ChecklistDao {
     @Query("DELETE FROM checklist_tasks WHERE id = :id") suspend fun delete(id: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 1, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 2, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
     companion object {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE checklist_tasks ADD COLUMN imageUri TEXT")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
+                .addMigrations(MIGRATION_1_2)
                 .build().also { instance = it }
         }
     }

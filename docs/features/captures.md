@@ -24,3 +24,13 @@ The feature receives, classifies, persists, searches and manages link, text and 
 - No captured content or image is uploaded.
 - Automatic screenshot discovery is not implemented; users select an image in CaptureFlow or share an image/screenshot to the app explicitly.
 - If copying an image fails, the original URI is retained as a fallback; OCR may fail if the provider no longer grants access.
+
+
+## Screenshots como tarefas
+
+- A aba **Checklist** permite selecionar uma imagem usando o seletor de fotos do Android e salvá-la como uma tarefa chamada "Revisar screenshot".
+- Imagens compartilhadas de outros aplicativos para o CaptureFlow também são registradas como tarefas com screenshot anexado.
+- O arquivo é copiado para o armazenamento privado do aplicativo quando possível; não há envio para a nuvem.
+- A exclusão da tarefa também tenta excluir a cópia local da imagem.
+- O banco Room migra da versão 1 para a 2 adicionando o campo opcional `imageUri` às tarefas existentes, preservando os dados já salvos.
+- A captura automática de screenshots em segundo plano não faz parte desta implementação. O usuário escolhe a imagem ou usa o menu Compartilhar do aplicativo de origem.

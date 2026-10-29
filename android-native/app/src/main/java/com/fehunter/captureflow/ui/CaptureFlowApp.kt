@@ -209,6 +209,10 @@ private fun CaptureCard(
 private fun ChecklistScreen(viewModel: CaptureViewModel) {
     val tasks by viewModel.tasks.collectAsState()
     var title by remember { mutableStateOf("") }
+    val screenshotPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> uri?.let(viewModel::addImageTask) },
+    )
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedTextField(value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth(),
             label = { Text("Nova tarefa") }, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -216,6 +220,18 @@ private fun ChecklistScreen(viewModel: CaptureViewModel) {
         Button(onClick = { viewModel.addTask(title); title = "" }, enabled = title.isNotBlank(),
             modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("Adicionar tarefa")
+        }
+        OutlinedButton(
+            onClick = {
+                screenshotPicker.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Default.Image, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Salvar screenshot como tarefa")
         }
         if (tasks.isEmpty()) Text("Suas tarefas aparecerão aqui.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -231,7 +247,17 @@ private fun TaskCard(task: ChecklistTaskEntity, onCompleted: (Boolean) -> Unit, 
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = task.isCompleted, onCheckedChange = onCompleted)
-            Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(task.title, style = MaterialTheme.typography.bodyLarge)
+                if (task.imageUri != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary)
+                        Text("Screenshot anexado", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir tarefa") }
         }
     }
