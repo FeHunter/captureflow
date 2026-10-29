@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Dialog
@@ -46,29 +47,27 @@ import com.fehunter.captureflow.data.ChecklistTaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CaptureFlowApp(viewModel: CaptureViewModel) {
-    var tab by remember { mutableIntStateOf(0) }
+fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit) {
+    var showThemeMenu by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(title = {
                 Column {
                     Text("CaptureFlow v${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
-                    Text(if (tab == 0) "Suas referências, organizadas" else "Transforme ideias em ação",
-                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Suas referências, organizadas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }, actions = {
+                IconButton(onClick = { showThemeMenu = true }) { Icon(Icons.Default.Palette, contentDescription = "Alterar tema") }
+                DropdownMenu(expanded = showThemeMenu, onDismissRequest = { showThemeMenu = false }) {
+                    listOf("system" to "Seguir dispositivo", "light" to "Claro", "dark" to "Escuro").forEach { (mode, label) ->
+                        DropdownMenuItem(text = { Text(if (themeMode == mode) "✓ $label" else label) }, onClick = { onThemeModeChange(mode); showThemeMenu = false })
+                    }
                 }
             })
         },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(selected = tab == 0, onClick = { tab = 0 },
-                    icon = { Icon(Icons.Default.Link, null) }, label = { Text("Referências") })
-                NavigationBarItem(selected = tab == 1, onClick = { tab = 1 },
-                    icon = { Icon(Icons.Default.CheckCircle, null) }, label = { Text("Checklist") })
-            }
-        },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            if (tab == 0) CaptureLibrary(viewModel) else ChecklistScreen(viewModel)
+            CaptureLibrary(viewModel)
         }
     }
 }
@@ -81,10 +80,18 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
     var content by remember { mutableStateOf("") }
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var imageCategory by remember { mutableStateOf("Referência") }
+    var taskTitle by remember { mutableStateOf("") }
+    val tasks by viewModel.tasks.collectAsState()
     val categories = listOf("Todas", "Ler depois", "Ideias", "Tarefas", "Referência")
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let(viewModel::addImageCapture) },
+        onResult = { uri -> selectedImageUri = uri },
+    )
+    val taskImagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> uri?.let(viewModel::addImageTask) },
     )
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
@@ -182,6 +189,27 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
                 )
             }
         }
+        item(key = "task-section") {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+            Text("Checklist", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = taskTitle, onValueChange = { taskTitle = it }, modifier = Modifier.weight(1f), label = { Text("Nova tarefa") }, singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { viewModel.addTask(taskTitle); taskTitle = "" }))
+                IconButton(onClick = { viewModel.addTask(taskTitle); taskTitle = "" }, enabled = taskTitle.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = "Adicionar tarefa") }
+            }
+            OutlinedButton(onClick = { taskImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Image, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Adicionar screenshot à checklist") }
+            if (tasks.isEmpty()) Text("Nenhuma tarefa ainda.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            else tasks.forEach { task -> TaskCard(task = task, onCompleted = { viewModel.setTaskCompleted(task.id, it) }, onDelete = { viewModel.deleteTask(task.id) }, onAnalyze = { viewModel.analyzeTaskScreenshot(task) }) }
+        }
+    }
+    selectedImageUri?.let { uri ->
+        AlertDialog(onDismissRequest = { selectedImageUri = null }, title = { Text("Vincular imagem a uma tag") }, text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Escolha a categoria para organizar esta imagem.")
+                categories.drop(1).forEach { tag ->
+                    FilterChip(selected = imageCategory == tag, onClick = { imageCategory = tag }, label = { Text(tag) })
+                }
+            }
+        }, confirmButton = { Button(onClick = { viewModel.addImageCapture(uri, imageCategory); selectedImageUri = null }) { Text("Salvar imagem") } }, dismissButton = { TextButton(onClick = { selectedImageUri = null }) { Text("Cancelar") } })
     }
 }
 
