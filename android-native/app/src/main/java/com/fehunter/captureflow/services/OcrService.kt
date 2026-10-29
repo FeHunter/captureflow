@@ -63,13 +63,23 @@ class OcrService {
         // Headline text is commonly split into multiple adjacent lines with similar
         // visual size. Collect those nearby, then keep all remaining recognized text
         // as a description so the OCR does not discard useful details.
-        val titleLines = titlePool.filter { line ->
-            line.bounds.top <= titleAnchor.bounds.bottom + medianHeight * 2 &&
-                line.bounds.bottom >= titleAnchor.bounds.top - medianHeight &&
-                line.bounds.height() >= titleAnchor.bounds.height() * 0.68
+        // Do not limit the headline to titlePool: that pool is only for finding
+        // the anchor. The remaining headline lines may be slightly narrower (for
+        // example, "to soaring fuel costs") and would otherwise be dropped.
+        val anchorHeight = titleAnchor.bounds.height().coerceAtLeast(1)
+        val headlineWindow = maxOf(anchorHeight * 5, medianHeight * 8)
+        val titleLines = candidateLines.filter { line ->
+            val verticalOffset = line.bounds.top - titleAnchor.bounds.top
+            verticalOffset >= -medianHeight &&
+                verticalOffset <= headlineWindow &&
+                line.bounds.height() >= anchorHeight * 0.62 &&
+                line.bounds.top < imageHeight * 0.48
         }.sortedWith(compareBy<OcrLine> { it.bounds.top }.thenBy { it.bounds.left })
             .ifEmpty { listOf(titleAnchor) }
-        val titleText = titleLines.joinToString(" ") { it.text }.take(180)
+        val titleText = titleLines.joinToString(" ") { it.text }
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .take(220)
         val titleSet = titleLines.map { it.text }.toSet()
         val descriptionText = candidateLines.filterNot { it.text in titleSet }
             .joinToString("\n") { it.text }.take(3_000)
