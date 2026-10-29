@@ -167,4 +167,4 @@ Não declarar build ou testes aprovados sem verificar o resultado do commit corr
 - PR #22: introduziu fluxo de screenshot por notificação e navegação por swipe no fullscreen.
 - PR #23: chegou a introduzir uma tela/aba independente de tarefas, mas a direção foi corrigida depois.
 - PR #24: removida a navegação inferior/tela independente; screenshot de notificação volta a ser `CaptureEntity` na tela Referências; dica de swipe sobreposta. Merge commit `0dfe7157fff10dcbc2bb95d750dd99b54b869e79`.
-- PR #25: correção de imports Compose para compilação Kotlin, aberta em 2026-10-29; aguarda validação de CI.
+- PR #25: correção de imports Compose (`KeyboardOptions` e `ImeAction`) integrada em 2026-10-29; validar o CI do commit atual.
