@@ -40,3 +40,11 @@ Paleta atual azul-marinho/oceano/ciano; tema claro/escuro evita preto puro e usa
 
 ## Acessibilidade e validação
 Manter alvos de toque de 48 dp, rótulos de ícone e estados não dependentes só de cor. Validar telas estreitas, fonte ampliada, contraste, gesto e leitura de imagem em dispositivo.
+
+
+## Navegação e título no fullscreen
+
+- Navegação por `HorizontalPager`: swipe-left avança; swipe-right retorna; a lista respeita busca/filtro ativos e não faz loop nas extremidades.
+- Cabeçalho sincronizado com a página estabilizada do pager.
+- Ação **Editar título** abre um diálogo apenas no fullscreen. O título é validado como não vazio e persistido no campo `captures.title` sem alterar os demais campos.
+- A sub-checklist permanece acessível pelo botão do cartão; o atalho de sub-checklist no cabeçalho fullscreen foi removido.
