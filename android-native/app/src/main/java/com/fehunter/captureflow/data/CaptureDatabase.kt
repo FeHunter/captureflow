@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -46,7 +48,7 @@ interface ChecklistDao {
     @Query("DELETE FROM checklist_tasks WHERE id = :id") suspend fun delete(id: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 1, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class], version = 2, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
@@ -54,7 +56,7 @@ abstract class CaptureDatabase : RoomDatabase() {
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .build().also { instance = it }
+                .addMigrations(MIGRATION_1_2)\n                .build().also { instance = it }
         }
     }
 }
