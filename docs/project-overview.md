@@ -17,7 +17,7 @@ Capture Flow é um app Android para guardar links, textos e imagens compartilhad
 
 ## Stack e arquitetura
 - Kotlin, Android SDK, Jetpack Compose/Material 3, MVVM, Coroutines/Flow.
-- Room/SQLite local (`captureflow.db`), versão observada 5.
+- Room/SQLite local (`captureflow.db`), versão observada 6.
 - ML Kit Text Recognition para OCR no dispositivo.
 - `LinkMetadataService` faz requisição HTTP(S) e tenta extrair H1, imagem do conteúdo e metadados fallback.
 - Imagens são copiadas para armazenamento privado quando possível.
@@ -27,7 +27,7 @@ Capture Flow é um app Android para guardar links, textos e imagens compartilhad
 - Uma tela principal de referências, nome do produto **Capture Flow**, sem bottom navigation ou tela independente de tarefas. A biblioteca agrupa referências por categoria em cartões de largura total, com até três thumbnails e ação “Ver todas”; a categoria expandida usa grade de três colunas.
 - Pesquisa por título/conteúdo, filtros `Ler depois`, `Verificar`, `Salvar`, `Importante` e ocultar/mostrar concluídas.
 - Compartilhar URL abre um diálogo de prévia e exige categoria antes de persistir; cancelamento não salva.
-- Texto sem URL é salvo diretamente. Imagens passam por cópia privada e OCR automático.
+- Texto sem URL é salvo diretamente. Imagens passam por cópia privada e OCR automático; URLs compartilhadas junto da imagem são associadas automaticamente, e URLs identificadas apenas por OCR exigem confirmação.
 - Visualizador fullscreen usa swipe horizontal, título editável e imagem `ContentScale.Fit`; o Back nativo fecha a camada superior.
 - Monitoramento de screenshots é opcional, baseado em metadados do MediaStore e best-effort.
 
