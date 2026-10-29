@@ -37,7 +37,13 @@ class OcrService {
 
         val imageHeight = image.height.coerceAtLeast(1)
         val imageWidth = image.width.coerceAtLeast(1)
-        val candidateLines = lines.filterNot { isInterfaceNoise(it.text) }
+        // Remove browser chrome and URL fragments before ranking title candidates.
+        // OCR can merge "Not secure", the address bar URL and page title into one line.
+        val candidateLines = lines.mapNotNull { line ->
+            val cleaned = sanitizeOcrLine(line.text)
+            cleaned.takeIf { it.isNotBlank() && !isInterfaceNoise(it) }
+                ?.let { line.copy(text = it) }
+        }
         if (candidateLines.isEmpty()) {
             return OcrTextResult(result.text, "", lines.joinToString("\n") { it.text })
         }
@@ -141,6 +147,15 @@ class OcrService {
             (words.size >= 3 || value.contains(":") || value.contains("/"))
         return wordRatio >= 0.55f && hasSentenceLikeContent &&
             !normalized.matches(Regex(".*\\b\\d+\\s*(likes?|views?|comments?)\\b.*"))
+    }
+
+    private fun sanitizeOcrLine(raw: String): String {
+        return raw.trim()
+            .replace(Regex("(?i)\\bnot\\s+secure\\b"), " ")
+            .replace(Regex("(?i)\\bhttps?://\\S+"), " ")
+            .replace(Regex("(?i)\\bwww\\.\\S+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
     }
 
     private fun isInterfaceNoise(text: String): Boolean {
