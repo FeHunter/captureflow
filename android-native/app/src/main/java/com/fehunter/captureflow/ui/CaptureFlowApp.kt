@@ -84,6 +84,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
 
 @Composable
 private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
+    val context = LocalContext.current
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
@@ -108,7 +109,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     ) {
         value = taskScreenshotToConfirm?.let { uri ->
             withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(LocalContext.current, uri.toString()) }.getOrNull()
+                runCatching { loadCoverBitmap(context, uri.toString()) }.getOrNull()
             }
         }
     }
