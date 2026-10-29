@@ -211,8 +211,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
                     onDelete = { viewModel.deleteCapture(capture.id) },
                     onCategoryChange = { viewModel.setCaptureCategory(capture.id, it) },
+                    allCaptures = filtered,
                     subtasks = allSubtasks.filter { it.captureId == capture.id },
-                    onAddSubtask = { viewModel.addCaptureSubtask(capture.id, it) },
+                    allSubtasks = allSubtasks,
+                    onAddSubtask = { captureId, title -> viewModel.addCaptureSubtask(captureId, title) },
                     onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
                     onDeleteSubtask = viewModel::deleteCaptureSubtask,
                 )
@@ -285,12 +287,15 @@ private fun CaptureCard(
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onCategoryChange: (String) -> Unit,
+    allCaptures: List<CaptureEntity>,
     subtasks: List<CaptureSubtaskEntity>,
-    onAddSubtask: (String) -> Unit,
+    allSubtasks: List<CaptureSubtaskEntity>,
+    onAddSubtask: (String, String) -> Unit,
     onSubtaskCompleted: (String, Boolean) -> Unit,
     onDeleteSubtask: (String) -> Unit,
 ) {
     var showFullscreen by remember(capture.id) { mutableStateOf(false) }
+    var fullscreenCapture by remember(capture.id) { mutableStateOf(capture) }
     var newSubtask by remember(capture.id) { mutableStateOf("") }
     var showSubtasks by remember(capture.id) { mutableStateOf(false) }
     val context = LocalContext.current
@@ -304,6 +309,17 @@ private fun CaptureCard(
         }
     }
 
+    val fullscreenCover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, fullscreenCapture.imageUri,
+    ) {
+        value = fullscreenCapture.imageUri?.let { raw ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            }
+        }
+    }
+    val modalSubtasks = allSubtasks.filter { it.captureId == fullscreenCapture.id }
+
     Card(
         modifier = Modifier.fillMaxWidth().height(320.dp),
         shape = MaterialTheme.shapes.large,
@@ -314,7 +330,7 @@ private fun CaptureCard(
             Box(
                 modifier = Modifier.fillMaxWidth().height(104.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { showFullscreen = true },
+                    .clickable { fullscreenCapture = capture; showFullscreen = true },
             ) {
                 if (cover != null) {
                     Image(
@@ -324,7 +340,7 @@ private fun CaptureCard(
                         contentScale = ContentScale.Crop,
                     )
                     IconButton(
-                        onClick = { showFullscreen = true },
+                        onClick = { fullscreenCapture = capture; showFullscreen = true },
                         modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
                             .background(Color.Black.copy(alpha = 0.58f), MaterialTheme.shapes.medium)
                             .size(40.dp),
@@ -456,7 +472,7 @@ private fun CaptureCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Sub-checklist · ${subtasks.count { it.isCompleted }}/${subtasks.size} concluídas",
+                        "Sub-checklist · ${modalSubtasks.count { it.isCompleted }}/${modalSubtasks.size} concluídas",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -465,7 +481,7 @@ private fun CaptureCard(
                         Icon(Icons.Default.Close, contentDescription = "Fechar sub-checklist")
                     }
                 }
-                subtasks.forEach { subtask ->
+                modalSubtasks.forEach { subtask ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         Checkbox(checked = subtask.isCompleted, onCheckedChange = { onSubtaskCompleted(subtask.id, it) })
                         Text(
@@ -489,7 +505,7 @@ private fun CaptureCard(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = {
-                            onAddSubtask(newSubtask)
+                            onAddSubtask(fullscreenCapture.id, newSubtask)
                             newSubtask = ""
                         }),
                     )
@@ -519,21 +535,47 @@ private fun CaptureCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(capture.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(fullscreenCapture.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(capture.createdAt)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(fullscreenCapture.createdAt)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
-                                Text(capture.category, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(fullscreenCapture.category, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
+                    }
+                    IconButton(onClick = {
+                        showFullscreen = false
+                        showSubtasks = true
+                    }, modifier = Modifier.size(48.dp)) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = "Abrir tarefas deste cartão")
                     }
                     IconButton(onClick = { showFullscreen = false }, modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)) {
                         Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
                     }
                 }
-                Box(modifier = Modifier.fillMaxWidth().weight(1f).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                    if (cover != null) {
-                        Image(bitmap = cover!!, contentDescription = "Imagem completa da referência", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f).background(MaterialTheme.colorScheme.surfaceVariant)
+                        .pointerInput(allCaptures, fullscreenCapture.id) {
+                            var totalDrag = 0f
+                            detectHorizontalDragGestures(
+                                onHorizontalDrag = { change, dragAmount ->
+                                    totalDrag += dragAmount
+                                    change.consume()
+                                },
+                                onDragEnd = {
+                                    if (kotlin.math.abs(totalDrag) >= 80f) {
+                                        val currentIndex = allCaptures.indexOfFirst { it.id == fullscreenCapture.id }
+                                        val nextIndex = if (totalDrag < 0) currentIndex + 1 else currentIndex - 1
+                                        if (nextIndex in allCaptures.indices) fullscreenCapture = allCaptures[nextIndex]
+                                    }
+                                    totalDrag = 0f
+                                },
+                            )
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (fullscreenCover != null) {
+                        Image(bitmap = fullscreenCover!!, contentDescription = "Imagem completa da referência", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                     } else {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
