@@ -266,7 +266,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.addImageCapture(uri, category = "Referência", deleteSourceScreenshotAfterImport = true)
+                    viewModel.addImageCapture(uri, category = "Salvar", deleteSourceScreenshotAfterImport = true)
                     taskScreenshotToConfirm = null
                     onTaskScreenshotHandled()
                 }) { Text("Adicionar às referências") }
