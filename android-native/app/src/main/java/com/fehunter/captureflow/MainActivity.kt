@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
     private val captureViewModel: CaptureViewModel by viewModels()
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
     private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
+    private val pendingScreenshotUris = ArrayDeque<Uri>()
     private var hasScreenshotAccess by mutableStateOf(false)
     private var screenshotMonitor: ScreenshotMonitor? = null
 
@@ -88,7 +89,7 @@ class MainActivity : ComponentActivity() {
                     hasScreenshotAccess = hasScreenshotAccess,
                     detectedScreenshotUri = detectedScreenshotUri,
                     onRequestScreenshotAccess = ::requestScreenshotAccess,
-                    onScreenshotHandled = { detectedScreenshotUri = null },
+                    onScreenshotHandled = ::handleScreenshotHandled,
                 )
             }
         }
@@ -128,8 +129,16 @@ class MainActivity : ComponentActivity() {
     private fun startScreenshotMonitor() {
         if (screenshotMonitor != null || !hasScreenshotPermission()) return
         screenshotMonitor = ScreenshotMonitor(this) { uri ->
-            if (detectedScreenshotUri == null) detectedScreenshotUri = uri
+            if (detectedScreenshotUri == null) {
+                detectedScreenshotUri = uri
+            } else if (uri != detectedScreenshotUri && uri !in pendingScreenshotUris) {
+                pendingScreenshotUris.addLast(uri)
+            }
         }.also { it.start() }
+    }
+
+    private fun handleScreenshotHandled() {
+        detectedScreenshotUri = if (pendingScreenshotUris.isEmpty()) null else pendingScreenshotUris.removeFirst()
     }
 
     override fun onNewIntent(intent: Intent) {
