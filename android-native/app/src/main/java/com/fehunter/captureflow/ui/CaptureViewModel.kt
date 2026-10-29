@@ -69,6 +69,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             val capture = CaptureClassifier.create("Imagem compartilhada", storedUri)
                 .copy(title = "Imagem selecionada")
             captureDao.insert(capture)
+            extractText(capture)
         }
     }
 
@@ -143,11 +144,12 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 val title = analysis.title.ifBlank {
                     extracted.lineSequence().firstOrNull(String::isNotBlank)?.take(72) ?: "Screenshot analisado"
                 }
-                val description = analysis.description.ifBlank { extracted }
                 withContext(Dispatchers.IO) {
-                    captureDao.updateExtractedText(capture.id, description, title)
+                    // For image references, keep only the title as the useful payload.
+                    // The original screenshot remains available through imageUri as the cover.
+                    captureDao.updateExtractedText(capture.id, "", title)
                 }
-                setOcrState(capture.id, OcrUiState(message = "Texto extraído e salvo nesta captura."))
+                setOcrState(capture.id, OcrUiState())
             } catch (error: Exception) {
                 setOcrState(
                     capture.id,
