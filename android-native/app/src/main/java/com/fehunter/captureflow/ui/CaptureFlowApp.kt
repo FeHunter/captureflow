@@ -72,82 +72,92 @@ private fun CaptureLibrary(viewModel: CaptureViewModel) {
             (category == "Todas" || it.category == category)
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        )) {
-            Column(
-                Modifier.fillMaxWidth().padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Image,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Analisar imagem do dispositivo", style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                        Text("Escolha uma foto ou captura de tela para extrair o texto no próprio aparelho.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    }
-                }
-                Button(
-                    onClick = {
-                        imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    },
-                    modifier = Modifier.fillMaxWidth(),
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item(key = "image-picker") {
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            )) {
+                Column(
+                    Modifier.fillMaxWidth().padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(Icons.Default.Image, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Selecionar imagem")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Analisar imagem do dispositivo", style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            Text("Escolha uma foto ou captura de tela para extrair o texto no próprio aparelho.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        }
+                    }
+                    Button(
+                        onClick = {
+                            imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Selecionar imagem")
+                    }
                 }
             }
         }
-
-        OutlinedTextField(value = content, onValueChange = { content = it }, modifier = Modifier.fillMaxWidth(),
-            label = { Text("Salvar texto ou link") }, placeholder = { Text("Cole um link ou escreva uma referência") },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { viewModel.addCapture(content); content = "" }),
-            minLines = 1, maxLines = 3)
-        Button(onClick = { viewModel.addCapture(content); content = "" }, enabled = content.isNotBlank(),
-            modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("Salvar referência")
+        item(key = "text-entry") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = content, onValueChange = { content = it }, modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Salvar texto ou link") }, placeholder = { Text("Cole um link ou escreva uma referência") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { viewModel.addCapture(content); content = "" }),
+                    minLines = 1, maxLines = 3)
+                Button(onClick = { viewModel.addCapture(content); content = "" }, enabled = content.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Add, null); Spacer(Modifier.width(8.dp)); Text("Salvar referência")
+                }
+            }
         }
-        OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
-            label = { Text("Buscar referências") }, singleLine = true)
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            categories.forEach { item ->
-                FilterChip(selected = category == item, onClick = { category = item }, label = { Text(item) })
+        item(key = "search") {
+            OutlinedTextField(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth(),
+                label = { Text("Buscar referências") }, singleLine = true)
+        }
+        item(key = "categories") {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                categories.forEach { item ->
+                    FilterChip(selected = category == item, onClick = { category = item }, label = { Text(item) })
+                }
             }
         }
         if (filtered.isEmpty()) {
-            Text(
-                if (captures.isEmpty()) "Selecione uma imagem acima ou compartilhe um link, texto ou imagem de outro app para começar."
-                else "Nenhuma referência encontrada.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            item(key = "empty-state") {
+                Text(
+                    if (captures.isEmpty()) "Selecione uma imagem acima ou compartilhe um link, texto ou imagem de outro app para começar."
+                    else "Nenhuma referência encontrada.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         } else {
-            LazyColumn(
-                Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(filtered, key = { it.id }) { capture ->
-                    CaptureCard(
-                        capture = capture,
-                        ocrState = ocrStates[capture.id] ?: OcrUiState(),
-                        onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
-                        onDelete = { viewModel.deleteCapture(capture.id) },
-                        onOcr = { viewModel.extractText(capture) },
-                    )
-                }
+            items(filtered, key = { it.id }) { capture ->
+                CaptureCard(
+                    capture = capture,
+                    ocrState = ocrStates[capture.id] ?: OcrUiState(),
+                    onCompleted = { viewModel.setCaptureCompleted(capture.id, it) },
+                    onDelete = { viewModel.deleteCapture(capture.id) },
+                    onOcr = { viewModel.extractText(capture) },
+                )
             }
         }
     }
