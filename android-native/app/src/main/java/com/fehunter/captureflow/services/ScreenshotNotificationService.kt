@@ -17,6 +17,7 @@ import android.os.Looper
 import android.provider.MediaStore
 import androidx.core.app.NotificationCompat
 import com.fehunter.captureflow.MainActivity
+import com.fehunter.captureflow.R
 
 /**
  * Optional, user-enabled foreground service that watches MediaStore for recent screenshots.
