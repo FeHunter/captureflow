@@ -274,7 +274,7 @@ private fun CaptureCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth().height(272.dp),
+        modifier = Modifier.fillMaxWidth().height(300.dp),
         shape = MaterialTheme.shapes.large,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -282,13 +282,14 @@ private fun CaptureCard(
         Column(Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(104.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { showFullscreen = true },
             ) {
                 if (cover != null) {
                     Image(
                         bitmap = cover!!,
                         contentDescription = "Abrir detalhes em tela cheia",
-                        modifier = Modifier.fillMaxSize().clickable { showFullscreen = true },
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                     )
                     IconButton(
