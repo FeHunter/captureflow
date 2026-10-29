@@ -127,9 +127,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         setOcrState(capture.id, OcrUiState(isProcessing = true, message = "Lendo imagem…"))
         viewModelScope.launch {
             try {
-                val extracted = withContext(Dispatchers.IO) {
-                    ocrService.extractText(getApplication(), Uri.parse(rawUri))
-                }.trim()
+                val analysis = withContext(Dispatchers.IO) {
+                    ocrService.extractStructuredText(getApplication(), Uri.parse(rawUri))
+                }
+                val extracted = analysis.fullText.trim()
 
                 if (extracted.isBlank()) {
                     setOcrState(
@@ -139,17 +140,12 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
 
-                val combined = if (capture.content == "Imagem compartilhada") {
-                    extracted
-                } else {
-                    listOf(capture.content, extracted).filter(String::isNotBlank).distinct().joinToString("\n")
+                val title = analysis.title.ifBlank {
+                    extracted.lineSequence().firstOrNull(String::isNotBlank)?.take(72) ?: "Screenshot analisado"
                 }
+                val description = analysis.description.ifBlank { extracted }
                 withContext(Dispatchers.IO) {
-                    captureDao.updateExtractedText(
-                        capture.id,
-                        combined,
-                        extracted.lineSequence().first().take(72),
-                    )
+                    captureDao.updateExtractedText(capture.id, description, title)
                 }
                 setOcrState(capture.id, OcrUiState(message = "Texto extraído e salvo nesta captura."))
             } catch (error: Exception) {
@@ -185,33 +181,12 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val rawUri = task.imageUri ?: return
         viewModelScope.launch {
             try {
-                val extracted = withContext(Dispatchers.IO) {
-                    ocrService.extractText(getApplication(), Uri.parse(rawUri))
+                val analysis = withContext(Dispatchers.IO) {
+                    ocrService.extractStructuredText(getApplication(), Uri.parse(rawUri))
                 }
-                val lines = extracted.lineSequence()
-                    .map(String::trim)
-                    .filter(String::isNotBlank)
-                    .filter { it.length > 2 }
-                    .filterNot { line ->
-                        line.matches(Regex("\\d{1,2}:\\d{2}")) ||
-                            line.matches(Regex("\\d{1,2}\\s+(minutes?|hours?|days?)\\s+ago", RegexOption.IGNORE_CASE)) ||
-                            line.startsWith("http", ignoreCase = true) ||
-                            line.matches(Regex("[^ ]+\\.(com|org|net|co)(/.*)?", RegexOption.IGNORE_CASE)) ||
-                            line.equals("share", true) || line.equals("save", true) ||
-                            line.equals("subscribe", true) || line.equals("bbc", true)
-                    }
-                    .toList()
-                if (lines.isEmpty()) return@launch
-                val titleLines = mutableListOf<String>()
-                var titleLength = 0
-                for (line in lines.take(5)) {
-                    if (titleLength + line.length > 150 && titleLines.isNotEmpty()) break
-                    titleLines += line
-                    titleLength += line.length + 1
-                    if (titleLength >= 45) break
-                }
-                val title = titleLines.joinToString(" ").take(150).ifBlank { "Screenshot para revisar" }
-                val description = lines.drop(titleLines.size).joinToString("\n").take(2_000)
+                if (analysis.fullText.isBlank()) return@launch
+                val title = analysis.title.ifBlank { "Screenshot para revisar" }
+                val description = analysis.description.ifBlank { analysis.fullText }.take(3_000)
                 withContext(Dispatchers.IO) {
                     checklistDao.updateDetails(task.id, title, description)
                 }
