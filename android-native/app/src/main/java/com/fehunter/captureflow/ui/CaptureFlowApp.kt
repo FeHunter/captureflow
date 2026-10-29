@@ -4,6 +4,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -236,29 +241,55 @@ private fun ChecklistScreen(viewModel: CaptureViewModel) {
         if (tasks.isEmpty()) Text("Suas tarefas aparecerão aqui.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(tasks, key = { it.id }) { task ->
-                TaskCard(task, { viewModel.setTaskCompleted(task.id, it) }, { viewModel.deleteTask(task.id) })
+                TaskCard(
+                    task = task,
+                    onCompleted = { viewModel.setTaskCompleted(task.id, it) },
+                    onDelete = { viewModel.deleteTask(task.id) },
+                    onAnalyze = { viewModel.analyzeTaskScreenshot(task) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TaskCard(task: ChecklistTaskEntity, onCompleted: (Boolean) -> Unit, onDelete: () -> Unit) {
+private fun TaskCard(
+    task: ChecklistTaskEntity,
+    onCompleted: (Boolean) -> Unit,
+    onDelete: () -> Unit,
+    onAnalyze: () -> Unit,
+) {
+    val cover = remember(task.imageUri) {
+        task.imageUri?.let { raw ->
+            runCatching { BitmapFactory.decodeFile(Uri.parse(raw).path)?.asImageBitmap() }.getOrNull()
+        }
+    }
     Card(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = task.isCompleted, onCheckedChange = onCompleted)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(task.title, style = MaterialTheme.typography.bodyLarge)
-                if (task.imageUri != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary)
-                        Text("Screenshot anexado", style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary)
-                    }
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = task.isCompleted, onCheckedChange = onCompleted)
+                Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold)
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir tarefa") }
+            }
+            cover?.let { bitmap ->
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Screenshot anexado à tarefa",
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+            task.description?.takeIf(String::isNotBlank)?.let { description ->
+                Text(description, style = MaterialTheme.typography.bodyMedium, maxLines = 6)
+            }
+            if (task.imageUri != null) {
+                OutlinedButton(onClick = onAnalyze, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Image, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Analisar screenshot")
                 }
             }
-            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir tarefa") }
         }
     }
 }
