@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
     private val captureViewModel: CaptureViewModel by viewModels()
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
     private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
+    private var pendingTaskScreenshotUri by mutableStateOf<Uri?>(null)
     private var hasScreenshotAccess by mutableStateOf(false)
     private var screenshotMonitoringEnabled by mutableStateOf(false)
 
@@ -95,6 +96,8 @@ class MainActivity : ComponentActivity() {
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
+                    pendingTaskScreenshotUri = pendingTaskScreenshotUri,
+                    onTaskScreenshotHandled = { pendingTaskScreenshotUri = null },
                     onRequestScreenshotAccess = ::requestScreenshotAccess,
                     onStopScreenshotMonitoring = ::stopScreenshotNotificationService,
                     onScreenshotHandled = ::handleScreenshotHandled,
@@ -172,7 +175,7 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)?.let(Uri::parse) ?: return
         when (intent.action) {
             ScreenshotNotificationService.ACTION_CREATE_TASK -> {
-                captureViewModel.addImageTask(uri)
+                pendingTaskScreenshotUri = uri
                 detectedScreenshotUri = null
             }
             ScreenshotNotificationService.ACTION_SAVE_REFERENCE -> detectedScreenshotUri = uri
