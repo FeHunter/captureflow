@@ -14,7 +14,7 @@
 
 ## Proveniência da origem em imagens
 - URL recebida em `EXTRA_TEXT` ou `ClipData` é validada como HTTP(S) e associada à imagem compartilhada.
-- URL obtida por OCR é uma sugestão não verificada. A UI solicita confirmação explícita antes de marcar a origem como confirmada e abrir o endereço.
+- URLs reconhecidas por OCR não são salvas como origem. O OCR pode ler a barra do navegador, endereços locais ou texto sem relação com o conteúdo; apenas URL explícita no payload de compartilhamento é associada automaticamente.
 - Pacote vindo de referrer ou `MediaStore.OWNER_PACKAGE_NAME` é apenas metadado de proveniência; não deve ser tratado como prova da página nem convertido em URL.
 - A URL de origem pode apontar para conteúdo externo; abrir o link sempre é uma ação explícita do usuário.
 
