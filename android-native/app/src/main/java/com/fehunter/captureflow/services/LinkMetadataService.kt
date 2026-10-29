@@ -128,7 +128,7 @@ class LinkMetadataService {
             .find(html)?.groupValues?.getOrNull(1)?.let(::clean)
 
     private fun attribute(tag: String, name: String): String? =
-        Regex("""\\b$name\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))""", RegexOption.IGNORE_CASE)
+        Regex("""\b$name\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", RegexOption.IGNORE_CASE)
             .find(tag)?.let { match ->
                 match.groupValues.drop(1).firstOrNull(String::isNotEmpty)
             }
