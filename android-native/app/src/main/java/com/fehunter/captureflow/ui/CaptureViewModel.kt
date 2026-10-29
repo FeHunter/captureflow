@@ -3,6 +3,8 @@ package com.fehunter.captureflow.ui
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.data.CaptureClassifier
@@ -85,6 +87,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         sourceVerified: Boolean = false,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
+            val resolvedSourceApp = sourceApp ?: resolveMediaStoreOwnerPackage(uri)
+            val resolvedDetectionMethod = sourceDetectionMethod ?: if (resolvedSourceApp != null) "mediastore_owner_package" else null
             val storedUri = runCatching {
                 imageStorageService.copyToPrivateStorage(getApplication(), uri).toString()
             }.getOrElse {
@@ -97,8 +101,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     title = "Imagem selecionada",
                     category = category,
                     sourceUrl = SourceUrlDetector.extract(sourceUrl.orEmpty()),
-                    sourceApp = sourceApp,
-                    sourceDetectionMethod = sourceDetectionMethod,
+                    sourceApp = resolvedSourceApp,
+                    sourceDetectionMethod = resolvedDetectionMethod,
                     sourceVerified = SourceUrlDetector.extract(sourceUrl.orEmpty()) != null && sourceVerified,
                 )
             captureDao.insert(capture)
@@ -109,6 +113,28 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             }
             extractText(capture)
         }
+    }
+
+    /**
+     * MediaStore's owner package is only a provenance hint. It may identify the component
+     * that inserted the media, not necessarily the app/page shown in the screenshot.
+     */
+    private fun resolveMediaStoreOwnerPackage(uri: Uri): String? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        return runCatching {
+            getApplication<Application>().contentResolver.query(
+                uri,
+                arrayOf(MediaStore.MediaColumns.OWNER_PACKAGE_NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.OWNER_PACKAGE_NAME))
+                        ?.takeIf(String::isNotBlank)
+                } else null
+            }
+        }.getOrNull()
     }
 
     fun receiveSharedIntent(intent: Intent) {
