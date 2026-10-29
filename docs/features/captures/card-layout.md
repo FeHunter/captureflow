@@ -162,7 +162,7 @@ Essas duas cores devem ser tratadas como referência complementar de design, nã
 - [ ] Data e hora de inserção são exibidas a partir de `createdAt`, em formato local consistente.
 - [ ] Imagens têm miniaturas consistentes sem perder acesso à imagem completa.
 - [ ] Tocar na imagem ou no título abre detalhes em tela cheia, com ícone de expansão visível.
-- [ ] A tela de detalhes mostra título completo e imagem inteira quando disponível.
+- [ ] A tela de detalhes mantém título, data/hora e categoria no cabeçalho; a imagem ocupa todo o espaço restante sem cortes.
 - [ ] O botão de sub-checklist fica entre concluir e excluir, mesmo com zero subtarefas, e abre um modal com ações de adicionar, concluir e excluir.
 - [ ] Estados de OCR, conclusão, erro e ausência de imagem estão contemplados.
 - [ ] O design funciona nos temas claro e escuro e mantém contraste/acessibilidade.
@@ -183,7 +183,19 @@ Essas duas cores devem ser tratadas como referência complementar de design, nã
 
 - Tocar na miniatura **ou no título** abre uma visualização de detalhes em tela cheia.
 - O ícone de expansão no canto superior da miniatura comunica visualmente que o cartão pode ser aberto.
-- A tela de detalhes mostra o título completo, data/hora, categoria, imagem em proporção integral quando houver e conteúdo capturado quando disponível. O conteúdo longo fica fora da grade para preservar a leitura rápida.
-- O texto secundário do cartão pode ocupar até duas linhas e recebe altura mínima para evitar que a tipografia fique comprimida.
+- A tela de detalhes mantém no cabeçalho o título completo, data/hora e categoria. O corpo é dedicado à imagem, que ocupa toda a área restante com ajuste `Fit/contain`, preservando a proporção e sem cortes. Não exibir conteúdo capturado nem URL no detalhe em tela cheia.
+- O texto secundário do cartão pode ocupar até duas linhas e recebe altura de 38–44 dp para evitar que a tipografia fique comprimida. A altura de referência do cartão é 320 dp.
 - A barra inferior mantém a ordem **concluir → sub-checklist/progresso → excluir**. O botão de sub-checklist fica visível mesmo quando o cartão ainda não tem subtarefas, para permitir adicionar a primeira.
 - A sub-checklist abre em modal bottom sheet, onde é possível adicionar, concluir e excluir subtarefas. O progresso usa o formato concluídas/total.
+
+
+## Atualização de layout — cartão ampliado e detalhe focado na imagem
+
+- Altura de referência do cartão na grade: **320 dp** (antes: 300 dp).
+- O subtítulo mantém até duas linhas, com altura reservada de **38–44 dp** (antes: 28–34 dp), para melhorar a leitura e evitar compressão.
+- A grade permanece em duas colunas, com 12 dp de espaçamento e ações inferiores de 48 dp.
+- A visualização em tela cheia é dividida em duas regiões:
+  1. **Cabeçalho:** título completo, data/hora persistida e tag/categoria; botão de fechar alinhado à direita.
+  2. **Corpo:** imagem ocupando toda a área vertical restante, usando ajuste `ContentScale.Fit` para preservar a imagem inteira sem recorte.
+- O cabeçalho não rola junto com a imagem. Não exibir conteúdo OCR capturado ou URL no modo de visualização da imagem.
+- Se não houver imagem disponível, manter a área principal e apresentar um placeholder centralizado, sem quebrar a composição.
