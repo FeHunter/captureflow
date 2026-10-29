@@ -66,3 +66,7 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Priorizada a região central da imagem na pontuação de candidatos a título OCR.
 - Fixada a divisão do fullscreen em 30% de cabeçalho e 70% de imagem, com fade escuro sobre a imagem para títulos longos.
 - Adicionada remoção best-effort do screenshot original após importação confirmada pelo fluxo de notificação; imagens escolhidas manualmente permanecem na galeria. A exclusão pode ser impedida pelo Android sem consentimento do usuário.
+
+
+## 2026-10-29 — Ajuste de proporção do fullscreen
+- Alterada a proporção do detalhe fullscreen de 30/70 para 20% de cabeçalho e 80% de imagem, ampliando a área visual da referência.
