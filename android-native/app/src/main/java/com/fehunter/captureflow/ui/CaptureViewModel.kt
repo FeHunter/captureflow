@@ -9,6 +9,7 @@ import com.fehunter.captureflow.data.CaptureClassifier
 import com.fehunter.captureflow.data.CaptureDatabase
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.CaptureSubtaskEntity
+import com.fehunter.captureflow.data.SourceUrlDetector
 import com.fehunter.captureflow.data.ChecklistTaskEntity
 import com.fehunter.captureflow.services.LinkMetadataService
 import com.fehunter.captureflow.services.OcrService
@@ -74,7 +75,15 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
      * Saves an image chosen with Android's system photo picker as a local capture.
      * Copying it immediately avoids relying on the picker URI grant later during OCR.
      */
-    fun addImageCapture(uri: Uri, category: String = "Referência", deleteSourceScreenshotAfterImport: Boolean = false) {
+    fun addImageCapture(
+        uri: Uri,
+        category: String = "Referência",
+        deleteSourceScreenshotAfterImport: Boolean = false,
+        sourceUrl: String? = null,
+        sourceApp: String? = null,
+        sourceDetectionMethod: String? = null,
+        sourceVerified: Boolean = false,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             val storedUri = runCatching {
                 imageStorageService.copyToPrivateStorage(getApplication(), uri).toString()
@@ -84,7 +93,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 uri.toString()
             }
             val capture = CaptureClassifier.create("Imagem compartilhada", storedUri)
-                .copy(title = "Imagem selecionada", category = category)
+                .copy(
+                    title = "Imagem selecionada",
+                    category = category,
+                    sourceUrl = sourceUrl ?: SourceUrlDetector.extract(sourceUrl.orEmpty()),
+                    sourceApp = sourceApp,
+                    sourceDetectionMethod = sourceDetectionMethod,
+                    sourceVerified = sourceUrl != null && sourceVerified,
+                )
             captureDao.insert(capture)
             // Only notification-driven screenshot imports opt into source cleanup.
             // Manually selected gallery images are never deleted automatically.
@@ -98,7 +114,13 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     fun receiveSharedIntent(intent: Intent) {
         val incoming = CaptureClassifier.fromIntent(intent) ?: return
         if (incoming.imageUri != null) {
-            addImageCapture(Uri.parse(incoming.imageUri))
+            addImageCapture(
+                uri = Uri.parse(incoming.imageUri),
+                sourceUrl = incoming.sourceUrl,
+                sourceApp = incoming.sourceApp,
+                sourceDetectionMethod = incoming.sourceDetectionMethod,
+                sourceVerified = incoming.sourceVerified,
+            )
             return
         }
 
@@ -164,6 +186,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 content = enrichedContent,
                 category = category,
                 sourceUrl = pending.url,
+                sourceDetectionMethod = "shared_text",
+                sourceVerified = true,
             )
             captureDao.insert(capture)
 
@@ -220,6 +244,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) { captureDao.setCompleted(id, completed) }
     }
 
+    fun confirmSourceUrl(id: String) {
+        viewModelScope.launch(Dispatchers.IO) { captureDao.confirmSourceUrl(id) }
+    }
+
     fun setCaptureCategory(id: String, category: String) {
         viewModelScope.launch(Dispatchers.IO) { captureDao.updateCategory(id, category) }
     }
@@ -251,6 +279,18 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     ocrService.extractStructuredText(getApplication(), Uri.parse(rawUri))
                 }
                 val extracted = analysis.fullText.trim()
+
+                val ocrUrlCandidate = if (capture.sourceUrl == null) SourceUrlDetector.extract(extracted) else null
+                if (ocrUrlCandidate != null) {
+                    withContext(Dispatchers.IO) {
+                        captureDao.updateSourceUrlIfMissing(
+                            capture.id,
+                            ocrUrlCandidate,
+                            "ocr_candidate",
+                            false,
+                        )
+                    }
+                }
 
                 if (extracted.isBlank()) {
                     setOcrState(
