@@ -158,7 +158,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             val enrichedContent = listOf(
                 pending.originalContent.trim(),
                 pending.description?.takeIf(String::isNotBlank),
-            ).filterNotNull().filter(String::isNotBlank).distinct().joinToString("\\n")
+            ).filterNotNull().filter(String::isNotBlank).distinct().joinToString("\n")
             val capture = fallback.copy(
                 title = pending.title.trim().takeIf(String::isNotBlank) ?: fallback.title,
                 content = enrichedContent,
