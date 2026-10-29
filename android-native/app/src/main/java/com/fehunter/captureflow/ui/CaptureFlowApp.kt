@@ -309,6 +309,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
         val sourceUrl = capture.sourceUrl?.takeIf { url ->
             Uri.parse(url).scheme?.lowercase()?.let { it == "http" || it == "https" } == true
         }
+        var confirmOcrSourceUrl by remember(capture.id) { mutableStateOf(false) }
         Dialog(
             onDismissRequest = { selectedCapture = null },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
@@ -349,15 +350,19 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         sourceUrl?.let { url ->
                             IconButton(
                                 onClick = {
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    if (!capture.sourceVerified) {
+                                        confirmOcrSourceUrl = true
+                                    } else {
+                                        runCatching {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                        }
                                     }
                                 },
                                 modifier = Modifier.size(48.dp),
                             ) {
                                 Icon(
                                     Icons.Default.Link,
-                                    contentDescription = "Abrir link original",
+                                    contentDescription = if (capture.sourceVerified) "Abrir link original" else "Confirmar link detectado na imagem",
                                     tint = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
@@ -385,6 +390,27 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     }
                 }
             }
+        }
+        if (confirmOcrSourceUrl && sourceUrl != null) {
+            AlertDialog(
+                onDismissRequest = { confirmOcrSourceUrl = false },
+                title = { Text("Confirmar link detectado") },
+                text = {
+                    Text("Este endereço foi identificado por OCR na imagem e ainda não foi confirmado. Deseja marcar como origem desta referência e abrir o link?\\n\\n$sourceUrl")
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmOcrSourceUrl = false
+                        viewModel.confirmSourceUrl(capture.id)
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(sourceUrl)))
+                        }
+                    }) { Text("Confirmar e abrir") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmOcrSourceUrl = false }) { Text("Cancelar") }
+                },
+            )
         }
     }
     taskScreenshotToConfirm?.let { uri ->
