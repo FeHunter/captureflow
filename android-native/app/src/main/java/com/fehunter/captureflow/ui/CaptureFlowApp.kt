@@ -179,14 +179,6 @@ private fun CaptureCard(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
-                Column(Modifier.weight(1f)) {
-                    Text(capture.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(capture.category, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir referência") }
-            }
             val cover = remember(capture.imageUri) {
                 capture.imageUri?.let { raw ->
                     runCatching {
@@ -201,6 +193,14 @@ private fun CaptureCard(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
                     contentScale = ContentScale.Crop,
                 )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = capture.isCompleted, onCheckedChange = onCompleted)
+                Column(Modifier.weight(1f)) {
+                    Text(capture.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(capture.category, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                }
+                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir referência") }
             }
             Text(capture.content, style = MaterialTheme.typography.bodyMedium, maxLines = 5)
             if (capture.kind == "image" && capture.imageUri != null) {
