@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
@@ -63,15 +64,27 @@ import com.fehunter.captureflow.data.CaptureSubtaskEntity
 @Composable
 fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, pendingTaskScreenshotUri: Uri?, onTaskScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
+    var showOptionsMenu by remember { mutableStateOf(false) }
+    var showCompletedCaptures by remember { mutableStateOf(true) }
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Column {
-                    Text("CaptureFlow v${BuildConfig.VERSION_NAME}", fontWeight = FontWeight.Bold)
-                    Text("Suas referências, organizadas", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TopAppBar(title = { Text("Biblioteca", fontWeight = FontWeight.Bold) }, actions = {
+                IconButton(onClick = { showOptionsMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Opções da biblioteca")
                 }
-            }, actions = {
-                IconButton(onClick = { showThemeMenu = true }) { Icon(Icons.Default.Palette, contentDescription = "Alterar tema") }
+                DropdownMenu(expanded = showOptionsMenu, onDismissRequest = { showOptionsMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if (showCompletedCaptures) "Ocultar concluídos" else "Mostrar concluídos") },
+                        onClick = {
+                            showCompletedCaptures = !showCompletedCaptures
+                            showOptionsMenu = false
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Alterar tema") },
+                        onClick = { showOptionsMenu = false; showThemeMenu = true },
+                    )
+                }
                 DropdownMenu(expanded = showThemeMenu, onDismissRequest = { showThemeMenu = false }) {
                     listOf("system" to "Seguir dispositivo", "light" to "Claro", "dark" to "Escuro").forEach { (mode, label) ->
                         DropdownMenuItem(text = { Text(if (themeMode == mode) "✓ $label" else label) }, onClick = { onThemeModeChange(mode); showThemeMenu = false })
@@ -82,7 +95,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
             CaptureLibrary(
-                viewModel, hasScreenshotAccess, screenshotMonitoringEnabled,
+                viewModel, hasScreenshotAccess, screenshotMonitoringEnabled, showCompletedCaptures,
                 detectedScreenshotUri, pendingTaskScreenshotUri,
                 onRequestScreenshotAccess, onStopScreenshotMonitoring,
                 onScreenshotHandled, onTaskScreenshotHandled,
@@ -92,7 +105,7 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
@@ -126,6 +139,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     }
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
+            (showCompletedCaptures || !it.isCompleted) &&
             (category == "Todas" || it.category == category)
     }
 
