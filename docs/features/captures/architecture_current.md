@@ -42,3 +42,8 @@ Composables não devem acessar Room nem executar IO. Preservar conteúdo se enri
 - Dados e métodos de `ChecklistTaskEntity` permanecem no ViewModel/banco, mas a tela atual não apresenta lista independente de tarefas.
 - O fluxo da notificação salva screenshot como referência; algumas strings/ações internas ainda usam nomenclatura histórica de tarefa.
 - A correção de imports Compose para `KeyboardOptions` e `ImeAction` foi integrada pelo PR #25; validar o CI do commit atual.
+
+
+### Atualização de navegação e edição
+
+O detalhe fullscreen utiliza `HorizontalPager` com sincronização do cabeçalho com a página ativa. O título principal pode ser editado no próprio fullscreen; a atualização usa `CaptureViewModel.updateCaptureTitle` e `CaptureDao.updateTitle`, sem alterar os demais dados da captura.
