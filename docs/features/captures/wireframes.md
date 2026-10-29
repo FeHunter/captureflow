@@ -227,3 +227,46 @@ A combinação violeta #F7F5FF / #29213D é apenas referência visual complement
 | Subtítulo | 38–44 dp |
 | Ações inferiores | 48 dp |
 | Espaçamento entre cartões | 12 dp |
+
+
+## 10. Interações do detalhe e entrada por notificação
+
+### Abertura de tarefa a partir da notificação
+
+```text
+Screenshot detectada
+       │
+       ▼
+Notificação tocada
+       │ URI + ACTION_CREATE_TASK
+       ▼
+MainActivity (onCreate / onNewIntent)
+       │ mantém URI pendente
+       ▼
+Confirmação “Criar tarefa com screenshot?”
+       ├── Criar tarefa ──► ViewModel persiste tarefa + imagem
+       └── Cancelar ──────► descarta intenção pendente
+```
+
+O resultado esperado é abrir a etapa de confirmação com a imagem associada à notificação, e não apenas abrir a biblioteca. A confirmação evita criar uma tarefa por acidente e deixa explícita a ação do usuário.
+
+### Cabeçalho atualizado do detalhe
+
+```text
+┌──────────────────────────────────────────┐
+│ Título completo             [☷ tarefas] [✕]│
+│ Data/hora · [Categoria/tag]               │
+├──────────────────────────────────────────┤
+│                                          │
+│             IMAGEM INTEGRAL               │
+│      swipe-left: próxima referência       │
+│      swipe-right: referência anterior    │
+│                                          │
+└──────────────────────────────────────────┘
+```
+
+- O botão **tarefas** abre a sub-checklist do cartão atualmente visível.
+- O botão **fechar** encerra a visualização.
+- Swipe-left e swipe-right atuam somente na área principal da imagem.
+- A sequência de navegação acompanha a biblioteca filtrada. Os limites da sequência não fazem loop automático.
+- Ao navegar, o cabeçalho, a imagem e as subtarefas devem mudar em conjunto para a nova referência.

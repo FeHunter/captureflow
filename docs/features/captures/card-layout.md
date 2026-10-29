@@ -199,3 +199,51 @@ Essas duas cores devem ser tratadas como referência complementar de design, nã
   2. **Corpo:** imagem ocupando toda a área vertical restante, usando ajuste `ContentScale.Fit` para preservar a imagem inteira sem recorte.
 - O cabeçalho não rola junto com a imagem. Não exibir conteúdo OCR capturado ou URL no modo de visualização da imagem.
 - Se não houver imagem disponível, manter a área principal e apresentar um placeholder centralizado, sem quebrar a composição.
+
+
+## Atualização funcional — tarefa iniciada pela notificação e navegação entre referências
+
+### Responsabilidades do fluxo de screenshot para tarefa
+
+- **`ScreenshotNotificationService`** continua responsável por detectar a screenshot no MediaStore e criar a notificação com a URI da imagem na ação `ACTION_CREATE_TASK`.
+- **`MainActivity`** recebe a ação tanto em `onCreate` quanto em `onNewIntent`. Ao tocar na notificação, deve guardar a URI como uma intenção pendente de criação de tarefa, sem criar o registro silenciosamente nem descartar a URI.
+- **`CaptureLibrary`** observa a URI pendente e apresenta uma confirmação visual. A ação principal cria a tarefa com `CaptureViewModel.addImageTask(uri)`; cancelar/fechar limpa a intenção pendente sem criar tarefa.
+- **`CaptureViewModel`** mantém a responsabilidade de copiar a imagem para o armazenamento privado quando possível e persistir uma `ChecklistTaskEntity` com imagem anexada.
+- A confirmação deve funcionar se o app estiver fechado ou já estiver aberto (fluxo `singleTop` / `onNewIntent`). A tela principal abrir sozinha não é suficiente: a imagem precisa chegar à etapa de confirmação.
+- A URI é tratada como dado de navegação transitório; não persistir uma intenção cancelada como tarefa.
+
+### Modal de confirmação
+
+Ao tocar na notificação “Screenshot pronta para tarefa”, abrir o CaptureFlow e exibir:
+
+```text
+┌──────────────────────────────────────┐
+│ Criar tarefa com screenshot?         │
+│                                      │
+│ A captura foi aberta pela notificação│
+│ e será anexada à nova tarefa.        │
+│                                      │
+│              [Cancelar] [Criar tarefa]│
+└──────────────────────────────────────┘
+```
+
+- **Criar tarefa:** chama o ViewModel com a URI recebida e fecha a confirmação.
+- **Cancelar / fechar:** limpa a URI pendente e fecha a confirmação, sem criar registro.
+- O fluxo não deve depender do monitor de screenshots estar em primeiro plano; a URI enviada pelo `PendingIntent` é a fonte da imagem.
+
+### Atalho de tarefas no detalhe em tela cheia
+
+- O cabeçalho do detalhe possui um botão de tarefas (ícone de checklist) ao lado do botão de fechar.
+- O atalho abre o modal bottom sheet de sub-checklist associado à referência atualmente visualizada, e não necessariamente ao cartão que originalmente abriu o detalhe após uma navegação por swipe.
+- O modal mantém ações para adicionar, concluir e excluir subtarefas e mostra o progresso concluídas/total.
+- Ao abrir o modal, o detalhe em tela cheia fecha para evitar empilhamento de janelas modais.
+
+### Navegação horizontal entre cartões no detalhe
+
+- Um gesto horizontal na área da imagem navega pela lista de referências que corresponde ao resultado atual da biblioteca (busca e filtro aplicados).
+- **Swipe-left:** próxima referência na sequência exibida.
+- **Swipe-right:** referência anterior.
+- A navegação respeita os limites: no primeiro cartão não existe anterior; no último não existe próxima.
+- Ao trocar de referência, atualizar juntos título, data/hora, tag/categoria, imagem e vínculo da sub-checklist.
+- A imagem usa `ContentScale.Fit`; o gesto não deve mudar o recorte da imagem.
+- A área de swipe é o corpo da imagem, para não conflitar com os botões do cabeçalho.
