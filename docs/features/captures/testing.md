@@ -40,8 +40,8 @@
 ## Recuperação da origem em imagens
 - [ ] Compartilhar imagem com URL HTTP(S) em `EXTRA_TEXT`: associar URL automaticamente e gravar `sourceVerified = true`, método `share_extra_text`.
 - [ ] Compartilhar imagem sem URL em `EXTRA_TEXT`, mas com URL em texto de `ClipData`: associar a URL com método `share_clipdata_text`.
-- [ ] Compartilhar imagem sem URL: OCR identifica URL visível e grava como candidata `ocr_candidate`, com `sourceVerified = false`.
-- [ ] Ao tocar no link OCR não confirmado, “Cancelar” não abre nem confirma; “Confirmar e abrir” marca como verificado e abre a URL.
+- [ ] Compartilhar imagem sem URL: OCR continua extraindo título/texto, mas uma URL visível na barra do navegador não é gravada como `sourceUrl`.
+- [ ] Título OCR não pode ser uma URL, IP/porta ou trecho da barra de endereço; se o título estruturado parecer endereço, usar a primeira linha de conteúdo útil ou o fallback “Screenshot analisado”.
 - [ ] URL inválida, FTP, texto sem URL ou OCR sem URL não criam `sourceUrl`.
 - [ ] Referrer `android-app://` e `OWNER_PACKAGE_NAME` podem preencher `sourceApp`, sem serem confundidos com URL.
 - [ ] Migração de banco v5→v6 mantém capturas e marca URLs antigas como verificadas; itens sem URL continuam sem origem verificada.
