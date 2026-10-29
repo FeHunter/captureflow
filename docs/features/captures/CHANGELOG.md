@@ -43,3 +43,12 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Documentação atualizada para declarar que a sub-checklist pertence a cada referência.
 - PR #25 adiciona imports Compose ausentes `KeyboardOptions` e `ImeAction`; aguardando CI/build do commit correspondente.
 - Pendências conhecidas: strings da notificação/modal ainda usam linguagem de tarefa e categoria `Referência` não aparece na lista padrão de categorias.
+
+
+## 2026-10-29 — UX fullscreen
+
+- Substituída a detecção manual de arraste horizontal por `HorizontalPager` para transição de página mais fluida.
+- Sincronizados cabeçalho e página selecionada; navegação permanece limitada à lista atual, sem wrap-around.
+- Substituído o atalho de sub-checklist no cabeçalho fullscreen por **Editar título**.
+- Adicionado salvamento do título manual via ViewModel e atualização específica no DAO, preservando conteúdo e imagem.
+- Sub-checklist segue disponível pelo controle do cartão.
