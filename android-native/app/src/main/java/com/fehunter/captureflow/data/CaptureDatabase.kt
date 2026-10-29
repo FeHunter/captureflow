@@ -22,7 +22,7 @@ data class CaptureEntity(
     val isCompleted: Boolean = false,
     val sourceApp: String? = null,
     val sourceDetectionMethod: String? = null,
-    val sourceVerified: Boolean = true,
+    @ColumnInfo(defaultValue = "0") val sourceVerified: Boolean = false,
 )
 
 @Entity(tableName = "checklist_tasks")
@@ -132,7 +132,8 @@ abstract class CaptureDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE captures ADD COLUMN sourceApp TEXT")
                 database.execSQL("ALTER TABLE captures ADD COLUMN sourceDetectionMethod TEXT")
-                database.execSQL("ALTER TABLE captures ADD COLUMN sourceVerified INTEGER NOT NULL DEFAULT 1")
+                database.execSQL("ALTER TABLE captures ADD COLUMN sourceVerified INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("UPDATE captures SET sourceVerified = CASE WHEN sourceUrl IS NULL THEN 0 ELSE 1 END")
             }
         }
 
@@ -196,7 +197,7 @@ object CaptureClassifier {
         val clipText = intent.clipData?.let { clip ->
             (0 until clip.itemCount).mapNotNull { index ->
                 clip.getItemAt(index).text?.toString()
-            }.joinToString("\\n")
+            }.joinToString("\n")
         }.orEmpty()
         val extraTextUrl = SourceUrlDetector.extract(extraText)
         val clipTextUrl = SourceUrlDetector.extract(clipText)
@@ -215,7 +216,9 @@ object CaptureClassifier {
                 } else {
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                } ?: intent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+                } ?: intent.clipData?.let { clip ->
+                    (0 until clip.itemCount).mapNotNull { index -> clip.getItemAt(index).uri }.firstOrNull()
+                }
                 uri?.let {
                     val sourceUrl = extraTextUrl ?: clipTextUrl
                     IncomingCapture(
