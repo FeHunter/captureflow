@@ -66,3 +66,9 @@ The former Expo/React Native implementation is archived under `legacy-expo/`; do
 - Keep the fullscreen header synchronized with the settled pager page.
 - **Editar título** is available only in fullscreen. Persist through `CaptureViewModel.updateCaptureTitle` and `CaptureDao.updateTitle`, changing only the title.
 - Keep the sub-checklist entry point on the reference card; do not restore its shortcut in the fullscreen header.
+
+
+## OCR, fullscreen e screenshots
+- Ao ajustar a extração de título por OCR, considere a região central da tela como sinal prioritário, sem eliminar os sinais de perfil de interface, tamanho e qualidade do texto.
+- No fullscreen, mantenha a proporção aproximada de 30% para cabeçalho e 70% para imagem. Títulos longos podem sobrepor a imagem com gradiente escuro para transparente, sem mudar o espaço reservado à imagem.
+- Nunca exclua imagens escolhidas manualmente pelo usuário. A remoção da screenshot original só pode ser habilitada no fluxo de importação confirmado pela notificação, após salvar a referência e a cópia privada; tratar falhas de exclusão como não fatais, pois o Android pode exigir consentimento explícito.
