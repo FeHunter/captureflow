@@ -131,3 +131,29 @@ Persistência em `capture_subtasks`; cada item pertence a uma referência via `c
 - A abertura de um thumbnail leva a um pager horizontal limitado às capturas da mesma categoria atualmente filtrada.
 - Swipe-left avança e swipe-right retorna; não há loop nas extremidades. A data/categoria e os controles de conclusão/exclusão refletem a página atual.
 - O título do produto permanece **Capture Flow** na barra principal e no launcher Android.
+
+
+## 7. Diálogo de link compartilhado — categoria obrigatória
+
+```text
+┌────────────────────────────────────────┐
+│ Salvar link como referência             │
+│ Título encontrado (H1/fallback)         │
+│ https://site.example/article            │
+│ Descrição, se encontrada                │
+│ Buscando título e imagem do site…       │
+│ Em qual categoria deseja salvar?        │
+│ ○ Ler depois                            │
+│ ○ Verificar                             │
+│ ○ Salvar                                │
+│ ○ Importante                            │
+│ [Cancelar]            [Salvar referência]│
+└────────────────────────────────────────┘
+```
+
+- Enquanto os metadados são buscados, a ação de salvar fica desabilitada.
+- É obrigatória a escolha de uma categoria; não há categoria pré-selecionada.
+- Cancelar descarta o link pendente sem gravar no banco.
+- Se a extração falhar, o diálogo explica que o título de fallback será usado e permite salvar depois da seleção.
+- O título tenta usar o primeiro H1. A imagem tenta usar uma imagem de article/main antes dos metadados sociais. A imagem é baixada após a confirmação e salva localmente.
+- O fetch não executa JavaScript; páginas dinâmicas podem usar o título fallback e não ter capa.
