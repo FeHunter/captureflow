@@ -52,3 +52,16 @@
 - [ ] Ao voltar ao app até 30 segundos após tirar screenshot em segundo plano, verificar a tentativa de detectar a imagem recente.
 - [ ] Ao sair do app, o ContentObserver é removido; não há monitoramento contínuo em segundo plano.
 - [ ] Cabeçalho exibe versão numérica `v0.3.2`, sem hash do commit.
+
+
+## Notificações de screenshots em segundo plano — v0.3.3
+- [ ] Sem permissão de imagens, ativação não inicia o monitoramento.
+- [ ] No Android 13+, negar permissão de notificações impede a ativação e a UI continua explicando o requisito.
+- [ ] Ao ativar, aparece a notificação persistente de monitoramento.
+- [ ] Com outro app em primeiro plano, tirar screenshot com nome/pasta reconhecível gera notificação CaptureFlow.
+- [ ] A ação `Salvar referência` abre a escolha de categoria e salva a imagem/inicia OCR.
+- [ ] A ação `Criar tarefa` cria tarefa com a screenshot anexada.
+- [ ] Desativar pelo app encerra o serviço e remove a notificação persistente.
+- [ ] Reiniciar/retomar o app com monitoramento habilitado tenta retomar o serviço sem duplicar notificações de serviço.
+- [ ] Validar no Android 13, Android 14+ e ao menos um dispositivo de fabricante com gestão agressiva de bateria.
+- [ ] Validar política de Google Play para serviço `specialUse` antes de publicação pública.
