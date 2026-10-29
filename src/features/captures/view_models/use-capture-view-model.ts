@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Capture } from "../model/capture";
+import { extractImageText } from "../services/ocr-service";
 import { deleteCapture, initializeCaptureRepository, listCaptures, saveCapture, toggleCaptureCompleted } from "../repository/capture-repository";
 
 export function useCaptureViewModel() {
@@ -28,10 +29,21 @@ export function useCaptureViewModel() {
     return () => { active = false; };
   }, []);
 
+  const extractText = useCallback(async (imageUri: string): Promise<string | null> => {
+    try {
+      const text = await extractImageText(imageUri);
+      setError(null);
+      return text;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível extrair o texto da imagem.");
+      return null;
+    }
+  }, []);
+
   const addCapture = useCallback(async (content: string, imageUri?: string | null) => {
     if (!content.trim() && !imageUri) return false;
     try {
-      await saveCapture({ content: content.trim() || "Imagem importada da galeria", imageUri });
+      await saveCapture({ content: content.trim(), imageUri });
       await refresh();
       return true;
     } catch {
@@ -56,5 +68,5 @@ export function useCaptureViewModel() {
     return matchesQuery && matchesFilter;
   }), [captures, filter, query]);
 
-  return { captures, visibleCaptures, isReady, error, query, setQuery, filter, setFilter, addCapture, toggleCompleted, removeCapture, refresh };
+  return { captures, visibleCaptures, isReady, error, query, setQuery, filter, setFilter, addCapture, extractText, toggleCompleted, removeCapture, refresh };
 }
