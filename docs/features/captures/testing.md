@@ -24,6 +24,8 @@
 - [ ] Confirmar que horário, URL, autoria e ações do navegador não entram no título.
 - [ ] Testar screenshot da Visual Capitalist: título esperado começa por “Mapped: Unemployment Rates Around the World in 2026”.
 - [ ] Testar screenshot do YouTube mobile: título esperado começa por “10 Easy craft ideas / miniature craft / Paper”; não usar `m.youtube.com/watch` ou `Open App` como título.
+- [ ] Testar screenshots de famílias vídeo/social, notícia, comércio e produtividade; verificar que o perfil ajusta a região candidata sem forçar uma posição única.
+- [ ] Confirmar que uma palavra como “share” ou “views” dentro de um título real não é removida quando não estiver em contexto de interface.
 - [ ] Confirmar que texto de likes/views/comments e navegação do player é filtrado do título.
 - [ ] Título da referência contém a manchete completa sem horários, URL, autoria ou ações do navegador.
 - [ ] O cartão mostra somente título, capa, checkbox e excluir; descrição/categoria/texto OCR bruto não aparecem.

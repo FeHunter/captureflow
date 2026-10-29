@@ -26,3 +26,9 @@
 - Referências aceitam sub-checklists persistentes com inclusão, conclusão e remoção de itens.
 - Room migra da versão 3 para 4 criando a tabela `capture_subtasks`; excluir uma referência remove os sub-itens associados.
 - Adicionados critérios de teste para a screenshot do YouTube mobile, fullscreen, persistência e exclusão de sub-itens.
+
+## OCR orientado por famílias de UI
+- Adicionada pesquisa de apps populares e padrões visuais por categoria em app-popularity-and-ocr-ui-research.md.
+- O OCR detecta perfis aproximados de vídeo, social, notícias, comércio e produtividade, ajustando pontuação e faixa vertical de títulos.
+- O filtro de ruído dá preferência a sinais fortes de interface/URL/metadata, evitando bloquear palavras genéricas isoladas que podem fazer parte do título.
+- A documentação diferencia rankings por MAU, downloads e índices de uso e registra as limitações de comparabilidade de 2024–2026.

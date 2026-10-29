@@ -24,6 +24,7 @@ Permitir que o usuário guarde conteúdo encontrado durante o uso do dispositivo
 - A imagem original permanece vinculada à referência/tarefa, mesmo após o OCR.
 - Para referências baseadas em imagem, o resultado persistido da análise é o título; o texto complementar do OCR não é mostrado nem armazenado no campo de conteúdo da referência.
 - A análise de imagem é iniciada automaticamente após salvar a cópia local; não há botão manual de OCR no cartão de referência.
+- OCR usa perfis heurísticos de famílias visuais (vídeo, social, notícias, comércio e produtividade) para ajustar a pontuação do título e filtrar ruído conhecido.
 - OCR é heurístico; não garante identificar semanticamente o título em todos os layouts.
 - A versão exibida no cabeçalho vem de `BuildConfig.VERSION_NAME`, não de texto duplicado na interface.
 - A sub-checklist de uma referência é armazenada em uma tabela Room separada e é removida quando a referência é excluída.
