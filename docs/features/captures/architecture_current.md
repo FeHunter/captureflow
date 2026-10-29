@@ -47,3 +47,8 @@ Composables não devem acessar Room nem executar IO. Preservar conteúdo se enri
 ### Atualização de navegação e edição
 
 O detalhe fullscreen utiliza `HorizontalPager` com sincronização do cabeçalho com a página ativa. O título principal pode ser editado no próprio fullscreen; a atualização usa `CaptureViewModel.updateCaptureTitle` e `CaptureDao.updateTitle`, sem alterar os demais dados da captura.
+
+
+## Fullscreen pager and title correction
+
+`CaptureFlowApp.kt` uses Compose Foundation `HorizontalPager` for fullscreen navigation. The pager is initialized at the selected reference, follows the filtered list, does not wrap around, and updates the header when the settled page changes. Title edits are routed through `CaptureViewModel.updateCaptureTitle` to the title-only `CaptureDao.updateTitle` query; no schema migration is needed. The fullscreen header no longer opens the sub-checklist; the card entry point remains.
