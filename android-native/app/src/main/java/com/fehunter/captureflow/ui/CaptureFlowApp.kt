@@ -269,8 +269,10 @@ private fun CaptureCard(
                 Text(
                     text = capture.title,
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
                 if (ocrState.isProcessing) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -280,6 +282,12 @@ private fun CaptureCard(
                     Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
                 }
             }
+
+            Text(
+                text = capture.title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             cover?.let { bitmap ->
                 Image(
@@ -422,6 +430,7 @@ private fun ChecklistScreen(viewModel: CaptureViewModel) {
                     onCompleted = { viewModel.setTaskCompleted(task.id, it) },
                     onDelete = { viewModel.deleteTask(task.id) },
                     onAnalyze = { viewModel.analyzeTaskScreenshot(task) },
+                    onCategoryChange = { viewModel.setTaskCategory(task.id, it) },
                 )
             }
         }
@@ -434,7 +443,10 @@ private fun TaskCard(
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onAnalyze: () -> Unit,
+    onCategoryChange: (String) -> Unit,
 ) {
+    var showCategoryMenu by remember(task.id) { mutableStateOf(false) }
+    val taskCategories = listOf("Ler depois", "Ideias", "Tarefa", "Importante", "Mais tarde")
     val context = LocalContext.current
     val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, task.imageUri,
@@ -452,6 +464,17 @@ private fun TaskCard(
                 Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold)
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Excluir tarefa") }
+            }
+            Box {
+                OutlinedButton(onClick = { showCategoryMenu = true }) { Text(task.category) }
+                DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
+                    taskCategories.forEach { tag ->
+                        DropdownMenuItem(text = { Text(tag) }, onClick = {
+                            onCategoryChange(tag)
+                            showCategoryMenu = false
+                        })
+                    }
+                }
             }
             cover?.let { bitmap ->
                 Image(
