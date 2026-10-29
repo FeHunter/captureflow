@@ -6,6 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -55,7 +57,7 @@ import com.fehunter.captureflow.data.ChecklistTaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit) {
+fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, pendingTaskScreenshotUri: Uri?, onTaskScreenshotHandled: () -> Unit) {
     var showThemeMenu by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
@@ -75,13 +77,13 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
         },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            CaptureLibrary(viewModel, hasScreenshotAccess, screenshotMonitoringEnabled, detectedScreenshotUri, onRequestScreenshotAccess, onStopScreenshotMonitoring, onScreenshotHandled)
+            CaptureLibrary(viewModel, hasScreenshotAccess, screenshotMonitoringEnabled, detectedScreenshotUri, pendingTaskScreenshotUri, onRequestScreenshotAccess, onStopScreenshotMonitoring, onScreenshotHandled, onTaskScreenshotHandled)
         }
     }
 }
 
 @Composable
-private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit) {
+private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingTaskScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onTaskScreenshotHandled: () -> Unit) {
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
@@ -96,6 +98,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     )
     LaunchedEffect(detectedScreenshotUri) {
         detectedScreenshotUri?.let { selectedImageUri = it }
+    }
+    var taskScreenshotToConfirm by remember { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(pendingTaskScreenshotUri) {
+        if (pendingTaskScreenshotUri != null) taskScreenshotToConfirm = pendingTaskScreenshotUri
     }
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
@@ -217,6 +223,30 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             }
         }
     }
+    taskScreenshotToConfirm?.let { uri ->
+        AlertDialog(
+            onDismissRequest = {
+                taskScreenshotToConfirm = null
+                onTaskScreenshotHandled()
+            },
+            title = { Text("Criar tarefa com screenshot?") },
+            text = { Text("A captura foi aberta pela notificação. Confirme para anexá-la a uma nova tarefa.") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.addImageTask(uri)
+                    taskScreenshotToConfirm = null
+                    onTaskScreenshotHandled()
+                }) { Text("Criar tarefa") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    taskScreenshotToConfirm = null
+                    onTaskScreenshotHandled()
+                }) { Text("Cancelar") }
+            },
+        )
+    }
+
     selectedImageUri?.let { uri ->
         AlertDialog(onDismissRequest = {
             selectedImageUri = null
