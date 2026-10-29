@@ -326,8 +326,9 @@ private fun TaskCard(
 private fun loadCoverBitmap(context: Context, rawUri: String): androidx.compose.ui.graphics.ImageBitmap? {
     val uri = Uri.parse(rawUri)
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-        ?: return null
+    val boundsStream = context.contentResolver.openInputStream(uri) ?: return null
+    boundsStream.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
     var sampleSize = 1
     while (bounds.outWidth / sampleSize > 1200 || bounds.outHeight / sampleSize > 1200) {
