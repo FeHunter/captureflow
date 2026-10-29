@@ -32,3 +32,9 @@
 - O OCR detecta perfis aproximados de vídeo, social, notícias, comércio e produtividade, ajustando pontuação e faixa vertical de títulos.
 - O filtro de ruído dá preferência a sinais fortes de interface/URL/metadata, evitando bloquear palavras genéricas isoladas que podem fazer parte do título.
 - A documentação diferencia rankings por MAU, downloads e índices de uso e registra as limitações de comparabilidade de 2024–2026.
+
+
+## Interface unificada, tags de imagem e tema
+- Removida a navegação inferior entre Referências e Checklist; ambas as áreas estão na tela principal.
+- Adicionado seletor de categoria para imagens escolhidas no dispositivo.
+- Adicionado seletor persistente de tema: sistema, claro e escuro, com paleta azul-marinho/ciano inspirada na referência visual fornecida.
