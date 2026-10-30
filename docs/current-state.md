@@ -1,6 +1,6 @@
 # Capture Flow — estado atual do aplicativo
 
-**Atualizado:** 2026-10-29. Este documento registra o comportamento observado no código; não é uma promessa de release.
+**Atualizado:** 2026-10-30. Este documento registra o comportamento observado no código; não é uma promessa de release.
 
 ## Produto e fonte de verdade
 Capture Flow guarda links, textos e imagens compartilhados como referências locais, organizáveis por categoria e com sub-checklists. O app ativo é Kotlin/Android/Jetpack Compose em `android-native/`; `legacy-expo/` é histórico. Banco local Room/SQLite em `captureflow.db`; sem sincronização em nuvem.
