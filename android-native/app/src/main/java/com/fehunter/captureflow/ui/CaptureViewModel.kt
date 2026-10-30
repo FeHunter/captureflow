@@ -253,6 +253,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             newName.equals("Concluído", true) || categories.value.any { it.name != oldName && it.name.equals(newName, true) }) return
         viewModelScope.launch(Dispatchers.IO) {
             captureDao.renameCategoryReferences(oldName, newName)
+            captureDao.renamePreviousCategoryReferences(oldName, newName)
             checklistDao.renameCategoryReferences(oldName, newName)
             categoryDao.rename(oldName, newName)
         }
@@ -265,6 +266,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             if (current.size <= 1 || current.none { it.name == name }) return@launch
             val fallback = current.firstOrNull { it.name != name }?.name ?: return@launch
             captureDao.renameCategoryReferences(name, fallback)
+            captureDao.renamePreviousCategoryReferences(name, fallback)
             checklistDao.renameCategoryReferences(name, fallback)
             categoryDao.delete(name)
         }
