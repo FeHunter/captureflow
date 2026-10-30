@@ -141,10 +141,11 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
+    val activeCategories = categoryEntities.map { it.name }.filterNot { it == "Concluído" }
     LaunchedEffect(categoryEntities) {
         if (category != "Todas" && categoryEntities.none { it.name == category }) category = "Todas"
         if (sharedLinkCategory != null && categoryEntities.none { it.name == sharedLinkCategory }) sharedLinkCategory = null
-        if (categoryEntities.isNotEmpty() && categoryEntities.none { it.name == imageCategory }) imageCategory = categoryEntities.first().name
+        if (activeCategories.isNotEmpty() && imageCategory !in activeCategories) imageCategory = activeCategories.first()
     }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -316,7 +317,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                 )
             }
         } else {
-            val visibleCategories = if (category == "Todas") categories.drop(1) else listOf(category)
+            val visibleCategories = if (category == "Todas") categoryEntities.map { it.name } else listOf(category)
             items(visibleCategories, key = { "category-$it" }) { tag ->
                 val categoryCaptures = filtered.filter { it.category == tag }
                 if (categoryCaptures.isNotEmpty()) {
@@ -334,6 +335,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     if (showCategoryManager) {
         CategoryManagementDialog(
             categories = categoryEntities.map { it.name },
+            fixedCategories = setOf("Concluído"),
             onAdd = viewModel::addCategory,
             onRename = viewModel::renameCategory,
             onDelete = viewModel::deleteCategory,
@@ -596,7 +598,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     CategorySelectionSection(
-                        categories = categories.drop(1),
+                        categories = activeCategories,
                         selectedCategory = sharedLinkCategory,
                         onCategorySelected = { sharedLinkCategory = it },
                     )
@@ -1267,6 +1269,7 @@ private fun CategorySelectionSection(
 @Composable
 private fun CategoryManagementDialog(
     categories: List<String>,
+    fixedCategories: Set<String> = emptySet(),
     onAdd: (String) -> Unit,
     onRename: (String, String) -> Unit,
     onDelete: (String) -> Unit,
@@ -1326,12 +1329,16 @@ private fun CategoryManagementDialog(
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                            IconButton(onClick = {
-                                editingCategory = name
-                                editedCategoryName = name
-                            }) { Icon(Icons.Default.Edit, contentDescription = "Renomear $name") }
-                            IconButton(onClick = { deleteTarget = name }, enabled = categories.size > 1) {
-                                Icon(Icons.Default.Delete, contentDescription = "Excluir $name")
+                            if (name in fixedCategories) {
+                                Text("Padrão", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            } else {
+                                IconButton(onClick = {
+                                    editingCategory = name
+                                    editedCategoryName = name
+                                }) { Icon(Icons.Default.Edit, contentDescription = "Renomear $name") }
+                                IconButton(onClick = { deleteTarget = name }, enabled = categories.size > 1) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Excluir $name")
+                                }
                             }
                         }
                     }
