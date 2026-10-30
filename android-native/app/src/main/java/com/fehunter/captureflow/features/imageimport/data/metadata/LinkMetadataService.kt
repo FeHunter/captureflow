@@ -1,4 +1,4 @@
-package com.fehunter.captureflow.services
+package com.fehunter.captureflow.features.imageimport.data.metadata
 
 import android.net.Uri
 import android.text.Html

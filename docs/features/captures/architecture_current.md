@@ -66,3 +66,13 @@ O detalhe fullscreen utiliza `HorizontalPager` com sincronização do cabeçalho
 - A persistência aguarda a confirmação explícita de categoria na UI.
 - Título prioriza H1; fallback og:title, twitter:title, title e host. Imagem prioriza article/main e depois metadados sociais.
 - A imagem é baixada para storage privado após confirmar. Falha de metadados não descarta a URL.
+
+
+## Migração Feature-first — etapa inicial
+
+Os arquivos Android foram realocados para pacotes com propriedade funcional:
+- Captures: `features.captures.data.local` e `features.captures.presentation`.
+- Image Import: `features.imageimport.data` (OCR, metadados e integração de screenshots).
+- Infraestrutura compartilhada de arquivos: `core.storage`.
+
+**Limite conhecido:** `CaptureViewModel` e `CaptureFlowApp` ainda são pontos de transição e mantêm responsabilidades agregadas. A extração de Domain/UseCases/repositórios e a decomposição das telas permanecem pendentes. Não ampliar esses arquivos; migrar os fluxos em fatias testáveis.

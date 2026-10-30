@@ -20,9 +20,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.fehunter.captureflow.ui.CaptureFlowApp
-import com.fehunter.captureflow.ui.CaptureViewModel
-import com.fehunter.captureflow.services.ScreenshotNotificationService
+import com.fehunter.captureflow.features.captures.presentation.screens.CaptureFlowApp
+import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
+import com.fehunter.captureflow.features.imageimport.data.android.ScreenshotNotificationService
 
 class MainActivity : ComponentActivity() {
     private val captureViewModel: CaptureViewModel by viewModels()
