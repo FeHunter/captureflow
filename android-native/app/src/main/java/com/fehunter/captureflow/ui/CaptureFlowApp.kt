@@ -447,35 +447,59 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                                 )
                             }
                         }
-                        Checkbox(checked = capture.isCompleted, onCheckedChange = { completed ->
-                            viewModel.setCaptureCompleted(capture.id, completed)
-                            selectedCapture = capture.copy(isCompleted = completed)
-                        }, modifier = Modifier.size(48.dp))
-                        IconButton(
-                            onClick = {
-                                selectedCaptureEditedTitle = capture.title
-                                showSelectedCaptureTitleDialog = true
-                            },
-                            modifier = Modifier.size(44.dp),
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
-                        }
-                        IconButton(onClick = { viewModel.deleteCapture(capture.id); selectedCapture = null }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.onSurface)
-                        }
                         IconButton(onClick = { selectedCapture = null }, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
-                    HorizontalPager(
-                        state = pagerState,
+                    Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        key = { page -> viewerCaptures[page].id },
-                    ) { page ->
-                        FullscreenCapturePage(
-                            capture = viewerCaptures[page],
-                            showNavigationHint = page == pagerState.currentPage,
-                        )
+                    ) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            key = { page -> viewerCaptures[page].id },
+                        ) { page ->
+                            FullscreenCapturePage(
+                                capture = viewerCaptures[page],
+                                showNavigationHint = page == pagerState.currentPage,
+                            )
+                        }
+                        Surface(
+                            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                            shadowElevation = 8.dp,
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                IconButton(
+                                    onClick = { viewModel.deleteCapture(capture.id); selectedCapture = null },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        selectedCaptureEditedTitle = capture.title
+                                        showSelectedCaptureTitleDialog = true
+                                    },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
+                                }
+                                Checkbox(
+                                    checked = capture.isCompleted,
+                                    onCheckedChange = { completed ->
+                                        viewModel.setCaptureCompleted(capture.id, completed)
+                                        selectedCapture = capture.copy(isCompleted = completed)
+                                    },
+                                    modifier = Modifier.size(48.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
