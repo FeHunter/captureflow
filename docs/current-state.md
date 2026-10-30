@@ -21,8 +21,19 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
 - Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences.
 - Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, chips horizontais e biblioteca de cartões em duas colunas com rolagem vertical.
-- Categorias atuais: `Ler depois`, `Verificar`, `Salvar`, `Importante`; `Todas` é somente filtro.
+- Categorias atuais: `Ler depois`, `Verificar`, `Salvar`, `Importante` e a categoria fixa `Concluído`; `Todas` é somente filtro.
+- `Concluído` é criada por padrão e não pode ser renomeada, excluída ou atribuída manualmente a uma nova referência.
+- Ao concluir uma referência, ela é movida para `Concluído`; sua categoria anterior fica registrada para ser restaurada quando a conclusão for desfeita.
+- O filtro `Concluído` exibe os itens concluídos mesmo quando a opção global de ocultar concluídos está ativa. Em `Todas`, a opção global continua controlando a visibilidade.
 - Busca combina título/conteúdo com categoria selecionada.
+
+## Meu progresso
+- Dashboard no topo da biblioteca com o título **Meu progresso**.
+- A categoria **Concluído** recebe destaque visual próprio: cartão com cor semântica de destaque do tema, ícone de conclusão e contador em tamanho ampliado.
+- O destaque permanece visível mesmo sem itens concluídos; nesse estado, apresenta uma mensagem de incentivo.
+- Abaixo do destaque, as demais categorias com referências são listadas com suas quantidades atuais. Categorias vazias são omitidas.
+- Os números consideram todas as referências persistidas, sem depender da busca, do filtro atual ou da opção de ocultar concluídos.
+- O contador de conquistas considera as referências cuja categoria é `Concluído`; a mudança de layout não altera as regras de persistência ou conclusão.
 
 ## Grupos e thumbnails de referência
 - A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails e a ação “Ver todas”.
@@ -69,7 +80,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, createdAt e isCompleted.
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
-- Versão Room no código: **5**. Migrações: 1→2 adiciona imageUri em tarefas; 2→3 description; 3→4 cria capture_subtasks/índice; 4→5 adiciona category em tarefas. Atualizar contrato e testar upgrades ao mudar esquema.
+- Versão Room no código: **7**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adiciona `previousCategory`, cria a categoria fixa `Concluído` e move referências já concluídas para ela preservando a categoria anterior. A conclusão/desconclusão é persistida no DAO e a categoria anterior é restaurada ao reabrir uma referência.
 
 ## Privacidade e validação
 - Dados e imagens permanecem no dispositivo; sem cloud sync.
