@@ -265,6 +265,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         title = tag,
                         captures = categoryCaptures,
                         ocrStates = ocrStates,
+                        categories = categoryEntities.map { it.name },
                         onExpand = { expandedCategory = tag },
                         onOpenCapture = { selectedCapture = it },
                     )
@@ -603,6 +604,7 @@ private fun CategoryCard(
     title: String,
     captures: List<CaptureEntity>,
     ocrStates: Map<String, OcrUiState>,
+    categories: List<String>,
     onExpand: () -> Unit,
     onOpenCapture: (CaptureEntity) -> Unit,
 ) {
@@ -822,7 +824,7 @@ private fun CaptureCard(
                         }
                     }
                     DropdownMenu(expanded = showCategoryMenu, onDismissRequest = { showCategoryMenu = false }) {
-                        listOf("Ler depois", "Verificar", "Salvar", "Importante").forEach { tag ->
+                        categories.forEach { tag ->
                             DropdownMenuItem(text = { Text(tag) }, onClick = {
                                 onCategoryChange(tag)
                                 showCategoryMenu = false
