@@ -1,3 +1,8 @@
+## 2026-10-30 — Anotações no Details Fullscreen ativo
+- Corrigido o alvo da exibição: o painel de anotação foi aplicado ao visualizador `selectedCapture` aberto a partir dos thumbnails da categoria (Details Fullscreen usado pela biblioteca), não ao fullscreen secundário de `CaptureCard`.
+- Quando a captura da página atual possui anotação não vazia, o texto aparece no canto inferior esquerdo sobre a imagem, em painel preto translúcido com texto branco; o painel acompanha a página durante o swipe.
+- A coluna de ações permanece no canto inferior direito, sem sobreposição com a área reservada ao painel. O botão **Anotações** continua abrindo o editor existente.
+
 ## 2026-10-30 — Regras preservadas do fluxo de screenshot e anotação no fullscreen
 - O fluxo de screenshot iniciado pela notificação deve sempre apresentar a prévia e exigir escolha explícita de uma categoria cadastrada antes de habilitar **Salvar referência**. Não fixar a categoria `Salvar` nem remover essa etapa em futuras alterações.
 - A lista de categorias desse fluxo deve excluir `Concluído`; o screenshot original só pode ser removido depois que a cópia privada for concluída com sucesso.
