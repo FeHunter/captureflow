@@ -157,9 +157,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     LaunchedEffect(detectedScreenshotUri) {
         detectedScreenshotUri?.let { selectedImageUri = it }
     }
-    var taskScreenshotToConfirm by remember { mutableStateOf<Uri?>(null) }
+    var taskScreenshotToConfirm by remember { mutableStateOf(pendingTaskScreenshotUri) }
     LaunchedEffect(pendingTaskScreenshotUri) {
-        if (pendingTaskScreenshotUri != null) taskScreenshotToConfirm = pendingTaskScreenshotUri
+        taskScreenshotToConfirm = pendingTaskScreenshotUri
     }
     val taskScreenshotPreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, taskScreenshotToConfirm,
