@@ -41,15 +41,17 @@ data class OcrUiState(
     val isError: Boolean = false,
 )
 
-class CaptureViewModel(application: Application) : AndroidViewModel(application) {
-    private val database = CaptureDatabase.get(application)
+class CaptureViewModel(
+    application: Application,
+    database: CaptureDatabase,
+    private val ocrService: OcrService,
+    private val linkMetadataService: LinkMetadataService,
+    private val imageStorageService: SharedImageStorageService,
+) : AndroidViewModel(application) {
     private val captureDao = database.captureDao()
     private val categoryDao = database.categoryDao()
     private val checklistDao = database.checklistDao()
     private val captureSubtaskDao = database.captureSubtaskDao()
-    private val ocrService = OcrService()
-    private val linkMetadataService = LinkMetadataService()
-    private val imageStorageService = SharedImageStorageService()
 
     private val _ocrStates = MutableStateFlow<Map<String, OcrUiState>>(emptyMap())
     val ocrStates = _ocrStates.asStateFlow()

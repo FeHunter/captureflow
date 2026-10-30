@@ -23,9 +23,11 @@ import androidx.compose.runtime.setValue
 import com.fehunter.captureflow.features.captures.presentation.screens.CaptureFlowApp
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
 import com.fehunter.captureflow.features.imageimport.data.android.ScreenshotNotificationService
+import com.fehunter.captureflow.app.di.AppContainer
 
 class MainActivity : ComponentActivity() {
-    private val captureViewModel: CaptureViewModel by viewModels()
+    private val appContainer by lazy { AppContainer(application) }
+    private val captureViewModel: CaptureViewModel by viewModels { appContainer.captureViewModelFactory }
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
     private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
     private var pendingTaskScreenshotUri by mutableStateOf<Uri?>(null)
