@@ -1,3 +1,11 @@
+## 2026-10-30 — Meu progresso e destaque para concluídos
+- Renomeada a seção de **Referências por categoria** para **Meu progresso**.
+- Criado um destaque visual para **Concluído**, com cartão em cor de destaque do tema, ícone de conclusão e contador em tipografia ampliada.
+- A área de conquistas permanece visível mesmo com zero itens concluídos e apresenta uma mensagem de incentivo/estado vazio.
+- As demais categorias continuam listadas abaixo, com suas quantidades atuais; categorias sem referências não ocupam espaço.
+- O contador de concluídos usa os itens cuja categoria persistida é **Concluído**, independentemente da busca, do filtro selecionado ou da opção global de ocultar concluídos.
+- A apresentação utiliza cores semânticas do Material Theme, preservando adaptação aos temas claro, escuro e sistema. Nenhuma regra de conclusão ou persistência foi alterada nesta atualização.
+
 # Changelog — Captures
 
 ## 2026-10-30 — Dashboard simplificado por categoria
