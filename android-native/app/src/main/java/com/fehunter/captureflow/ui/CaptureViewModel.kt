@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.data.CaptureClassifier
 import com.fehunter.captureflow.data.CaptureDatabase
+import com.fehunter.captureflow.data.CaptureCategoryEntity
 import com.fehunter.captureflow.data.CaptureEntity
 import com.fehunter.captureflow.data.CaptureSubtaskEntity
 import com.fehunter.captureflow.data.ChecklistTaskEntity
@@ -42,6 +43,7 @@ data class OcrUiState(
 class CaptureViewModel(application: Application) : AndroidViewModel(application) {
     private val database = CaptureDatabase.get(application)
     private val captureDao = database.captureDao()
+    private val categoryDao = database.categoryDao()
     private val checklistDao = database.checklistDao()
     private val captureSubtaskDao = database.captureSubtaskDao()
     private val ocrService = OcrService()
@@ -54,9 +56,18 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     private val _pendingSharedLink = MutableStateFlow<PendingSharedLink?>(null)
     val pendingSharedLink = _pendingSharedLink.asStateFlow()
 
+    val categories = categoryDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val captures = captureDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val tasks = checklistDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val captureSubtasks = captureSubtaskDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            listOf("Ler depois", "Verificar", "Salvar", "Importante").forEachIndexed { index, name ->
+                categoryDao.insert(CaptureCategoryEntity(name, index))
+            }
+        }
+    }
 
     fun addCapture(raw: String) {
         val content = CaptureClassifier.normalize(raw)
@@ -142,13 +153,17 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun updatePendingSharedLinkTitle(title: String) {
+        _pendingSharedLink.value = _pendingSharedLink.value?.copy(title = title.take(160))
+    }
+
     fun cancelPendingSharedLink() {
         _pendingSharedLink.value = null
     }
 
     fun confirmPendingSharedLink(category: String) {
         val pending = _pendingSharedLink.value ?: return
-        if (pending.isLoading || category !in listOf("Ler depois", "Verificar", "Salvar", "Importante")) return
+        if (pending.isLoading || category !in categories.value.map { it.name }) return
         _pendingSharedLink.value = null
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -218,6 +233,37 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     fun setCaptureCompleted(id: String, completed: Boolean) {
         viewModelScope.launch(Dispatchers.IO) { captureDao.setCompleted(id, completed) }
+    }
+
+    fun addCategory(rawName: String) {
+        val name = rawName.trim().take(32)
+        if (name.isBlank() || name.equals("Todas", true) || categories.value.any { it.name.equals(name, true) }) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val nextOrder = (categories.value.maxOfOrNull { it.sortOrder } ?: -1) + 1
+            categoryDao.insert(CaptureCategoryEntity(name, nextOrder))
+        }
+    }
+
+    fun renameCategory(oldName: String, rawName: String) {
+        val newName = rawName.trim().take(32)
+        if (newName.isBlank() || newName.equals("Todas", true) ||
+            categories.value.any { it.name != oldName && it.name.equals(newName, true) }) return
+        viewModelScope.launch(Dispatchers.IO) {
+            captureDao.renameCategoryReferences(oldName, newName)
+            checklistDao.renameCategoryReferences(oldName, newName)
+            categoryDao.rename(oldName, newName)
+        }
+    }
+
+    fun deleteCategory(name: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val current = categories.value
+            if (current.size <= 1 || current.none { it.name == name }) return@launch
+            val fallback = current.firstOrNull { it.name != name }?.name ?: return@launch
+            captureDao.renameCategoryReferences(name, fallback)
+            checklistDao.renameCategoryReferences(name, fallback)
+            categoryDao.delete(name)
+        }
     }
 
     fun setCaptureCategory(id: String, category: String) {
