@@ -28,6 +28,7 @@ data class PendingSharedLink(
     val originalContent: String,
     val url: String,
     val title: String,
+    val titleManuallyEdited: Boolean = false,
     val description: String? = null,
     val imageUrl: String? = null,
     val isLoading: Boolean = true,
@@ -144,7 +145,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             val current = _pendingSharedLink.value
             if (current?.id != requestId) return@launch
             _pendingSharedLink.value = current.copy(
-                title = metadata?.title?.takeIf(String::isNotBlank) ?: fallbackTitle,
+                title = if (current.titleManuallyEdited) current.title else metadata?.title?.takeIf(String::isNotBlank) ?: fallbackTitle,
                 description = metadata?.description,
                 imageUrl = metadata?.imageUrl,
                 isLoading = false,
@@ -154,7 +155,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun updatePendingSharedLinkTitle(title: String) {
-        _pendingSharedLink.value = _pendingSharedLink.value?.copy(title = title.take(160))
+        _pendingSharedLink.value = _pendingSharedLink.value?.copy(title = title.take(160), titleManuallyEdited = true)
     }
 
     fun cancelPendingSharedLink() {
