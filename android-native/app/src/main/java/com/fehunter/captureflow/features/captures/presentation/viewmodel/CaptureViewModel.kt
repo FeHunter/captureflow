@@ -1,218 +1,39 @@
 package com.fehunter.captureflow.features.captures.presentation.viewmodel
 
-import android.app.Application
-import android.content.Intent
-import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fehunter.captureflow.features.captures.data.local.CaptureClassifier
-import com.fehunter.captureflow.features.captures.data.local.CaptureDatabase
-import com.fehunter.captureflow.features.captures.data.local.CaptureCategoryEntity
-import com.fehunter.captureflow.features.captures.data.local.CaptureEntity
-import com.fehunter.captureflow.features.captures.data.local.CaptureSubtaskEntity
-import com.fehunter.captureflow.features.captures.data.local.ChecklistTaskEntity
-import com.fehunter.captureflow.features.imageimport.data.metadata.LinkMetadataService
-import com.fehunter.captureflow.features.imageimport.data.ocr.OcrService
-import com.fehunter.captureflow.core.storage.SharedImageStorageService
+import com.fehunter.captureflow.core.storage.PrivateImageStorage
+import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.UUID
 
-data class PendingSharedLink(
-    val id: String,
-    val originalContent: String,
-    val url: String,
-    val title: String,
-    val titleManuallyEdited: Boolean = false,
-    val description: String? = null,
-    val imageUrl: String? = null,
-    val isLoading: Boolean = true,
-    val metadataFound: Boolean = false,
-)
-
-data class OcrUiState(
-    val isProcessing: Boolean = false,
-    val message: String? = null,
-    val isError: Boolean = false,
-)
-
+/** Owns Capture and CaptureSubtask state and actions. */
 class CaptureViewModel(
-    application: Application,
-    database: CaptureDatabase,
-    private val ocrService: OcrService,
-    private val linkMetadataService: LinkMetadataService,
-    private val imageStorageService: SharedImageStorageService,
-) : AndroidViewModel(application) {
-    private val captureDao = database.captureDao()
-    private val categoryDao = database.categoryDao()
-    private val checklistDao = database.checklistDao()
-    private val captureSubtaskDao = database.captureSubtaskDao()
+    private val captureUseCases: CaptureUseCases,
+    private val privateImageStorage: PrivateImageStorage,
+) : ViewModel() {
+    val captures = captureUseCases.observeCaptures().stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        emptyList(),
+    )
 
-    private val _ocrStates = MutableStateFlow<Map<String, OcrUiState>>(emptyMap())
-    val ocrStates = _ocrStates.asStateFlow()
-
-    private val _pendingSharedLink = MutableStateFlow<PendingSharedLink?>(null)
-    val pendingSharedLink = _pendingSharedLink.asStateFlow()
-
-    val categories = categoryDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val captures = captureDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val tasks = checklistDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val captureSubtasks = captureSubtaskDao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            listOf("Ler depois", "Verificar", "Salvar", "Importante", "Concluído").forEachIndexed { index, name ->
-                categoryDao.insert(CaptureCategoryEntity(name, if (name == "Concluído") 999 else index))
-            }
-        }
-    }
-
-    fun addCapture(raw: String) {
-        val content = CaptureClassifier.normalize(raw)
-        if (content.isBlank()) return
-        viewModelScope.launch(Dispatchers.IO) {
-            if (!captureDao.containsContent(content)) {
-                val capture = CaptureClassifier.create(content)
-                captureDao.insert(capture)
-                enrichLink(capture.id, content, capture.title)
-            }
-        }
-    }
-
-    /**
-     * Saves an image chosen with Android's system photo picker as a local capture.
-     * Copying it immediately avoids relying on the picker URI grant later during OCR.
-     */
-    fun addImageCapture(uri: Uri, category: String = "Referência", deleteSourceScreenshotAfterImport: Boolean = false) {
-        val targetCategory = category.takeUnless { it == "Concluído" } ?: "Salvar"
-        viewModelScope.launch(Dispatchers.IO) {
-            val storedUri = runCatching {
-                imageStorageService.copyToPrivateStorage(getApplication(), uri).toString()
-            }.getOrElse {
-                // Keep the granted URI as a fallback; OCR will show an actionable error if
-                // the provider no longer allows access when the user starts analysis.
-                uri.toString()
-            }
-            val capture = CaptureClassifier.create("Imagem compartilhada", storedUri)
-                .copy(title = "Imagem selecionada", category = targetCategory)
-            captureDao.insert(capture)
-            // Only notification-driven screenshot imports opt into source cleanup.
-            // Manually selected gallery images are never deleted automatically.
-            if (deleteSourceScreenshotAfterImport && storedUri != uri.toString()) {
-                imageStorageService.deleteSourceScreenshot(getApplication(), uri)
-            }
-            extractText(capture)
-        }
-    }
-
-    fun receiveSharedIntent(intent: Intent) {
-        val incoming = CaptureClassifier.fromIntent(intent) ?: return
-        if (incoming.imageUri != null) {
-            addImageCapture(Uri.parse(incoming.imageUri))
-            return
-        }
-
-        val content = CaptureClassifier.normalize(incoming.content)
-        val url = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE)
-            .find(content)?.value?.trimEnd('.', ',', ')', ']', '}', ';')
-
-        if (url != null) {
-            prepareSharedLink(content, url)
-            return
-        }
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val capture = CaptureClassifier.create(content)
-            if (!captureDao.containsContent(content)) captureDao.insert(capture)
-        }
-    }
-
-    private fun prepareSharedLink(content: String, url: String) {
-        val requestId = UUID.randomUUID().toString()
-        val fallbackTitle = CaptureClassifier.create(content).title
-        _pendingSharedLink.value = PendingSharedLink(
-            id = requestId,
-            originalContent = content,
-            url = url,
-            title = fallbackTitle,
-            isLoading = true,
-        )
-
-        viewModelScope.launch {
-            val metadata = linkMetadataService.fetch(url)
-            val current = _pendingSharedLink.value
-            if (current?.id != requestId) return@launch
-            _pendingSharedLink.value = current.copy(
-                title = if (current.titleManuallyEdited) current.title else metadata?.title?.takeIf(String::isNotBlank) ?: fallbackTitle,
-                description = metadata?.description,
-                imageUrl = metadata?.imageUrl,
-                isLoading = false,
-                metadataFound = metadata != null,
-            )
-        }
-    }
-
-    fun updatePendingSharedLinkTitle(title: String) {
-        _pendingSharedLink.value = _pendingSharedLink.value?.copy(title = title.take(160), titleManuallyEdited = true)
-    }
-
-    fun cancelPendingSharedLink() {
-        _pendingSharedLink.value = null
-    }
-
-    fun confirmPendingSharedLink(category: String) {
-        val pending = _pendingSharedLink.value ?: return
-        if (pending.isLoading || category == "Concluído" || category !in categories.value.map { it.name }) return
-        _pendingSharedLink.value = null
-
-        viewModelScope.launch(Dispatchers.IO) {
-            if (captureDao.containsSourceUrl(pending.url)) return@launch
-
-            val fallback = CaptureClassifier.create(pending.originalContent)
-            val enrichedContent = listOf(
-                pending.originalContent.trim(),
-                pending.description?.takeIf(String::isNotBlank),
-            ).filterNotNull().filter(String::isNotBlank).distinct().joinToString("\n")
-            val capture = fallback.copy(
-                title = pending.title.trim().takeIf(String::isNotBlank) ?: fallback.title,
-                content = enrichedContent,
-                category = category,
-                sourceUrl = pending.url,
-            )
-            captureDao.insert(capture)
-
-            pending.imageUrl?.let { imageUrl ->
-                imageStorageService.downloadToPrivateStorage(getApplication(), imageUrl)?.let { localImage ->
-                    captureDao.updateImageUri(capture.id, localImage.toString())
-                }
-            }
-        }
-    }
-
-    private suspend fun enrichLink(id: String, content: String, fallbackTitle: String) {
-        val url = Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE).find(content)?.value ?: return
-        val metadata = linkMetadataService.fetch(url) ?: return
-        val description = metadata.description?.takeIf(String::isNotBlank)
-        val enrichedContent = listOf(url, description).filterNotNull().joinToString("\n")
-        captureDao.updateExtractedText(id, enrichedContent, metadata.title.ifBlank { fallbackTitle })
-        metadata.imageUrl?.let { imageUrl ->
-            imageStorageService.downloadToPrivateStorage(getApplication(), imageUrl)?.let { localImage ->
-                captureDao.updateImageUri(id, localImage.toString())
-            }
-        }
-    }
+    val captureSubtasks = captureUseCases.observeSubtasks().stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        emptyList(),
+    )
 
     fun addCaptureSubtask(captureId: String, rawTitle: String) {
-        val title = rawTitle.trim()
+        val title = rawTitle.trim().take(160)
         if (title.isBlank()) return
         viewModelScope.launch(Dispatchers.IO) {
-            captureSubtaskDao.insert(
-                CaptureSubtaskEntity(
+            captureUseCases.addSubtask(
+                CaptureSubtask(
                     id = UUID.randomUUID().toString(),
                     captureId = captureId,
                     title = title,
@@ -225,168 +46,42 @@ class CaptureViewModel(
 
     fun setCaptureSubtaskCompleted(id: String, completed: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            captureSubtaskDao.setCompleted(id, completed)
+            captureUseCases.setSubtaskCompleted(id, completed)
         }
     }
 
     fun deleteCaptureSubtask(id: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            captureSubtaskDao.delete(id)
+            captureUseCases.deleteSubtask(id)
         }
     }
 
     fun setCaptureCompleted(id: String, completed: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            if (completed) captureDao.markCompleted(id) else captureDao.markPending(id)
+            captureUseCases.setCompleted(id, completed)
         }
-    }
-
-    fun addCategory(rawName: String) {
-        val name = rawName.trim().take(32)
-        if (name.isBlank() || name.equals("Todas", true) || name.equals("Concluído", true) || categories.value.any { it.name.equals(name, true) }) return
-        viewModelScope.launch(Dispatchers.IO) {
-            val nextOrder = (categories.value.maxOfOrNull { it.sortOrder } ?: -1) + 1
-            categoryDao.insert(CaptureCategoryEntity(name, nextOrder))
-        }
-    }
-
-    fun renameCategory(oldName: String, rawName: String) {
-        val newName = rawName.trim().take(32)
-        if (oldName == "Concluído" || newName.isBlank() || newName.equals("Todas", true) ||
-            newName.equals("Concluído", true) || categories.value.any { it.name != oldName && it.name.equals(newName, true) }) return
-        viewModelScope.launch(Dispatchers.IO) {
-            captureDao.renameCategoryReferences(oldName, newName)
-            captureDao.renamePreviousCategoryReferences(oldName, newName)
-            checklistDao.renameCategoryReferences(oldName, newName)
-            categoryDao.rename(oldName, newName)
-        }
-    }
-
-    fun deleteCategory(name: String) {
-        if (name == "Concluído") return
-        viewModelScope.launch(Dispatchers.IO) {
-            val current = categories.value
-            if (current.size <= 1 || current.none { it.name == name }) return@launch
-            val fallback = current.firstOrNull { it.name != name && it.name != "Concluído" }?.name ?: return@launch
-            captureDao.renameCategoryReferences(name, fallback)
-            captureDao.renamePreviousCategoryReferences(name, fallback)
-            checklistDao.renameCategoryReferences(name, fallback)
-            categoryDao.delete(name)
-        }
-    }
-
-    fun setCaptureCategory(id: String, category: String) {
-        if (category == "Concluído") return
-        viewModelScope.launch(Dispatchers.IO) { captureDao.updateCategory(id, category) }
     }
 
     fun updateCaptureTitle(id: String, rawTitle: String) {
         val title = rawTitle.trim().take(160)
         if (title.isBlank()) return
-        viewModelScope.launch(Dispatchers.IO) { captureDao.updateTitle(id, title) }
+        viewModelScope.launch(Dispatchers.IO) {
+            captureUseCases.updateTitle(id, title)
+        }
     }
 
     fun updateCaptureNotes(id: String, rawNotes: String) {
         val notes = rawNotes.trim().take(10_000).takeIf(String::isNotBlank)
-        viewModelScope.launch(Dispatchers.IO) { captureDao.updateNotes(id, notes) }
+        viewModelScope.launch(Dispatchers.IO) {
+            captureUseCases.updateNotes(id, notes)
+        }
     }
 
     fun deleteCapture(id: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val capture = captures.value.firstOrNull { it.id == id }
-            imageStorageService.deletePrivateImage(getApplication(), capture?.imageUri)
-            captureSubtaskDao.deleteForCapture(id)
-            captureDao.delete(id)
-            _ocrStates.value = _ocrStates.value - id
-        }
-    }
-
-    fun extractText(capture: CaptureEntity) {
-        val rawUri = capture.imageUri ?: return
-        if (_ocrStates.value[capture.id]?.isProcessing == true) return
-
-        setOcrState(capture.id, OcrUiState(isProcessing = true, message = "Lendo imagem…"))
-        viewModelScope.launch {
-            try {
-                val analysis = withContext(Dispatchers.IO) {
-                    ocrService.extractStructuredText(getApplication(), Uri.parse(rawUri))
-                }
-                val extracted = analysis.fullText.trim()
-
-                if (extracted.isBlank()) {
-                    setOcrState(
-                        capture.id,
-                        OcrUiState(message = "Nenhum texto foi identificado nesta imagem.", isError = true),
-                    )
-                    return@launch
-                }
-
-                val title = analysis.title.ifBlank {
-                    extracted.lineSequence().firstOrNull(String::isNotBlank)?.take(72) ?: "Screenshot analisado"
-                }
-                withContext(Dispatchers.IO) {
-                    // For image references, keep only the title as the useful payload.
-                    // The original screenshot remains available through imageUri as the cover.
-                    captureDao.updateExtractedText(capture.id, "", title)
-                }
-                setOcrState(capture.id, OcrUiState())
-            } catch (error: Exception) {
-                setOcrState(
-                    capture.id,
-                    OcrUiState(
-                        message = error.localizedMessage?.takeIf(String::isNotBlank)
-                            ?: "Não foi possível ler esta imagem. Tente compartilhá-la novamente.",
-                        isError = true,
-                    ),
-                )
-            }
-        }
-    }
-
-    private fun setOcrState(id: String, state: OcrUiState) {
-        _ocrStates.value = _ocrStates.value.toMutableMap().apply { put(id, state) }
-    }
-
-    fun addTask(rawTitle: String) {
-        val title = rawTitle.trim()
-        if (title.isBlank()) return
-        viewModelScope.launch(Dispatchers.IO) {
-            checklistDao.insert(ChecklistTaskEntity(UUID.randomUUID().toString(), title, false, System.currentTimeMillis()))
-        }
-    }
-
-    fun setTaskCategory(id: String, category: String) {
-        viewModelScope.launch(Dispatchers.IO) { checklistDao.updateCategory(id, category) }
-    }
-
-    fun setTaskCompleted(id: String, completed: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) { checklistDao.setCompleted(id, completed) }
-    }
-
-    fun analyzeTaskScreenshot(task: ChecklistTaskEntity) {
-        val rawUri = task.imageUri ?: return
-        viewModelScope.launch {
-            try {
-                val analysis = withContext(Dispatchers.IO) {
-                    ocrService.extractStructuredText(getApplication(), Uri.parse(rawUri))
-                }
-                if (analysis.fullText.isBlank()) return@launch
-                val title = analysis.title.ifBlank { "Screenshot para revisar" }
-                val description = analysis.description.ifBlank { analysis.fullText }.take(3_000)
-                withContext(Dispatchers.IO) {
-                    checklistDao.updateDetails(task.id, title, description)
-                }
-            } catch (_: Exception) {
-                // Keep the original task and screenshot when OCR cannot read the image.
-            }
-        }
-    }
-
-    fun deleteTask(id: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val task = tasks.value.firstOrNull { it.id == id }
-            imageStorageService.deletePrivateImage(getApplication(), task?.imageUri)
-            checklistDao.delete(id)
+            val capture = captureUseCases.findById(id)
+            captureUseCases.delete(id)
+            privateImageStorage.deletePrivateImage(capture?.imageUri)
         }
     }
 }

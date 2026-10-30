@@ -14,23 +14,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import com.fehunter.captureflow.features.captures.presentation.screens.CaptureFlowApp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fehunter.captureflow.app.navigation.CaptureFlowApp
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
+import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
+import com.fehunter.captureflow.features.settings.presentation.viewmodel.SettingsViewModel
+import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
+import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
 import com.fehunter.captureflow.features.imageimport.data.android.ScreenshotNotificationService
 import com.fehunter.captureflow.app.di.AppContainer
+import com.fehunter.captureflow.features.imageimport.data.android.SharedContentIntentParser
 
 class MainActivity : ComponentActivity() {
     private val appContainer by lazy { AppContainer(application) }
     private val captureViewModel: CaptureViewModel by viewModels { appContainer.captureViewModelFactory }
+    private val imageImportViewModel: ImageImportViewModel by viewModels { appContainer.imageImportViewModelFactory }
+    private val settingsViewModel: SettingsViewModel by viewModels { appContainer.settingsViewModelFactory }
+    private val categoriesViewModel: CategoriesViewModel by viewModels { appContainer.categoriesViewModelFactory }
+    private val dashboardViewModel: DashboardViewModel by viewModels { appContainer.dashboardViewModelFactory }
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
     private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
-    private var pendingTaskScreenshotUri by mutableStateOf<Uri?>(null)
+    private var pendingScreenshotImportUri by mutableStateOf<Uri?>(null)
     private var hasScreenshotAccess by mutableStateOf(false)
     private var screenshotMonitoringEnabled by mutableStateOf(false)
 
@@ -54,10 +60,7 @@ class MainActivity : ComponentActivity() {
         }
         handleScreenshotAction(intent)
         setContent {
-            val preferences = remember { getSharedPreferences("captureflow_preferences", MODE_PRIVATE) }
-            var themeMode by remember {
-                mutableStateOf(preferences.getString("theme_mode", "system") ?: "system")
-            }
+            val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
             val isDark = when (themeMode) {
                 "dark" -> true
                 "light" -> false
@@ -84,24 +87,28 @@ class MainActivity : ComponentActivity() {
                 surfaceVariant = Color(0xFFE1EDF6),
                 onSurfaceVariant = Color(0xFF3D5D73), outline = Color(0xFF7D9AAF),
             )
-            SideEffect { preferences.edit().putString("theme_mode", themeMode).apply() }
             MaterialTheme(colorScheme = scheme) {
                 val shared = pendingShareIntent
                 LaunchedEffect(shared) {
                     if (shared?.action == Intent.ACTION_SEND || shared?.action == Intent.ACTION_SEND_MULTIPLE) {
-                        captureViewModel.receiveSharedIntent(shared)
+                        SharedContentIntentParser.parse(shared)?.let { incoming ->
+                            imageImportViewModel.receiveSharedContent(incoming.content, incoming.imageUri)
+                        }
                         pendingShareIntent = null
                     }
                 }
                 CaptureFlowApp(
                     viewModel = captureViewModel,
+                    imageImportViewModel = imageImportViewModel,
+                    categoriesViewModel = categoriesViewModel,
+                    dashboardViewModel = dashboardViewModel,
                     themeMode = themeMode,
-                    onThemeModeChange = { themeMode = it },
+                    onThemeModeChange = settingsViewModel::setThemeMode,
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
-                    pendingTaskScreenshotUri = pendingTaskScreenshotUri,
-                    onTaskScreenshotHandled = { pendingTaskScreenshotUri = null },
+                    pendingScreenshotImportUri = pendingScreenshotImportUri,
+                    onScreenshotImportHandled = { pendingScreenshotImportUri = null },
                     onRequestScreenshotAccess = ::requestScreenshotAccess,
                     onStopScreenshotMonitoring = ::stopScreenshotNotificationService,
                     onScreenshotHandled = ::handleScreenshotHandled,
@@ -178,8 +185,8 @@ class MainActivity : ComponentActivity() {
     private fun handleScreenshotAction(intent: Intent?) {
         val uri = intent?.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)?.let(Uri::parse) ?: return
         when (intent.action) {
-            ScreenshotNotificationService.ACTION_CREATE_TASK -> {
-                pendingTaskScreenshotUri = uri
+            ScreenshotNotificationService.ACTION_IMPORT_SCREENSHOT -> {
+                pendingScreenshotImportUri = uri
                 detectedScreenshotUri = null
             }
             ScreenshotNotificationService.ACTION_SAVE_REFERENCE -> detectedScreenshotUri = uri

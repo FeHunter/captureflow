@@ -1,18 +1,14 @@
-# Feature: Image Import
+# Image Import
 
-**Responsabilidade:** receber e preparar imagens/links compartilhados, OCR e integração de screenshots.
+Feature responsável pela entrada de conteúdo externo e processamento de imagens.
 
-## Organização
-- `data/ocr`: reconhecimento local e heurísticas de OCR.
-- `data/metadata`: extração HTTP(S) de metadados de links.
-- `data/android`: monitoramento MediaStore e notificação de screenshots.
-- `domain` e `presentation`: serão extraídos ao separar o fluxo de importação do ViewModel legado.
+- `domain/gateway/ImageImportGateway.kt`: contrato sem tipos Android.
+- `data/ImageImportGatewayImpl.kt`: adaptação para OCR, metadados e armazenamento.
+- `data/storage/ImageImportStorageService.kt`: cópia para armazenamento privado, download de capas e exclusão best-effort da screenshot original; delega a remoção genérica de arquivos ao contrato Core.
+- `data/metadata`: extração best-effort de metadados de links.
+- `data/ocr`: análise local via ML Kit.
+- `data/android`: monitoramento e notificações de screenshots.
+- `presentation/model`: estados de importação e OCR.
+- `presentation/viewmodel`: compartilhamento, prévia de links, confirmação por categoria, cópia privada e OCR.
 
-## Regras
-- OCR permanece on-device.
-- Falhas de OCR/metadados não descartam a captura.
-- Importação manual não exclui a imagem original.
-- A limpeza da screenshot original só pode ocorrer após confirmação explícita da notificação e cópia privada bem-sucedida.
-
-## Estado da migração
-Serviços foram realocados para esta feature; a coordenação de importação ainda está no ViewModel transitório de Captures. O próximo passo é criar um contrato público de resultado de importação e um ViewModel próprio.
+A confirmação do link continua explícita antes de persistir. A importação manual não apaga a imagem original; limpeza de screenshot só ocorre no fluxo opt-in após cópia privada bem-sucedida.

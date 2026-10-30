@@ -106,16 +106,16 @@ class ScreenshotNotificationService : Service() {
     }
 
     private fun notifyScreenshot(uri: Uri) {
-        val taskIntent = actionIntent(ACTION_CREATE_TASK, uri, 2)
+        val importIntent = actionIntent(ACTION_IMPORT_SCREENSHOT, uri, 2)
         val notification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
-            .setContentTitle("Screenshot pronta para tarefa")
-            .setContentText("Toque para abrir o CaptureFlow e salvar a imagem como tarefa")
-            .setContentIntent(taskIntent)
+            .setContentTitle("Screenshot pronta para salvar")
+            .setContentText("Toque para abrir o CaptureFlow e salvar a imagem como referência")
+            .setContentIntent(importIntent)
             .addAction(
                 android.R.drawable.ic_menu_save,
-                "Salvar como tarefa",
-                taskIntent,
+                "Salvar referência",
+                importIntent,
             )
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -171,7 +171,7 @@ class ScreenshotNotificationService : Service() {
     companion object {
         const val ACTION_STOP = "com.fehunter.captureflow.action.STOP_SCREENSHOT_MONITOR"
         const val ACTION_SAVE_REFERENCE = "com.fehunter.captureflow.action.SAVE_SCREENSHOT_REFERENCE"
-        const val ACTION_CREATE_TASK = "com.fehunter.captureflow.action.CREATE_SCREENSHOT_TASK"
+        const val ACTION_IMPORT_SCREENSHOT = "com.fehunter.captureflow.action.CREATE_SCREENSHOT_TASK"
         const val EXTRA_SCREENSHOT_URI = "com.fehunter.captureflow.extra.SCREENSHOT_URI"
         const val PREFERENCES = "captureflow_preferences"
         const val PREF_MONITOR_ENABLED = "screenshot_monitor_enabled"
