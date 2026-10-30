@@ -15,6 +15,7 @@ Kotlin, Android SDK, Jetpack Compose/Material 3, Android ViewModel, Coroutines/F
 ```text
 com.fehunter.captureflow/
 ├── MainActivity.kt
+├── app/di/AppContainer.kt
 ├── core/storage/SharedImageStorageService.kt
 └── features/
     ├── captures/
@@ -33,9 +34,10 @@ com.fehunter.captureflow/
 - `MainActivity`: entrada Android para intents, permissões e encaminhamento à UI.
 - `features.captures.presentation.screens.CaptureFlowApp`: tela Compose existente; ainda reúne múltiplas experiências e deverá ser decomposta.
 - `features.captures.presentation.viewmodel.CaptureViewModel`: ViewModel transitório; ainda coordena referências, categorias, subtarefas e parte da importação. Não adicionar novas responsabilidades.
-- `features.captures.data.local.CaptureDatabase`: Room, entidades, DAOs, migrations e classificador atuais, ainda a decompor.
+- `features.captures.data.local`: Room, entidades, DAOs, migrations e classificador separados em arquivos; ainda pertencem à camada Data.
 - `features.imageimport`: OCR, metadados HTTP(S), monitoramento e notificações de screenshots.
 - `core.storage`: armazenamento privado reutilizável de imagens.
+- `app.di.AppContainer` + `CaptureViewModelFactory`: composição manual de banco e serviços, injetados no ViewModel; não introduzir framework de DI nesta etapa.
 
 ## Fluxo atual
 
