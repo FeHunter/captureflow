@@ -287,11 +287,11 @@ Quando um comportamento mudar, atualizar documentação funcional, UI/UX, wirefr
 ## Estado da migração no código — branch feature-first
 
 A primeira realocação de pacotes foi aplicada:
-- `features/captures/data/local`: banco Room, entidades, DAOs e classificador atuais.
+- `features/captures/data/local`: banco Room, entidades, DAOs e classificador separados em arquivos próprios.
 - `features/captures/presentation/viewmodel`: ViewModel atual de Captures (ainda transitório).
 - `features/captures/presentation/screens`: tela Compose atual (ainda agregada).
 - `features/imageimport/data/{ocr,metadata,android}`: OCR, metadados e integrações Android de screenshots.
 - `core/storage`: armazenamento privado compartilhado.
-- `MainActivity.kt` permanece na raiz do pacote como entrada Android.
+- `app/di/AppContainer.kt` e `CaptureViewModelFactory` fazem a composição manual das dependências; `MainActivity.kt` permanece na raiz do pacote como entrada Android.
 
 A realocação de pacotes não equivale à conclusão de Clean Architecture: o ViewModel ainda acessa DAOs e serviços concretos, e a tela Compose ainda reúne múltiplas áreas do produto. Próximas mudanças devem extrair contratos Domain, repositórios, UseCases, ViewModels e telas por feature. Não adicionar novas responsabilidades ao ViewModel/tela transitórios. O schema Room permanece na versão declarada pelo código (8); esta etapa não deve criar migration.
