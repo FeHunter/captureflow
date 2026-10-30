@@ -1,3 +1,8 @@
+
+## 2026-10-30 — Escolha de categoria ao importar screenshot pela notificação
+- Restaurada a seleção obrigatória de categoria no diálogo aberto pela notificação de screenshot.
+- O seletor usa as categorias cadastradas e exclui `Concluído`, mantendo a regra de que novas referências não podem ser criadas diretamente como concluídas.
+- A ação **Salvar referência** fica desabilitada até o usuário escolher uma categoria; a cópia privada e a remoção condicional do screenshot original continuam no fluxo de confirmação.
 ## 2026-10-30 — Correção do fluxo de screenshot pela notificação
 - A notificação de screenshot agora oferece também uma ação explícita **Salvar como tarefa**, além do toque no corpo da notificação.
 - O `PendingIntent` recebe um identificador de dados único por imagem e permissão de leitura da URI, evitando reaproveitamento ambíguo da intent ao receber screenshots diferentes.
