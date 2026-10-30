@@ -87,6 +87,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
      * Copying it immediately avoids relying on the picker URI grant later during OCR.
      */
     fun addImageCapture(uri: Uri, category: String = "Referência", deleteSourceScreenshotAfterImport: Boolean = false) {
+        val targetCategory = category.takeUnless { it == "Concluído" } ?: "Salvar"
         viewModelScope.launch(Dispatchers.IO) {
             val storedUri = runCatching {
                 imageStorageService.copyToPrivateStorage(getApplication(), uri).toString()
@@ -96,7 +97,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 uri.toString()
             }
             val capture = CaptureClassifier.create("Imagem compartilhada", storedUri)
-                .copy(title = "Imagem selecionada", category = category)
+                .copy(title = "Imagem selecionada", category = targetCategory)
             captureDao.insert(capture)
             // Only notification-driven screenshot imports opt into source cleanup.
             // Manually selected gallery images are never deleted automatically.
@@ -164,7 +165,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     fun confirmPendingSharedLink(category: String) {
         val pending = _pendingSharedLink.value ?: return
-        if (pending.isLoading || category !in categories.value.map { it.name }) return
+        if (pending.isLoading || category == "Concluído" || category !in categories.value.map { it.name }) return
         _pendingSharedLink.value = null
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -264,7 +265,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch(Dispatchers.IO) {
             val current = categories.value
             if (current.size <= 1 || current.none { it.name == name }) return@launch
-            val fallback = current.firstOrNull { it.name != name }?.name ?: return@launch
+            val fallback = current.firstOrNull { it.name != name && it.name != "Concluído" }?.name ?: return@launch
             captureDao.renameCategoryReferences(name, fallback)
             captureDao.renamePreviousCategoryReferences(name, fallback)
             checklistDao.renameCategoryReferences(name, fallback)
