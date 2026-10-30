@@ -661,7 +661,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     "Escolha a categoria para organizar esta imagem."
                 })
                 CategorySelectionSection(
-                    categories = categories.drop(1),
+                    categories = activeCategories,
                     selectedCategory = imageCategory,
                     onCategorySelected = { imageCategory = it },
                 )
