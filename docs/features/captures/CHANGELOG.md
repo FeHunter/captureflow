@@ -1,3 +1,8 @@
+## 2026-10-30 — Regras preservadas do fluxo de screenshot e anotação no fullscreen
+- O fluxo de screenshot iniciado pela notificação deve sempre apresentar a prévia e exigir escolha explícita de uma categoria cadastrada antes de habilitar **Salvar referência**. Não fixar a categoria `Salvar` nem remover essa etapa em futuras alterações.
+- A lista de categorias desse fluxo deve excluir `Concluído`; o screenshot original só pode ser removido depois que a cópia privada for concluída com sucesso.
+- No fullscreen aberto pelo cartão, anotações não vazias são exibidas sobre a imagem no canto inferior esquerdo, em um painel preto translúcido com texto branco. A ação **Anotações** continua disponível para criar, editar ou remover o texto.
+
 
 ## 2026-10-30 — Escolha de categoria ao importar screenshot pela notificação
 - Restaurada a seleção obrigatória de categoria no diálogo aberto pela notificação de screenshot.
