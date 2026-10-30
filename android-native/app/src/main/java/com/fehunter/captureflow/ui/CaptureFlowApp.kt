@@ -934,34 +934,14 @@ private fun CaptureCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                fullscreenCapture.title,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            IconButton(
-                                onClick = {
-                                    editedTitle = fullscreenCapture.title
-                                    showEditTitle = true
-                                },
-                                modifier = Modifier.size(36.dp),
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Editar título",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
+                        Text(
+                            fullscreenCapture.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(fullscreenCapture.createdAt)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
@@ -969,8 +949,42 @@ private fun CaptureCard(
                             }
                         }
                     }
-                    IconButton(onClick = { showFullscreen = false }, modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)) {
-                        Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    ) {
+                        Checkbox(
+                            checked = fullscreenCapture.isCompleted,
+                            onCheckedChange = { completed ->
+                                onCompleted(completed)
+                                fullscreenCapture = fullscreenCapture.copy(isCompleted = completed)
+                            },
+                            modifier = Modifier.size(44.dp),
+                        )
+                        IconButton(
+                            onClick = {
+                                editedTitle = fullscreenCapture.title
+                                showEditTitle = true
+                            },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar título")
+                        }
+                        IconButton(
+                            onClick = {
+                                onDelete()
+                                showFullscreen = false
+                            },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
+                        }
+                        IconButton(
+                            onClick = { showFullscreen = false },
+                            modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large),
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
+                        }
                     }
                 }
                 val initialPage = allCaptures.indexOfFirst { it.id == fullscreenCapture.id }.coerceAtLeast(0)
