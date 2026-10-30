@@ -141,8 +141,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var showSelectedCaptureNotesDialog by remember { mutableStateOf(false) }
     var selectedCaptureEditedNotes by remember { mutableStateOf("") }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
+    var taskScreenshotCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
+    LaunchedEffect(taskScreenshotToConfirm) { taskScreenshotCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
     val activeCategories = categoryEntities.map { it.name }.filterNot { it == "Concluído" }
     LaunchedEffect(categoryEntities) {
@@ -636,24 +638,41 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             },
             title = { Text("Adicionar screenshot às referências?") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("A captura foi aberta pela notificação. Confirme para anexá-la a uma nova tarefa.")
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 430.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text("A captura foi aberta pela notificação. Escolha em qual categoria deseja salvá-la.")
                     taskScreenshotPreview?.let { preview ->
                         Image(
                             bitmap = preview,
-                            contentDescription = "Prévia da screenshot que será anexada à tarefa",
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp),
+                            contentDescription = "Prévia da screenshot que será salva como referência",
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
                             contentScale = ContentScale.Fit,
                         )
                     }
+                    CategorySelectionSection(
+                        categories = activeCategories,
+                        selectedCategory = taskScreenshotCategory,
+                        onCategorySelected = { taskScreenshotCategory = it },
+                    )
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    viewModel.addImageCapture(uri, category = "Salvar", deleteSourceScreenshotAfterImport = true)
-                    taskScreenshotToConfirm = null
-                    onTaskScreenshotHandled()
-                }) { Text("Adicionar às referências") }
+                Button(
+                    onClick = {
+                        taskScreenshotCategory?.let { selectedCategory ->
+                            viewModel.addImageCapture(
+                                uri,
+                                category = selectedCategory,
+                                deleteSourceScreenshotAfterImport = true,
+                            )
+                            taskScreenshotToConfirm = null
+                            onTaskScreenshotHandled()
+                        }
+                    },
+                    enabled = taskScreenshotCategory != null,
+                ) { Text("Salvar referência") }
             },
             dismissButton = {
                 TextButton(onClick = {
