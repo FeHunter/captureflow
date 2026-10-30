@@ -1,5 +1,10 @@
 # Changelog — Captures
 
+## 2026-10-30 — Atalho de monitoramento no header e referências concluídas
+- Movido o controle de avisos de screenshot para a barra superior, ao lado do menu de opções; o ícone alterna entre estado ativo e inativo e aciona o fluxo existente de permissão/ativação ou desativação.
+- Removidos os botões e textos de configuração do card de seleção de imagem, mantendo apenas a ação de selecionar imagem.
+- Miniaturas de referências concluídas nos cards de categoria agora são exibidas com opacidade reduzida, mantendo a possibilidade de abri-las.
+
 ## 2026-10-30 — Dashboard de progresso e edição no visualizador de referências
 - Adicionado ao topo da biblioteca um dashboard com gráfico de barras horizontais por categoria, exibindo itens concluídos em relação ao total cadastrado.
 - O dashboard considera todas as referências, independentemente dos filtros de busca e da opção de ocultar concluídos, e atualiza conforme o estado persistido no Room.
