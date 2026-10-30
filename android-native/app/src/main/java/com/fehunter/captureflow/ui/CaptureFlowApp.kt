@@ -138,6 +138,8 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var selectedCapture by remember { mutableStateOf<CaptureEntity?>(null) }
     var showSelectedCaptureTitleDialog by remember { mutableStateOf(false) }
     var selectedCaptureEditedTitle by remember { mutableStateOf("") }
+    var showSelectedCaptureNotesDialog by remember { mutableStateOf(false) }
+    var selectedCaptureEditedNotes by remember { mutableStateOf("") }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
@@ -508,12 +510,14 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
-                                IconButton(
-                                    onClick = { viewModel.deleteCapture(capture.id); selectedCapture = null },
+                                Checkbox(
+                                    checked = capture.isCompleted,
+                                    onCheckedChange = { completed ->
+                                        viewModel.setCaptureCompleted(capture.id, completed)
+                                        selectedCapture = capture.copy(isCompleted = completed)
+                                    },
                                     modifier = Modifier.size(48.dp),
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
-                                }
+                                )
                                 IconButton(
                                     onClick = {
                                         selectedCaptureEditedTitle = capture.title
@@ -523,14 +527,21 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                                 ) {
                                     Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
                                 }
-                                Checkbox(
-                                    checked = capture.isCompleted,
-                                    onCheckedChange = { completed ->
-                                        viewModel.setCaptureCompleted(capture.id, completed)
-                                        selectedCapture = capture.copy(isCompleted = completed)
+                                IconButton(
+                                    onClick = {
+                                        selectedCaptureEditedNotes = capture.notes.orEmpty()
+                                        showSelectedCaptureNotesDialog = true
                                     },
                                     modifier = Modifier.size(48.dp),
-                                )
+                                ) {
+                                    Icon(Icons.Default.Description, contentDescription = "Anotações", tint = MaterialTheme.colorScheme.onSurface)
+                                }
+                                IconButton(
+                                    onClick = { viewModel.deleteCapture(capture.id); selectedCapture = null },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
+                                }
                             }
                         }
                     }
@@ -538,6 +549,40 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             }
         }
     }
+    if (showSelectedCaptureNotesDialog) {
+        AlertDialog(
+            onDismissRequest = { showSelectedCaptureNotesDialog = false },
+            title = { Text("Anotações") },
+            text = {
+                OutlinedTextField(
+                    value = selectedCaptureEditedNotes,
+                    onValueChange = { selectedCaptureEditedNotes = it.take(10_000) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Escreva suas anotações sobre esta referência…") },
+                    minLines = 5,
+                    maxLines = 10,
+                    supportingText = { Text("${selectedCaptureEditedNotes.length}/10000") },
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        selectedCapture?.let { current ->
+                            viewModel.updateCaptureNotes(current.id, selectedCaptureEditedNotes)
+                            selectedCapture = current.copy(
+                                notes = selectedCaptureEditedNotes.trim().takeIf(String::isNotBlank),
+                            )
+                        }
+                        showSelectedCaptureNotesDialog = false
+                    },
+                ) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSelectedCaptureNotesDialog = false }) { Text("Cancelar") }
+            },
+        )
+    }
+
     if (showSelectedCaptureTitleDialog) {
         AlertDialog(
             onDismissRequest = { showSelectedCaptureTitleDialog = false },
