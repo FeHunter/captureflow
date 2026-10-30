@@ -76,6 +76,14 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Para referência de imagem, o título sugerido é persistido; texto OCR bruto não substitui o conteúdo principal. Erro de OCR não apaga a referência.
 - Visualizador usa imagem ajustada, sem recorte. Não excluir imagens escolhidas manualmente da galeria.
 
+## Monitoramento e ação de screenshot
+- Serviço foreground opcional observa alterações no MediaStore e identifica imagens recentes por nome/caminho de screenshot.
+- A notificação abre a Activity com a ação `ACTION_CREATE_TASK` e a URI da imagem; também oferece ação direta **Salvar como tarefa**.
+- A intent usa identificador de dados específico por screenshot e concessão de leitura da URI para evitar reaproveitamento incorreto do PendingIntent.
+- A Activity encaminha a URI à UI, que abre a confirmação tanto em inicialização fria quanto quando já está em execução.
+- Ao confirmar, a imagem é copiada para o armazenamento privado e criada como referência na categoria **Salvar**; o arquivo original só é removido após cópia privada bem-sucedida.
+- Requer monitoramento ativado e permissões de imagens/notificações aplicáveis à versão Android.
+
 ## Monitoramento de screenshots
 - Opcional e habilitado pelo usuário, com permissões de imagens e notificações quando aplicável.
 - Foreground service observa MediaStore e procura nomes/pastas que parecem screenshots recentes; é best-effort e varia por fabricante/restrições do sistema.
