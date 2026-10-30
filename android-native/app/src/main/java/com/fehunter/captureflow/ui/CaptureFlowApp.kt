@@ -169,7 +169,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     }
     val filtered = captures.filter {
         (query.isBlank() || it.title.contains(query, true) || it.content.contains(query, true)) &&
-            (showCompletedCaptures || !it.isCompleted) &&
+            (category == "Concluído" || showCompletedCaptures || !it.isCompleted) &&
             (category == "Todas" || it.category == category)
     }
 
