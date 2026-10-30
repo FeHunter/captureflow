@@ -127,6 +127,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     LaunchedEffect(categoryEntities) {
         if (category != "Todas" && categoryEntities.none { it.name == category }) category = "Todas"
         if (sharedLinkCategory != null && categoryEntities.none { it.name == sharedLinkCategory }) sharedLinkCategory = null
+        if (categoryEntities.isNotEmpty() && categoryEntities.none { it.name == imageCategory }) imageCategory = categoryEntities.first().name
     }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
