@@ -65,7 +65,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     init {
         viewModelScope.launch(Dispatchers.IO) {
             listOf("Ler depois", "Verificar", "Salvar", "Importante", "Concluído").forEachIndexed { index, name ->
-                categoryDao.insert(CaptureCategoryEntity(name, index))
+                categoryDao.insert(CaptureCategoryEntity(name, if (name == "Concluído") 999 else index))
             }
         }
     }
