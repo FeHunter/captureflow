@@ -233,55 +233,45 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             )
         }
         item(key = "dashboard") {
-            val categoryProgress = categoryEntities.map { item ->
-                val categoryCaptures = captures.filter { it.category == item.name }
-                Triple(item.name, categoryCaptures.size, categoryCaptures.count { it.isCompleted })
+            val categoryCounts = categoryEntities.map { item ->
+                item.name to captures.count { it.category == item.name }
             }.filter { it.second > 0 }
-            val totalCaptures = captures.size
-            val completedCaptures = captures.count { it.isCompleted }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Progresso das tarefas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Referências por categoria",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    if (categoryCounts.isEmpty()) {
                         Text(
-                            "$completedCaptures de $totalCaptures concluídas",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    if (categoryProgress.isEmpty()) {
-                        Text(
-                            "As tarefas adicionadas aparecerão aqui, organizadas por categoria.",
+                            "As referências adicionadas aparecerão aqui, organizadas por categoria.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        categoryProgress.forEach { (name, total, done) ->
-                            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-                                    Text(
-                                        "$done / $total feitos",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().height(10.dp)
-                                        .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraLarge),
-                                ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth(done.toFloat() / total.toFloat())
-                                            .height(10.dp)
-                                            .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge),
-                                    )
-                                }
+                        categoryCounts.forEach { (name, count) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    name,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    count.toString(),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                         }
                     }
