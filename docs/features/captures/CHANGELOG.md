@@ -1,3 +1,11 @@
+## 2026-10-30 — Anotações no visualizador fullscreen
+- Adicionado o campo opcional `notes` ao payload de `CaptureEntity`, permitindo salvar texto livre associado a cada referência.
+- Criada a migração Room 7→8 para adicionar a coluna `notes` sem apagar ou alterar os dados existentes.
+- Adicionada a operação `updateCaptureNotes` no ViewModel e atualização específica no DAO; anotações vazias são persistidas como nulas e podem ser apagadas.
+- O visualizador fullscreen ativo agora apresenta a coluna vertical de ações na ordem **Concluir, Editar título, Anotações e Excluir**.
+- O botão **Anotações** usa um ícone de documento/notas e abre um diálogo sobre o fullscreen com campo multilinha, limite de 10.000 caracteres e ações Salvar/Cancelar.
+- Ao salvar, o texto fica vinculado à referência atual e permanece disponível ao fechar e reabrir o visualizador. Cancelar descarta as alterações não salvas.
+
 ## 2026-10-30 — Meu progresso e destaque para concluídos
 - Renomeada a seção de **Referências por categoria** para **Meu progresso**.
 - Criado um destaque visual para **Concluído**, com cartão em cor de destaque do tema, ícone de conclusão e contador em tipografia ampliada.
