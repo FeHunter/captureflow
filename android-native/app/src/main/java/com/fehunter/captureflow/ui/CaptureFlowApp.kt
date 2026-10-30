@@ -16,6 +16,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,6 +44,8 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
@@ -71,6 +74,18 @@ fun CaptureFlowApp(viewModel: CaptureViewModel, themeMode: String, onThemeModeCh
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Capture Flow", fontWeight = FontWeight.Bold) }, actions = {
+                IconButton(
+                    onClick = {
+                        if (screenshotMonitoringEnabled) onStopScreenshotMonitoring()
+                        else onRequestScreenshotAccess()
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (screenshotMonitoringEnabled) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                        contentDescription = if (screenshotMonitoringEnabled) "Desativar avisos de screenshot" else if (hasScreenshotAccess) "Ativar avisos de screenshot" else "Configurar avisos de screenshot",
+                        tint = if (screenshotMonitoringEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 IconButton(onClick = { showOptionsMenu = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Opções da biblioteca")
                 }
@@ -195,21 +210,6 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         Icon(Icons.Default.Image, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Selecionar imagem")
-                    }
-                    if (!screenshotMonitoringEnabled) {
-                        OutlinedButton(onClick = onRequestScreenshotAccess, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (hasScreenshotAccess) "Ativar avisos de screenshot" else "Configurar avisos de screenshot")
-                        }
-                        Text(
-                            "Requisitos: permitir acesso a fotos/imagens e notificações. O Android mantém uma notificação fixa enquanto a detecção estiver ativa. A detecção depende do nome/pasta da captura e pode variar por fabricante.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    } else {
-                        Text("Detecção ativa em segundo plano. Uma notificação fixa indica que o monitoramento está ligado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                        OutlinedButton(onClick = onStopScreenshotMonitoring, modifier = Modifier.fillMaxWidth()) {
-                            Text("Desativar avisos de screenshot")
-                        }
                     }
                 }
             }
@@ -743,6 +743,7 @@ private fun CategoryCard(
                     }
                     Box(
                         modifier = Modifier.weight(1f).aspectRatio(1f)
+                            .alpha(if (capture.isCompleted) 0.42f else 1f)
                             .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
                             .clickable { onOpenCapture(capture) },
                     ) {
