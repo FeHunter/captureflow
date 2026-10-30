@@ -68,8 +68,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.fehunter.captureflow.BuildConfig
-import com.fehunter.captureflow.features.captures.data.local.CaptureEntity
-import com.fehunter.captureflow.features.captures.data.local.CaptureSubtaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
