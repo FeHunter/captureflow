@@ -92,6 +92,7 @@ interface CaptureDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
     @Query("UPDATE captures SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
+    @Query("UPDATE captures SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
@@ -108,6 +109,7 @@ interface ChecklistDao {
     @Query("DELETE FROM checklist_tasks WHERE id = :id") suspend fun delete(id: String)
     @Query("UPDATE checklist_tasks SET title = :title, description = :description WHERE id = :id") suspend fun updateDetails(id: String, title: String, description: String)
     @Query("UPDATE checklist_tasks SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
+    @Query("UPDATE checklist_tasks SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
 }
 
 @Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 6, exportSchema = false)
