@@ -459,20 +459,11 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     modifier = Modifier.fillMaxWidth().heightIn(max = 430.dp).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text("Categoria", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-                    Column(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        categories.drop(1).forEach { tag ->
-                            FilterChip(
-                                selected = sharedLinkCategory == tag,
-                                onClick = { sharedLinkCategory = tag },
-                                label = { Text(tag) },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
+                    CategorySelectionSection(
+                        categories = categories.drop(1),
+                        selectedCategory = sharedLinkCategory,
+                        onCategorySelected = { sharedLinkCategory = it },
+                    )
                     OutlinedTextField(
                         value = pending.title,
                         onValueChange = viewModel::updatePendingSharedLinkTitle,
@@ -522,15 +513,20 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             selectedImageUri = null
             if (uri == detectedScreenshotUri) onScreenshotHandled()
         }, title = { Text(if (uri == detectedScreenshotUri) "Screenshot detectada" else "Vincular imagem a uma tag") }, text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Text(if (uri == detectedScreenshotUri) {
-    "Uma nova captura de tela foi encontrada. Deseja enviá-la ao CaptureFlow?"
-} else {
-    "Escolha a categoria para organizar esta imagem."
-})
-                categories.drop(1).forEach { tag ->
-                    FilterChip(selected = imageCategory == tag, onClick = { imageCategory = tag }, label = { Text(tag) })
-                }
+                    "Uma nova captura de tela foi encontrada. Deseja enviá-la ao CaptureFlow?"
+                } else {
+                    "Escolha a categoria para organizar esta imagem."
+                })
+                CategorySelectionSection(
+                    categories = categories.drop(1),
+                    selectedCategory = imageCategory,
+                    onCategorySelected = { imageCategory = it },
+                )
             }
         }, confirmButton = {
             Button(onClick = {
@@ -946,11 +942,16 @@ private fun CaptureCard(
                             }
                         }
                     }
-                    IconButton(onClick = {
-                        editedTitle = fullscreenCapture.title
-                        showEditTitle = true
-                    }, modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar título da referência")
+                    FilledTonalButton(
+                        onClick = {
+                            editedTitle = fullscreenCapture.title
+                            showEditTitle = true
+                        },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Editar título", style = MaterialTheme.typography.labelMedium)
                     }
                     IconButton(onClick = { showFullscreen = false }, modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large)) {
                         Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
@@ -1010,7 +1011,7 @@ private fun CaptureCard(
             },
             confirmButton = {
                 Button(onClick = {
-                    val title = editedTitle.trim()
+                    val title = editedTitle.trim().take(160)
                     if (title.isNotBlank()) {
                         onTitleChange(fullscreenCapture.id, title)
                         fullscreenCapture = fullscreenCapture.copy(title = title)
@@ -1025,6 +1026,76 @@ private fun CaptureCard(
     }
 }
 
+
+@Composable
+private fun CategorySelectionSection(
+    categories: List<String>,
+    selectedCategory: String?,
+    onCategorySelected: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Categoria",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            if (categories.size > 3) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        "Role para ver todas",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Icon(
+                        Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 156.dp)
+                .verticalScroll(rememberScrollState())
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    MaterialTheme.shapes.medium,
+                )
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            categories.forEach { tag ->
+                FilterChip(
+                    selected = selectedCategory == tag,
+                    onClick = { onCategorySelected(tag) },
+                    label = { Text(tag) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+        if (categories.size > 3) {
+            Text(
+                "Deslize dentro da lista para acessar as demais categorias.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
 
 @Composable
 private fun CategoryManagementDialog(
