@@ -64,7 +64,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            listOf("Ler depois", "Verificar", "Salvar", "Importante").forEachIndexed { index, name ->
+            listOf("Ler depois", "Verificar", "Salvar", "Importante", "Concluído").forEachIndexed { index, name ->
                 categoryDao.insert(CaptureCategoryEntity(name, index))
             }
         }
@@ -233,12 +233,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setCaptureCompleted(id: String, completed: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) { captureDao.setCompleted(id, completed) }
+        viewModelScope.launch(Dispatchers.IO) {
+            if (completed) captureDao.markCompleted(id) else captureDao.markPending(id)
+        }
     }
 
     fun addCategory(rawName: String) {
         val name = rawName.trim().take(32)
-        if (name.isBlank() || name.equals("Todas", true) || categories.value.any { it.name.equals(name, true) }) return
+        if (name.isBlank() || name.equals("Todas", true) || name.equals("Concluído", true) || categories.value.any { it.name.equals(name, true) }) return
         viewModelScope.launch(Dispatchers.IO) {
             val nextOrder = (categories.value.maxOfOrNull { it.sortOrder } ?: -1) + 1
             categoryDao.insert(CaptureCategoryEntity(name, nextOrder))
@@ -247,8 +249,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     fun renameCategory(oldName: String, rawName: String) {
         val newName = rawName.trim().take(32)
-        if (newName.isBlank() || newName.equals("Todas", true) ||
-            categories.value.any { it.name != oldName && it.name.equals(newName, true) }) return
+        if (oldName == "Concluído" || newName.isBlank() || newName.equals("Todas", true) ||
+            newName.equals("Concluído", true) || categories.value.any { it.name != oldName && it.name.equals(newName, true) }) return
         viewModelScope.launch(Dispatchers.IO) {
             captureDao.renameCategoryReferences(oldName, newName)
             checklistDao.renameCategoryReferences(oldName, newName)
@@ -257,6 +259,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun deleteCategory(name: String) {
+        if (name == "Concluído") return
         viewModelScope.launch(Dispatchers.IO) {
             val current = categories.value
             if (current.size <= 1 || current.none { it.name == name }) return@launch
@@ -268,6 +271,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setCaptureCategory(id: String, category: String) {
+        if (category == "Concluído") return
         viewModelScope.launch(Dispatchers.IO) { captureDao.updateCategory(id, category) }
     }
 
