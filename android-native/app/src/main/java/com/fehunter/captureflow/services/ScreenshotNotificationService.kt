@@ -112,6 +112,11 @@ class ScreenshotNotificationService : Service() {
             .setContentTitle("Screenshot pronta para tarefa")
             .setContentText("Toque para abrir o CaptureFlow e salvar a imagem como tarefa")
             .setContentIntent(taskIntent)
+            .addAction(
+                android.R.drawable.ic_menu_save,
+                "Salvar como tarefa",
+                taskIntent,
+            )
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
@@ -121,8 +126,10 @@ class ScreenshotNotificationService : Service() {
     private fun actionIntent(action: String, uri: Uri, requestCode: Int): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
             this.action = action
+            data = Uri.parse("captureflow://screenshot/${uri.lastPathSegment ?: uri.hashCode()}")
             putExtra(EXTRA_SCREENSHOT_URI, uri.toString())
             addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         return PendingIntent.getActivity(
             this,
