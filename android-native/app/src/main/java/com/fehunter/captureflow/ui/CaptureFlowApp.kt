@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
@@ -867,6 +868,7 @@ private fun CaptureCard(
     onSubtaskCompleted: (String, Boolean) -> Unit,
     onDeleteSubtask: (String) -> Unit,
     onTitleChange: (String, String) -> Unit,
+    onNotesChange: (String, String) -> Unit,
 ) {
     var showFullscreen by remember(capture.id) { mutableStateOf(false) }
     var fullscreenCapture by remember(capture.id) { mutableStateOf(capture) }
@@ -874,6 +876,8 @@ private fun CaptureCard(
     var showSubtasks by remember(capture.id) { mutableStateOf(false) }
     var showEditTitle by remember(capture.id) { mutableStateOf(false) }
     var editedTitle by remember(capture.id) { mutableStateOf(capture.title) }
+    var showNotes by remember(capture.id) { mutableStateOf(false) }
+    var editedNotes by remember(capture.id) { mutableStateOf(capture.notes.orEmpty()) }
     val context = LocalContext.current
     val cover by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, capture.imageUri,
@@ -1118,42 +1122,11 @@ private fun CaptureCard(
                             }
                         }
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                    IconButton(
+                        onClick = { showFullscreen = false },
+                        modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large),
                     ) {
-                        Checkbox(
-                            checked = fullscreenCapture.isCompleted,
-                            onCheckedChange = { completed ->
-                                onCompleted(completed)
-                                fullscreenCapture = fullscreenCapture.copy(isCompleted = completed)
-                            },
-                            modifier = Modifier.size(44.dp),
-                        )
-                        IconButton(
-                            onClick = {
-                                editedTitle = fullscreenCapture.title
-                                showEditTitle = true
-                            },
-                            modifier = Modifier.size(44.dp),
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar título")
-                        }
-                        IconButton(
-                            onClick = {
-                                onDelete()
-                                showFullscreen = false
-                            },
-                            modifier = Modifier.size(44.dp),
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
-                        }
-                        IconButton(
-                            onClick = { showFullscreen = false },
-                            modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.large),
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
-                        }
+                        Icon(Icons.Default.Close, contentDescription = "Fechar detalhes")
                     }
                 }
                 val initialPage = allCaptures.indexOfFirst { it.id == fullscreenCapture.id }.coerceAtLeast(0)
@@ -1171,20 +1144,99 @@ private fun CaptureCard(
                         }
                     }
                 }
-                HorizontalPager(
-                    state = pagerState,
+                Box(
                     modifier = Modifier.fillMaxWidth().weight(0.80f).background(MaterialTheme.colorScheme.surfaceVariant),
-                    key = { page -> allCaptures[page].id },
-                ) { page ->
-                    FullscreenCapturePage(
-                        capture = allCaptures[page],
-                        showNavigationHint = page == pagerState.currentPage,
-                    )
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        key = { page -> allCaptures[page].id },
+                    ) { page ->
+                        FullscreenCapturePage(
+                            capture = allCaptures[page],
+                            showNavigationHint = page == pagerState.currentPage,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f), shadowElevation = 4.dp) {
+                            Checkbox(
+                                checked = fullscreenCapture.isCompleted,
+                                onCheckedChange = { completed ->
+                                    onCompleted(completed)
+                                    fullscreenCapture = fullscreenCapture.copy(
+                                        isCompleted = completed,
+                                        category = if (completed) "Concluído" else fullscreenCapture.previousCategory ?: "Salvar",
+                                    )
+                                },
+                                modifier = Modifier.size(48.dp),
+                            )
+                        }
+                        FilledIconButton(
+                            onClick = {
+                                editedTitle = fullscreenCapture.title
+                                showEditTitle = true
+                            },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar título")
+                        }
+                        FilledIconButton(
+                            onClick = {
+                                editedNotes = fullscreenCapture.notes.orEmpty()
+                                showNotes = true
+                            },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(Icons.Default.Description, contentDescription = "Anotações")
+                        }
+                        FilledIconButton(
+                            onClick = {
+                                onDelete()
+                                showFullscreen = false
+                            },
+                            modifier = Modifier.size(48.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.error),
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir referência")
+                        }
+                    }
                 }
             }
         }
     }
     
+    if (showNotes) {
+        AlertDialog(
+            onDismissRequest = { showNotes = false },
+            title = { Text("Anotações") },
+            text = {
+                OutlinedTextField(
+                    value = editedNotes,
+                    onValueChange = { editedNotes = it.take(10_000) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Escreva suas anotações sobre esta referência…") },
+                    minLines = 5,
+                    maxLines = 10,
+                    supportingText = { Text("${editedNotes.length}/10000") },
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    onNotesChange(fullscreenCapture.id, editedNotes)
+                    fullscreenCapture = fullscreenCapture.copy(notes = editedNotes.trim().takeIf(String::isNotBlank))
+                    showNotes = false
+                }) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotes = false }) { Text("Cancelar") }
+            },
+        )
+    }
+
     if (showEditTitle) {
         AlertDialog(
             onDismissRequest = { showEditTitle = false },
