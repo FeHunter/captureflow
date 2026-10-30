@@ -120,6 +120,8 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var imageCategory by remember { mutableStateOf("Ler depois") }
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var selectedCapture by remember { mutableStateOf<CaptureEntity?>(null) }
+    var showSelectedCaptureTitleDialog by remember { mutableStateOf(false) }
+    var selectedCaptureEditedTitle by remember { mutableStateOf("") }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
@@ -228,6 +230,62 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                     }
                 },
             )
+        }
+        item(key = "dashboard") {
+            val categoryProgress = categoryEntities.map { item ->
+                val categoryCaptures = captures.filter { it.category == item.name }
+                Triple(item.name, categoryCaptures.size, categoryCaptures.count { it.isCompleted })
+            }.filter { it.second > 0 }
+            val totalCaptures = captures.size
+            val completedCaptures = captures.count { it.isCompleted }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Progresso das tarefas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "$completedCaptures de $totalCaptures concluídas",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (categoryProgress.isEmpty()) {
+                        Text(
+                            "As tarefas adicionadas aparecerão aqui, organizadas por categoria.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        categoryProgress.forEach { (name, total, done) ->
+                            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+                                    Text(
+                                        "$done / $total feitos",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(10.dp)
+                                        .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraLarge),
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(done.toFloat() / total.toFloat())
+                                            .height(10.dp)
+                                            .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraLarge),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         item(key = "categories") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -380,7 +438,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                     }
                                 },
-                                modifier = Modifier.size(48.dp),
+                                modifier = Modifier.size(44.dp),
                             ) {
                                 Icon(
                                     Icons.Default.Link,
@@ -388,6 +446,15 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                                     tint = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
+                        }
+                        IconButton(
+                            onClick = {
+                                selectedCaptureEditedTitle = capture.title
+                                showSelectedCaptureTitleDialog = true
+                            },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
                         }
                         Checkbox(checked = capture.isCompleted, onCheckedChange = { completed ->
                             viewModel.setCaptureCompleted(capture.id, completed)
@@ -414,6 +481,51 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             }
         }
     }
+    if (showSelectedCaptureTitleDialog) {
+        AlertDialog(
+            onDismissRequest = { showSelectedCaptureTitleDialog = false },
+            title = { Text("Editar título") },
+            text = {
+                OutlinedTextField(
+                    value = selectedCaptureEditedTitle,
+                    onValueChange = { selectedCaptureEditedTitle = it.take(160) },
+                    label = { Text("Título principal") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        val title = selectedCaptureEditedTitle.trim()
+                        if (title.isNotBlank()) {
+                            selectedCapture?.let { current ->
+                                viewModel.updateCaptureTitle(current.id, title)
+                                selectedCapture = current.copy(title = title)
+                            }
+                            showSelectedCaptureTitleDialog = false
+                        }
+                    }),
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val title = selectedCaptureEditedTitle.trim()
+                        if (title.isNotBlank()) {
+                            selectedCapture?.let { current ->
+                                viewModel.updateCaptureTitle(current.id, title)
+                                selectedCapture = current.copy(title = title)
+                            }
+                            showSelectedCaptureTitleDialog = false
+                        }
+                    },
+                    enabled = selectedCaptureEditedTitle.isNotBlank(),
+                ) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSelectedCaptureTitleDialog = false }) { Text("Cancelar") }
+            },
+        )
+    }
+
     taskScreenshotToConfirm?.let { uri ->
         AlertDialog(
             onDismissRequest = {
