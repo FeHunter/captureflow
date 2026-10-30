@@ -21,6 +21,7 @@ data class CaptureEntity(
     val createdAt: Long,
     val isCompleted: Boolean = false,
     val previousCategory: String? = null,
+    val notes: String? = null,
 )
 
 @Entity(tableName = "categories")
@@ -98,6 +99,7 @@ interface CaptureDao {
     @Query("UPDATE captures SET previousCategory = :newName WHERE previousCategory = :oldName") suspend fun renamePreviousCategoryReferences(oldName: String, newName: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
+    @Query("UPDATE captures SET notes = :notes WHERE id = :id") suspend fun updateNotes(id: String, notes: String?)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
     @Query("UPDATE captures SET content = :content, title = :title WHERE id = :id") suspend fun updateExtractedText(id: String, content: String, title: String)
     @Query("SELECT EXISTS(SELECT 1 FROM captures WHERE content = :content)") suspend fun containsContent(content: String): Boolean
@@ -115,7 +117,7 @@ interface ChecklistDao {
     @Query("UPDATE checklist_tasks SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 7, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 8, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun categoryDao(): CaptureCategoryDao
     abstract fun captureDao(): CaptureDao
@@ -164,10 +166,16 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE captures ADD COLUMN notes TEXT")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build().also { instance = it }
         }
     }
