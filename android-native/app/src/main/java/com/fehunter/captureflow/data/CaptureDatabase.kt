@@ -20,6 +20,7 @@ data class CaptureEntity(
     val imageUri: String?,
     val createdAt: Long,
     val isCompleted: Boolean = false,
+    val previousCategory: String? = null,
 )
 
 @Entity(tableName = "categories")
@@ -90,7 +91,8 @@ interface CaptureSubtaskDao {
 interface CaptureDao {
     @Query("SELECT * FROM captures ORDER BY createdAt DESC") fun observeAll(): Flow<List<CaptureEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
-    @Query("UPDATE captures SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
+    @Query("UPDATE captures SET isCompleted = 1, previousCategory = CASE WHEN category != 'Concluído' THEN category ELSE previousCategory END, category = 'Concluído' WHERE id = :id") suspend fun markCompleted(id: String)
+    @Query("UPDATE captures SET isCompleted = 0, category = COALESCE(previousCategory, 'Salvar'), previousCategory = NULL WHERE id = :id") suspend fun markPending(id: String)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
     @Query("UPDATE captures SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
@@ -112,7 +114,7 @@ interface ChecklistDao {
     @Query("UPDATE checklist_tasks SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 6, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 7, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun categoryDao(): CaptureCategoryDao
     abstract fun captureDao(): CaptureDao
@@ -153,10 +155,18 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE captures ADD COLUMN previousCategory TEXT")
+                database.execSQL("INSERT OR IGNORE INTO categories (name, sortOrder) VALUES ('Concluído', 4)")
+                database.execSQL("UPDATE captures SET previousCategory = category, category = 'Concluído' WHERE isCompleted = 1")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build().also { instance = it }
         }
     }
