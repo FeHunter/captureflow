@@ -1,5 +1,11 @@
 # Changelog — Captures
 
+## 2026-10-30 — Seleção de categorias consistente e edição fullscreen
+- Reutilizado o mesmo componente de seleção de categorias nos modais de link compartilhado e de importação de imagem.
+- A seleção agora tem área vertical limitada, fundo destacado, chips em largura total e indicação visual/textual de rolagem quando há mais categorias.
+- O cabeçalho do visualizador fullscreen apresenta a ação identificada **Editar título**, abrindo o diálogo de edição e persistindo o título na referência atual.
+- Padronizado o limite de 160 caracteres ao salvar o título editado.
+
 ## 2026-10-29 — Edição de título e gerenciamento de categorias
 - Restaurada a edição do título principal diretamente no modal de confirmação de links compartilhados; a edição manual é preservada mesmo se a busca de metadados terminar depois.
 - Reorganizado o modal: seleção de categoria no topo, lista vertical rolável com todas as categorias, campo de título editável e exibição compacta da URL; descrição longa foi removida da confirmação.
