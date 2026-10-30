@@ -44,6 +44,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 ## Anotações da referência
 - O visualizador fullscreen ativo mantém uma coluna vertical de ações sobre a imagem, na ordem: concluir, editar título, anotações e excluir.
 - **Anotações** abre um diálogo dentro da experiência fullscreen, com campo multilinha e limite de 10.000 caracteres.
+- Quando há anotação não vazia, o visualizador aberto pelo cartão também a apresenta sobre a imagem no canto inferior esquerdo, em um painel preto translúcido com texto branco (até cinco linhas visíveis e reticências para conteúdo maior). A anotação continua editável/removível pelo botão **Anotações**.
 - Salvar persiste o texto em `captures.notes` por meio do ViewModel/DAO. Texto vazio limpa as anotações; Cancelar não persiste alterações.
 - As anotações pertencem à referência e continuam disponíveis após fechar/reabrir o visualizador.
 
@@ -81,7 +82,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A notificação abre a Activity com a ação `ACTION_CREATE_TASK` e a URI da imagem; também oferece ação direta **Salvar como tarefa**.
 - A intent usa identificador de dados específico por screenshot e concessão de leitura da URI para evitar reaproveitamento incorreto do PendingIntent.
 - A Activity encaminha a URI à UI, que abre a confirmação tanto em inicialização fria quanto quando já está em execução.
-- A confirmação apresenta prévia da imagem e exige que o usuário escolha uma categoria cadastrada, exceto **Concluído**, antes de habilitar **Salvar referência**.
+- A confirmação apresenta prévia da imagem e exige que o usuário escolha uma categoria cadastrada, exceto **Concluído**, antes de habilitar **Salvar referência**. Essa escolha explícita é requisito funcional e não deve ser substituída por uma categoria fixa.
 - Ao confirmar, a imagem é copiada para o armazenamento privado e criada na categoria escolhida; o arquivo original só é removido após cópia privada bem-sucedida.
 - Requer monitoramento ativado e permissões de imagens/notificações aplicáveis à versão Android.
 
