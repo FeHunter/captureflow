@@ -41,6 +41,12 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Estado de OCR pode exibir indicador de processamento/erro.
 - O botão/gesto Back fecha a categoria expandida quando nenhum visualizador está por cima.
 
+## Anotações da referência
+- O visualizador fullscreen ativo mantém uma coluna vertical de ações sobre a imagem, na ordem: concluir, editar título, anotações e excluir.
+- **Anotações** abre um diálogo dentro da experiência fullscreen, com campo multilinha e limite de 10.000 caracteres.
+- Salvar persiste o texto em `captures.notes` por meio do ViewModel/DAO. Texto vazio limpa as anotações; Cancelar não persiste alterações.
+- As anotações pertencem à referência e continuam disponíveis após fechar/reabrir o visualizador.
+
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido), checkbox de conclusão, excluir e fechar.
@@ -77,10 +83,10 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - **Inconsistência existente:** o serviço de notificação ainda contém nomes e textos históricos de tarefa (`ACTION_CREATE_TASK`, “pronta para tarefa”), embora o app ativo seja a biblioteca de referências. Corrigir as strings sem reintroduzir uma tela independente de tarefas.
 
 ## Banco de dados
-- `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, createdAt e isCompleted.
+- `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, `notes` opcional (anotações de texto do usuário), createdAt, isCompleted e `previousCategory` opcional (categoria restaurada ao desfazer conclusão).
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
-- Versão Room no código: **7**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adiciona `previousCategory`, cria a categoria fixa `Concluído` e move referências já concluídas para ela preservando a categoria anterior. A conclusão/desconclusão é persistida no DAO e a categoria anterior é restaurada ao reabrir uma referência.
+- Versão Room no código: **8**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adiciona `previousCategory`, cria a categoria fixa `Concluído` e move referências já concluídas para ela preservando a categoria anterior; 7→8 adiciona a coluna opcional `notes` para anotações de texto por referência. A conclusão/desconclusão é persistida no DAO e a categoria anterior é restaurada ao reabrir uma referência.
 
 ## Privacidade e validação
 - Dados e imagens permanecem no dispositivo; sem cloud sync.
