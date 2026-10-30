@@ -1,5 +1,12 @@
 # Changelog — Captures
 
+## 2026-10-30 — Categoria fixa Concluído
+- Criada a categoria padrão **Concluído**, protegida contra renomeação e exclusão no gerenciador e bloqueada para atribuição manual em novos itens.
+- Ao marcar uma referência como concluída, o Room guarda sua categoria anterior e move o item para **Concluído**; ao desmarcá-la, restaura a categoria anterior.
+- Adicionada migração Room 6→7: cria a categoria fixa, adiciona `previousCategory` e migra referências já concluídas preservando a categoria original para restauração.
+- O filtro **Concluído** mostra os itens concluídos mesmo quando a opção global de ocultar concluídos está ativa; em **Todas**, o comportamento de ocultar concluídos permanece.
+- Seletores de categoria para novas referências não oferecem **Concluído**. Renomear/excluir categorias atualiza também as categorias de restauração dos itens concluídos.
+
 ## 2026-10-30 — Ações flutuantes no visualizador fullscreen
 - Reposicionadas as ações de concluir, editar título e excluir para uma coluna vertical flutuante sobre a imagem, alinhada no canto inferior direito com margem das bordas.
 - Ordem visual de cima para baixo: excluir, editar e concluir, correspondendo à sequência solicitada de baixo para cima: checkbox, editar e excluir.
