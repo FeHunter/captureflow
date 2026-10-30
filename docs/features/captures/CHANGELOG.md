@@ -1,5 +1,11 @@
 # Changelog — Captures
 
+## 2026-10-30 — Dashboard de progresso e edição no visualizador de referências
+- Adicionado ao topo da biblioteca um dashboard com gráfico de barras horizontais por categoria, exibindo itens concluídos em relação ao total cadastrado.
+- O dashboard considera todas as referências, independentemente dos filtros de busca e da opção de ocultar concluídos, e atualiza conforme o estado persistido no Room.
+- Adicionada a ação de editar título ao cabeçalho do visualizador aberto pela grade/lista de referências; o botão de abrir link original foi preservado e permanece antes do checkbox, lápis, lixeira e fechar.
+- A edição utiliza o método de atualização de título do ViewModel e persiste somente o título, sem alterar URL, conteúdo ou imagem.
+
 ## 2026-10-30 — Seleção de categorias consistente e edição fullscreen
 - Reutilizado o mesmo componente de seleção de categorias nos modais de link compartilhado e de importação de imagem.
 - A seleção agora tem área vertical limitada, fundo destacado, chips em largura total e indicação visual/textual de rolagem quando há mais categorias.
