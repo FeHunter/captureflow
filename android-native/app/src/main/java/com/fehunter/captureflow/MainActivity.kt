@@ -16,6 +16,8 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fehunter.captureflow.app.navigation.CaptureFlowApp
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
