@@ -124,6 +124,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
+    LaunchedEffect(categoryEntities) {
+        if (category != "Todas" && categoryEntities.none { it.name == category }) category = "Todas"
+        if (sharedLinkCategory != null && categoryEntities.none { it.name == sharedLinkCategory }) sharedLinkCategory = null
+    }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
@@ -1058,7 +1062,7 @@ private fun CategoryManagementDialog(
                         enabled = newCategoryName.isNotBlank(),
                     ) { Icon(Icons.Default.Add, contentDescription = "Adicionar categoria") }
                 }
-                HorizontalDivider()
+                Divider()
                 categories.forEach { name ->
                     if (editingCategory == name) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
