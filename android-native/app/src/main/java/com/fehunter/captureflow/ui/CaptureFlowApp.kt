@@ -1216,10 +1216,33 @@ private fun CaptureCard(
                         modifier = Modifier.fillMaxSize(),
                         key = { page -> allCaptures[page].id },
                     ) { page ->
-                        FullscreenCapturePage(
-                            capture = allCaptures[page],
-                            showNavigationHint = page == pagerState.currentPage,
-                        )
+                        val pageCapture = allCaptures[page]
+                        Box(Modifier.fillMaxSize()) {
+                            FullscreenCapturePage(
+                                capture = pageCapture,
+                                showNavigationHint = page == pagerState.currentPage,
+                            )
+                            pageCapture.notes?.trim()?.takeIf { it.isNotEmpty() }?.let { note ->
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(start = 16.dp, bottom = 20.dp, end = 88.dp)
+                                        .fillMaxWidth(0.78f),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = Color.Black.copy(alpha = 0.68f),
+                                    shadowElevation = 4.dp,
+                                ) {
+                                    Text(
+                                        text = note,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White,
+                                        maxLines = 5,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
                     }
                     Column(
                         modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
