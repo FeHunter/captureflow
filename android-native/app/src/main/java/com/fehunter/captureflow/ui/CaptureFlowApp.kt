@@ -447,6 +447,10 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                                 )
                             }
                         }
+                        Checkbox(checked = capture.isCompleted, onCheckedChange = { completed ->
+                            viewModel.setCaptureCompleted(capture.id, completed)
+                            selectedCapture = capture.copy(isCompleted = completed)
+                        }, modifier = Modifier.size(48.dp))
                         IconButton(
                             onClick = {
                                 selectedCaptureEditedTitle = capture.title
@@ -456,10 +460,6 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         ) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
                         }
-                        Checkbox(checked = capture.isCompleted, onCheckedChange = { completed ->
-                            viewModel.setCaptureCompleted(capture.id, completed)
-                            selectedCapture = capture.copy(isCompleted = completed)
-                        }, modifier = Modifier.size(48.dp))
                         IconButton(onClick = { viewModel.deleteCapture(capture.id); selectedCapture = null }, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.onSurface)
                         }
