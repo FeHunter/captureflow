@@ -81,7 +81,8 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A notificação abre a Activity com a ação `ACTION_CREATE_TASK` e a URI da imagem; também oferece ação direta **Salvar como tarefa**.
 - A intent usa identificador de dados específico por screenshot e concessão de leitura da URI para evitar reaproveitamento incorreto do PendingIntent.
 - A Activity encaminha a URI à UI, que abre a confirmação tanto em inicialização fria quanto quando já está em execução.
-- Ao confirmar, a imagem é copiada para o armazenamento privado e criada como referência na categoria **Salvar**; o arquivo original só é removido após cópia privada bem-sucedida.
+- A confirmação apresenta prévia da imagem e exige que o usuário escolha uma categoria cadastrada, exceto **Concluído**, antes de habilitar **Salvar referência**.
+- Ao confirmar, a imagem é copiada para o armazenamento privado e criada na categoria escolhida; o arquivo original só é removido após cópia privada bem-sucedida.
 - Requer monitoramento ativado e permissões de imagens/notificações aplicáveis à versão Android.
 
 ## Monitoramento de screenshots
