@@ -265,7 +265,6 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         title = tag,
                         captures = categoryCaptures,
                         ocrStates = ocrStates,
-                        categories = categoryEntities.map { it.name },
                         onExpand = { expandedCategory = tag },
                         onOpenCapture = { selectedCapture = it },
                     )
@@ -604,7 +603,6 @@ private fun CategoryCard(
     title: String,
     captures: List<CaptureEntity>,
     ocrStates: Map<String, OcrUiState>,
-    categories: List<String>,
     onExpand: () -> Unit,
     onOpenCapture: (CaptureEntity) -> Unit,
 ) {
@@ -695,6 +693,7 @@ private fun CaptureCard(
     onCompleted: (Boolean) -> Unit,
     onDelete: () -> Unit,
     onCategoryChange: (String) -> Unit,
+    categories: List<String>,
     allCaptures: List<CaptureEntity>,
     subtasks: List<CaptureSubtaskEntity>,
     allSubtasks: List<CaptureSubtaskEntity>,
