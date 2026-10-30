@@ -1,67 +1,91 @@
 # Arquitetura do Capture Flow
 
-## Stack canônica
-Kotlin, Android SDK, Jetpack Compose/Material 3, ViewModel, Coroutines/Flow, Room/SQLite e Google ML Kit Text Recognition. O app ativo está em `android-native/`; `legacy-expo/` é histórico.
+## Direção arquitetural
 
-## Camadas e responsabilidades
-- **Entrada Android — `MainActivity.kt`:** recebe launcher, `ACTION_SEND` do Sharesheet e intents de notificação; encaminha compartilhamentos ao ViewModel.
-- **Apresentação — `ui/CaptureFlowApp.kt`:** tela única de referências, busca, chips, cartões, diálogo de categoria para links, seleção de imagem, fullscreen e sub-checklist.
-- **Orquestração — `ui/CaptureViewModel.kt`:** estado observável, deduplicação, captura pendente de link, persistência, OCR, enriquecimento de link e subtarefas.
-- **Dados — `data/CaptureDatabase.kt`:** entidades, DAOs, Room, classificação e normalização.
-- **Serviços — `services/LinkMetadataService.kt`:** requisição HTTP(S), leitura limitada de HTML e extração H1/imagem/metadados.
-- **Serviços — `services/OcrService.kt`:** OCR local e heurísticas de título.
-- **Serviços — `services/SharedImageStorageService.kt`:** cópia/download para armazenamento privado e exclusão segura de arquivos privados.
-- **Screenshots — `ScreenshotMonitor.kt` e `ScreenshotNotificationService.kt`:** detecção heurística pelo MediaStore e notificação opt-in.
+A arquitetura-alvo do app Android é **Feature-first + MVVM + separação pragmática entre Presentation, Domain e Data**. As regras completas estão no `AGENTS.md`.
+
+A migração está em andamento. Esta primeira etapa organiza os pacotes por propriedade funcional. A extração completa de contratos de Domain, repositórios, UseCases, ViewModels por feature e telas independentes ainda está pendente; não considerar a migração concluída.
+
+## Stack canônica
+
+Kotlin, Android SDK, Jetpack Compose/Material 3, Android ViewModel, Coroutines/Flow, Room/SQLite e Google ML Kit Text Recognition. App ativo em `android-native/`; `legacy-expo/` é histórico.
+
+## Estrutura atual
 
 ```text
-Sharesheet / Photo Picker / notification
-                 |
-                 v
-            MainActivity
-                 |
-                 v
-        CaptureFlowApp (Compose)
-                 |
-                 v
-          CaptureViewModel
-          /      |       \
-         v       v        v
-       Room     OCR    LinkMetadataService
-      SQLite   ML Kit  HTTP(S) HTML
-                         |
-                         v
-                SharedImageStorageService
+com.fehunter.captureflow/
+├── MainActivity.kt
+├── app/di/AppContainer.kt
+├── core/storage/SharedImageStorageService.kt
+└── features/
+    ├── captures/
+    │   ├── data/local/CaptureDatabase.kt
+    │   └── presentation/
+    │       ├── screens/CaptureFlowApp.kt
+    │       └── viewmodel/CaptureViewModel.kt
+    └── imageimport/data/
+        ├── android/{ScreenshotMonitor,ScreenshotNotificationService}.kt
+        ├── metadata/LinkMetadataService.kt
+        └── ocr/OcrService.kt
+```
+
+## Responsabilidades atuais e limites conhecidos
+
+- `MainActivity`: entrada Android para intents, permissões e encaminhamento à UI.
+- `features.captures.presentation.screens.CaptureFlowApp`: tela Compose existente; ainda reúne múltiplas experiências e deverá ser decomposta.
+- `features.captures.presentation.viewmodel.CaptureViewModel`: ViewModel transitório; ainda coordena referências, categorias, subtarefas e parte da importação. Não adicionar novas responsabilidades.
+- `features.captures.data.local`: Room, entidades, DAOs, migrations e classificador separados em arquivos; ainda pertencem à camada Data.
+- `features.imageimport`: OCR, metadados HTTP(S), monitoramento e notificações de screenshots.
+- `core.storage`: armazenamento privado reutilizável de imagens.
+- `app.di.AppContainer` + `CaptureViewModelFactory`: composição manual de banco e serviços, injetados no ViewModel; não introduzir framework de DI nesta etapa.
+
+## Fluxo atual
+
+```text
+Sharesheet / Photo Picker / screenshot notification
+                       |
+                       v
+                  MainActivity
+                       |
+                       v
+         CaptureFlowApp (Compose)
+                       |
+                       v
+       CaptureViewModel (transitional)
+             |         |          |
+             v         v          v
+            Room   Image Import  Core Storage
 ```
 
 ## Fluxo de link compartilhado
-1. `MainActivity` recebe `ACTION_SEND` com `text/plain` e chama `receiveSharedIntent`.
-2. O ViewModel extrai a URL HTTP(S), define `PendingSharedLink` e inicia a requisição em coroutine; o banco ainda não recebe uma referência de link.
-3. `LinkMetadataService` baixa o body HTML com timeout e limite de 512 KB. Prioridade de título: primeiro `H1`, `og:title`, `twitter:title`, `title`, host como fallback.
-4. Prioridade de imagem: primeira imagem dentro de `article`, depois `main`, depois metadados Open Graph/Twitter. URLs relativas são resolvidas pela URL final após redirects.
-5. A UI exibe título, URL, descrição quando disponível, estado de carregamento e seleção obrigatória entre quatro categorias.
-6. Cancelar descarta a captura pendente. Confirmar valida categoria, evita duplicata por `sourceUrl`, grava referência e tenta baixar a imagem para armazenamento privado.
-7. Se a requisição falhar, o usuário ainda pode salvar o link com o título de fallback.
 
-A extração é baseada em regex e HTML recebido; não executa JavaScript nem equivale a um browser/DOM completo. Requisição bloqueada, site autenticado ou conteúdo dinâmico podem limitar o resultado.
+1. `MainActivity` recebe `ACTION_SEND` e encaminha a intent.
+2. O ViewModel cria um estado pendente e busca metadados fora da main thread; ainda não persiste a referência.
+3. O usuário escolhe explicitamente uma tag válida.
+4. Confirmar persiste a referência e tenta baixar a imagem de prévia para storage privado; cancelar não persiste.
+5. Falha de metadados não descarta a URL original.
 
-## Texto e imagem compartilhados
-- Texto sem URL é normalizado, deduplicado por conteúdo e persistido sem diálogo de categoria de link.
-- Imagem compartilhada usa URI do Intent, tenta copiar para armazenamento privado e inicia OCR. A seleção de imagem do Photo Picker segue fluxo semelhante.
-- Não apagar a imagem original da galeria em importação manual.
-
-## OCR
-ML Kit reconhece texto localmente. Heurísticas analisam caixas delimitadoras, posição, tamanho e sinais aproximados de tipo de UI para sugerir título. Falhas não devem remover a referência nem a imagem.
+Prioridade de título: primeiro H1, depois Open Graph/Twitter/document title e host como fallback. Prioridade de imagem: conteúdo em `article`, depois `main`, depois metadados sociais. A extração é best-effort, limitada e não executa JavaScript.
 
 ## Dados e privacidade
-- Banco local `captureflow.db`; versão Room 5.
-- `captures` contém referências; `capture_subtasks` guarda subtarefas por `captureId`; `checklist_tasks` permanece como modelo legado/compatibilidade sem tela independente atual.
-- Sem sync cloud.
-- Metadados exigem requisição de rede ao URL compartilhado; imagens extraídas são baixadas localmente quando possível.
-- O monitor de screenshots é opt-in e usa metadados MediaStore; não usa Accessibility Service nem lê pixels de outros apps.
 
-## Regras de manutenção
-- Não acessar DAOs diretamente de Composables.
-- Não persistir link compartilhado antes da seleção de categoria.
-- Manter a extração de H1 e imagem best-effort, com fallback e timeouts.
-- Atualizar visão geral, estado atual, feature contract, UI/UX, wireframes, segurança, testes e changelog quando mudar fluxo ou layout.
-- Executar `testDebugUnitTest` e `assembleDebug` quando o ambiente permitir; não declarar sucesso sem resultado verificado.
+- Banco local `captureflow.db`; versão Room declarada no código: **8**.
+- `captures` contém referências; `capture_subtasks` guarda subtarefas por `captureId`; `checklist_tasks` permanece legado/compatibilidade.
+- Sem sincronização cloud. OCR é local.
+- O monitor de screenshots é opt-in e usa metadados MediaStore; não usa Accessibility Service nem lê pixels de outros apps.
+- Importação manual nunca apaga a imagem original. Limpeza da screenshot original só ocorre no fluxo confirmado pela notificação e após cópia privada bem-sucedida.
+
+## Próximas etapas
+
+1. Extrair modelos de domínio e contratos de repositório de Captures.
+2. Implementar DataSources/RepositoryImpl e UseCases, removendo acesso a DAO do ViewModel.
+3. Separar Image Import em fluxo/ViewModel próprio e expor resultado para Captures por contrato público.
+4. Extrair Categories, Search, Fullscreen, Checklists, Dashboard e Settings.
+5. Decompor a tela Compose monolítica e criar testes dos limites arquiteturais.
+
+## Qualidade
+
+- Composables não acessam DAOs.
+- Não persistir links antes da confirmação da tag.
+- Não usar destructive migration.
+- Executar `./gradlew testDebugUnitTest` e `./gradlew assembleDebug` em ambiente Android configurado; não declarar sucesso sem execução verificada.

@@ -104,3 +104,10 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Links acionam requisição ao host fornecido pelo usuário; HTML limitado por timeout/tamanho. Download de capa acontece somente após confirmação de categoria.
 - Validar em CI o commit exato e executar `.\gradlew.bat testDebugUnitTest` e `.\gradlew.bat assembleDebug` em `android-native/`.
 - Testar Sharesheet (URL, texto+URL, texto simples, imagem), H1/metadata fallbacks, imagem relativa, redirects, timeout/offline, cancelamento, quatro categorias, duplicatas, OCR, permissões, screenshot notification, Back nativo e telas estreitas/fonte ampliada.
+
+
+## Estado da migração Feature-first + MVVM
+
+A primeira etapa de organização de pacotes moveu a persistência e apresentação principal de Captures para `features/captures`, as integrações de OCR/metadados/screenshots para `features/imageimport` e o armazenamento privado compartilhado para `core/storage`. O banco Room foi dividido em entidades, DAOs, database/migrations e classificador. `AppContainer` e `CaptureViewModelFactory` fazem a composição manual das dependências; `MainActivity` continua na raiz do pacote como entrada Android.
+
+Esta é uma etapa estrutural, não a conclusão da arquitetura. O ViewModel ainda agrega operações de Captures, categorias, subtarefas e importação; a tela Compose ainda reúne múltiplos fluxos; Room entities, DAOs, database/migrations e classificador já estão separados em arquivos, mas continuam sob a camada Data. A próxima etapa deve extrair Domain, contratos, repositórios e UseCases, preservando o schema Room v8 e os fluxos funcionais atuais.

@@ -1,19 +1,19 @@
-package com.fehunter.captureflow.ui
+package com.fehunter.captureflow.features.captures.presentation.viewmodel
 
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.fehunter.captureflow.data.CaptureClassifier
-import com.fehunter.captureflow.data.CaptureDatabase
-import com.fehunter.captureflow.data.CaptureCategoryEntity
-import com.fehunter.captureflow.data.CaptureEntity
-import com.fehunter.captureflow.data.CaptureSubtaskEntity
-import com.fehunter.captureflow.data.ChecklistTaskEntity
-import com.fehunter.captureflow.services.LinkMetadataService
-import com.fehunter.captureflow.services.OcrService
-import com.fehunter.captureflow.services.SharedImageStorageService
+import com.fehunter.captureflow.features.captures.data.local.CaptureClassifier
+import com.fehunter.captureflow.features.captures.data.local.CaptureDatabase
+import com.fehunter.captureflow.features.captures.data.local.CaptureCategoryEntity
+import com.fehunter.captureflow.features.captures.data.local.CaptureEntity
+import com.fehunter.captureflow.features.captures.data.local.CaptureSubtaskEntity
+import com.fehunter.captureflow.features.captures.data.local.ChecklistTaskEntity
+import com.fehunter.captureflow.features.imageimport.data.metadata.LinkMetadataService
+import com.fehunter.captureflow.features.imageimport.data.ocr.OcrService
+import com.fehunter.captureflow.core.storage.SharedImageStorageService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,15 +41,17 @@ data class OcrUiState(
     val isError: Boolean = false,
 )
 
-class CaptureViewModel(application: Application) : AndroidViewModel(application) {
-    private val database = CaptureDatabase.get(application)
+class CaptureViewModel(
+    application: Application,
+    database: CaptureDatabase,
+    private val ocrService: OcrService,
+    private val linkMetadataService: LinkMetadataService,
+    private val imageStorageService: SharedImageStorageService,
+) : AndroidViewModel(application) {
     private val captureDao = database.captureDao()
     private val categoryDao = database.categoryDao()
     private val checklistDao = database.checklistDao()
     private val captureSubtaskDao = database.captureSubtaskDao()
-    private val ocrService = OcrService()
-    private val linkMetadataService = LinkMetadataService()
-    private val imageStorageService = SharedImageStorageService()
 
     private val _ocrStates = MutableStateFlow<Map<String, OcrUiState>>(emptyMap())
     val ocrStates = _ocrStates.asStateFlow()

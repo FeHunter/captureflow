@@ -1,4 +1,4 @@
-package com.fehunter.captureflow.data
+package com.fehunter.captureflow.features.captures.data.local
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

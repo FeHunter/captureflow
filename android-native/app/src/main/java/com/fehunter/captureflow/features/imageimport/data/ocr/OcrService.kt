@@ -1,4 +1,4 @@
-package com.fehunter.captureflow.services
+package com.fehunter.captureflow.features.imageimport.data.ocr
 
 import android.content.Context
 import android.graphics.Rect

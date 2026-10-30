@@ -1,4 +1,4 @@
-package com.fehunter.captureflow.services
+package com.fehunter.captureflow.core.storage
 
 import android.content.Context
 import android.net.Uri

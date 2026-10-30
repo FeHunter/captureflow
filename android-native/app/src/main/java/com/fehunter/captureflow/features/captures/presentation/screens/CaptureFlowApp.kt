@@ -1,4 +1,9 @@
-package com.fehunter.captureflow.ui
+package com.fehunter.captureflow.features.captures.presentation.screens
+
+import com.fehunter.captureflow.features.captures.data.local.CaptureEntity
+import com.fehunter.captureflow.features.captures.data.local.CaptureSubtaskEntity
+import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
+import com.fehunter.captureflow.features.captures.presentation.viewmodel.OcrUiState
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,8 +68,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.fehunter.captureflow.BuildConfig
-import com.fehunter.captureflow.data.CaptureEntity
-import com.fehunter.captureflow.data.CaptureSubtaskEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
