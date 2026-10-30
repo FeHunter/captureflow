@@ -1,5 +1,12 @@
 # Changelog — Captures
 
+## 2026-10-29 — Edição de título e gerenciamento de categorias
+- Restaurada a edição do título principal diretamente no modal de confirmação de links compartilhados; a edição manual é preservada mesmo se a busca de metadados terminar depois.
+- Reorganizado o modal: seleção de categoria no topo, lista vertical rolável com todas as categorias, campo de título editável e exibição compacta da URL; descrição longa foi removida da confirmação.
+- Criada persistência Room para categorias, com migração 5→6 e carga inicial de Ler depois, Verificar, Salvar e Importante.
+- Adicionadas ações de CRUD para categorias na biblioteca. Renomear ou excluir uma categoria também atualiza as referências e tarefas vinculadas; exclusão move os itens para outra categoria existente.
+- Filtros e seletores de categoria agora usam a lista persistida em vez de uma lista fixa.
+
 ## 2026-10-29 — Compatibilidade de compartilhamento e títulos de links
 - O Android Sharesheet aceita MIME types `text/*`, além de imagens; o app trata `ACTION_SEND` e `ACTION_SEND_MULTIPLE`.
 - A leitura de links compartilhados considera `EXTRA_TEXT`, texto/URI em `ClipData`, `Intent.data` e `EXTRA_SUBJECT`, evitando depender de um único formato de payload.

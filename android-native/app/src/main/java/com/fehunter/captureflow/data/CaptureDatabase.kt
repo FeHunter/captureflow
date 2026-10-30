@@ -22,6 +22,12 @@ data class CaptureEntity(
     val isCompleted: Boolean = false,
 )
 
+@Entity(tableName = "categories")
+data class CaptureCategoryEntity(
+    @PrimaryKey val name: String,
+    val sortOrder: Int,
+)
+
 @Entity(tableName = "checklist_tasks")
 data class ChecklistTaskEntity(
     @PrimaryKey val id: String,
@@ -44,6 +50,21 @@ data class CaptureSubtaskEntity(
     val isCompleted: Boolean = false,
     val createdAt: Long,
 )
+
+@Dao
+interface CaptureCategoryDao {
+    @Query("SELECT * FROM categories ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
+    fun observeAll(): Flow<List<CaptureCategoryEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(category: CaptureCategoryEntity)
+
+    @Query("UPDATE categories SET name = :newName WHERE name = :oldName")
+    suspend fun rename(oldName: String, newName: String)
+
+    @Query("DELETE FROM categories WHERE name = :name")
+    suspend fun delete(name: String)
+}
 
 @Dao
 interface CaptureSubtaskDao {
@@ -71,6 +92,7 @@ interface CaptureDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
     @Query("UPDATE captures SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
+    @Query("UPDATE captures SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
@@ -87,10 +109,12 @@ interface ChecklistDao {
     @Query("DELETE FROM checklist_tasks WHERE id = :id") suspend fun delete(id: String)
     @Query("UPDATE checklist_tasks SET title = :title, description = :description WHERE id = :id") suspend fun updateDetails(id: String, title: String, description: String)
     @Query("UPDATE checklist_tasks SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
+    @Query("UPDATE checklist_tasks SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
 }
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class], version = 5, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 6, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
+    abstract fun categoryDao(): CaptureCategoryDao
     abstract fun captureDao(): CaptureDao
     abstract fun checklistDao(): ChecklistDao
     abstract fun captureSubtaskDao(): CaptureSubtaskDao
@@ -122,10 +146,17 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS categories (name TEXT NOT NULL PRIMARY KEY, sortOrder INTEGER NOT NULL)")
+                database.execSQL("INSERT OR IGNORE INTO categories (name, sortOrder) VALUES ('Ler depois', 0), ('Verificar', 1), ('Salvar', 2), ('Importante', 3)")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build().also { instance = it }
         }
     }
