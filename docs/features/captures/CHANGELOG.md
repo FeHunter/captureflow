@@ -1,3 +1,10 @@
+## 2026-10-30 — Correção do fluxo de screenshot pela notificação
+- A notificação de screenshot agora oferece também uma ação explícita **Salvar como tarefa**, além do toque no corpo da notificação.
+- O `PendingIntent` recebe um identificador de dados único por imagem e permissão de leitura da URI, evitando reaproveitamento ambíguo da intent ao receber screenshots diferentes.
+- A confirmação da screenshot na UI inicializa seu estado diretamente com a URI recebida e acompanha também a limpeza/atualização da URI pela Activity, garantindo a abertura do diálogo tanto com o app iniciado quanto já em execução.
+- O fluxo continua exigindo confirmação do usuário e, ao confirmar, importa a imagem para a biblioteca como referência na categoria **Salvar**, usando o armazenamento privado existente e removendo a screenshot de origem somente quando a cópia privada for concluída.
+- A detecção continua dependendo de monitoramento ativado, permissão de leitura de imagens e permissão de notificações quando exigida pelo Android.
+
 ## 2026-10-30 — Anotações no visualizador fullscreen
 - Adicionado o campo opcional `notes` ao payload de `CaptureEntity`, permitindo salvar texto livre associado a cada referência.
 - Criada a migração Room 7→8 para adicionar a coluna `notes` sem apagar ou alterar os dados existentes.
