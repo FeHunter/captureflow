@@ -1,5 +1,10 @@
 # Changelog — Captures
 
+## 2026-10-30 — Ações flutuantes no visualizador fullscreen
+- Reposicionadas as ações de concluir, editar título e excluir para uma coluna vertical flutuante sobre a imagem, alinhada no canto inferior direito com margem das bordas.
+- Ordem visual de cima para baixo: excluir, editar e concluir, correspondendo à sequência solicitada de baixo para cima: checkbox, editar e excluir.
+- A ação de fechar permanece no header; o atalho para abrir o link original também permanece no header quando disponível.
+
 ## 2026-10-30 — Atalho de monitoramento no header e referências concluídas
 - Movido o controle de avisos de screenshot para a barra superior, ao lado do menu de opções; o ícone alterna entre estado ativo e inativo e aciona o fluxo existente de permissão/ativação ou desativação.
 - Removidos os botões e textos de configuração do card de seleção de imagem, mantendo apenas a ação de selecionar imagem.
