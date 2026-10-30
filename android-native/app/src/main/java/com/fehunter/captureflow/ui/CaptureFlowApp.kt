@@ -112,6 +112,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     val captures by viewModel.captures.collectAsState()
     val ocrStates by viewModel.ocrStates.collectAsState()
     val pendingSharedLink by viewModel.pendingSharedLink.collectAsState()
+    val categoryEntities by viewModel.categories.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
     var query by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Todas") }
@@ -120,8 +121,9 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var selectedCapture by remember { mutableStateOf<CaptureEntity?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
+    var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
-    val categories = listOf("Todas", "Ler depois", "Verificar", "Salvar", "Importante")
+    val categories = listOf("Todas") + categoryEntities.map { it.name }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> selectedImageUri = uri },
@@ -223,12 +225,22 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             )
         }
         item(key = "categories") {
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                categories.forEach { item ->
-                    FilterChip(selected = category == item, onClick = { category = item }, label = { Text(item) })
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Categorias", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showCategoryManager = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Gerenciar")
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    categories.forEach { item ->
+                        FilterChip(selected = category == item, onClick = { category = item }, label = { Text(item) })
+                    }
                 }
             }
         }
@@ -256,6 +268,16 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             }
         }
     }
+    if (showCategoryManager) {
+        CategoryManagementDialog(
+            categories = categoryEntities.map { it.name },
+            onAdd = viewModel::addCategory,
+            onRename = viewModel::renameCategory,
+            onDelete = viewModel::deleteCategory,
+            onDismiss = { showCategoryManager = false },
+        )
+    }
+
     expandedCategory?.let { tag ->
         val categoryCaptures = filtered.filter { it.category == tag }
         Dialog(
@@ -429,38 +451,46 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
             title = { Text("Salvar link como referência") },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 430.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(pending.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(pending.url, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    pending.description?.takeIf(String::isNotBlank)?.let {
-                        Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 4, overflow = TextOverflow.Ellipsis)
-                    }
-                    if (pending.isLoading) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Text("Buscando título e imagem do site…", style = MaterialTheme.typography.bodySmall)
-                        }
-                    } else if (!pending.metadataFound) {
-                        Text(
-                            "Não foi possível ler os metadados do site. Você ainda pode salvar o link com o título disponível.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text("Em qual categoria deseja salvar?", style = MaterialTheme.typography.labelLarge)
-                    categories.drop(1).forEach { tag ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { sharedLinkCategory = tag }.padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(
+                    Text("Categoria", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                    Column(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        categories.drop(1).forEach { tag ->
+                            FilterChip(
                                 selected = sharedLinkCategory == tag,
                                 onClick = { sharedLinkCategory = tag },
+                                label = { Text(tag) },
+                                modifier = Modifier.fillMaxWidth(),
                             )
-                            Text(tag, modifier = Modifier.padding(start = 8.dp))
                         }
+                    }
+                    OutlinedTextField(
+                        value = pending.title,
+                        onValueChange = viewModel::updatePendingSharedLinkTitle,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Título principal") },
+                        placeholder = { Text("Digite um título") },
+                        maxLines = 2,
+                        singleLine = false,
+                    )
+                    Text(
+                        pending.url,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (pending.isLoading) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Text("Buscando informações do link…", style = MaterialTheme.typography.bodySmall)
+                        }
+                    } else if (!pending.metadataFound) {
+                        Text("Não foi possível obter o título automaticamente.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             },
@@ -470,7 +500,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
                         sharedLinkCategory?.let(viewModel::confirmPendingSharedLink)
                         sharedLinkCategory = null
                     },
-                    enabled = !pending.isLoading && sharedLinkCategory != null,
+                    enabled = !pending.isLoading && sharedLinkCategory != null && pending.title.isNotBlank(),
                 ) { Text("Salvar referência") }
             },
             dismissButton = {
@@ -985,6 +1015,100 @@ private fun CaptureCard(
             dismissButton = {
                 TextButton(onClick = { showEditTitle = false }) { Text("Cancelar") }
             },
+        )
+    }
+}
+
+
+@Composable
+private fun CategoryManagementDialog(
+    categories: List<String>,
+    onAdd: (String) -> Unit,
+    onRename: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var newCategoryName by remember { mutableStateOf("") }
+    var editingCategory by remember { mutableStateOf<String?>(null) }
+    var editedCategoryName by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Gerenciar categorias") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("Adicione, renomeie ou remova categorias. As referências existentes acompanham as alterações.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newCategoryName,
+                        onValueChange = { newCategoryName = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Nova categoria") },
+                        singleLine = true,
+                    )
+                    IconButton(
+                        onClick = {
+                            onAdd(newCategoryName)
+                            newCategoryName = ""
+                        },
+                        enabled = newCategoryName.isNotBlank(),
+                    ) { Icon(Icons.Default.Add, contentDescription = "Adicionar categoria") }
+                }
+                HorizontalDivider()
+                categories.forEach { name ->
+                    if (editingCategory == name) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedTextField(
+                                value = editedCategoryName,
+                                onValueChange = { editedCategoryName = it },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                label = { Text("Nome da categoria") },
+                            )
+                            IconButton(onClick = {
+                                onRename(name, editedCategoryName)
+                                editingCategory = null
+                            }, enabled = editedCategoryName.isNotBlank()) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = "Salvar nome")
+                            }
+                            IconButton(onClick = { editingCategory = null }) {
+                                Icon(Icons.Default.Close, contentDescription = "Cancelar edição")
+                            }
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                            IconButton(onClick = {
+                                editingCategory = name
+                                editedCategoryName = name
+                            }) { Icon(Icons.Default.Edit, contentDescription = "Renomear $name") }
+                            IconButton(onClick = { deleteTarget = name }, enabled = categories.size > 1) {
+                                Icon(Icons.Default.Delete, contentDescription = "Excluir $name")
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Concluir") } },
+    )
+
+    deleteTarget?.let { name ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Excluir categoria?") },
+            text = { Text("As referências e tarefas em \"$name\" serão movidas para outra categoria.") },
+            confirmButton = {
+                Button(onClick = {
+                    onDelete(name)
+                    deleteTarget = null
+                }) { Text("Excluir") }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancelar") } },
         )
     }
 }
