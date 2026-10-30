@@ -95,6 +95,8 @@ interface CaptureDao {
     @Query("UPDATE captures SET isCompleted = 0, category = COALESCE(previousCategory, 'Salvar'), previousCategory = NULL WHERE id = :id") suspend fun markPending(id: String)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
     @Query("UPDATE captures SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
+    @Query("UPDATE captures SET previousCategory = :newName WHERE previousCategory = :oldName") suspend fun renamePreviousCategoryReferences(oldName: String, newName: String)
+    @Query("UPDATE captures SET previousCategory = :newName WHERE previousCategory = :oldName") suspend fun movePreviousCategoryReferences(oldName: String, newName: String)
     @Query("UPDATE captures SET imageUri = :imageUri WHERE id = :id") suspend fun updateImageUri(id: String, imageUri: String?)
     @Query("UPDATE captures SET title = :title WHERE id = :id") suspend fun updateTitle(id: String, title: String)
     @Query("DELETE FROM captures WHERE id = :id") suspend fun delete(id: String)
