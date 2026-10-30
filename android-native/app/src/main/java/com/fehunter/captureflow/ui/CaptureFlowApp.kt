@@ -1011,7 +1011,7 @@ private fun CaptureCard(
             },
             confirmButton = {
                 Button(onClick = {
-                    val title = editedTitle.trim()
+                    val title = editedTitle.trim().take(160)
                     if (title.isNotBlank()) {
                         onTitleChange(fullscreenCapture.id, title)
                         fullscreenCapture = fullscreenCapture.copy(title = title)
