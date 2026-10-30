@@ -1,7 +1,16 @@
-# Features — organização por funcionalidade
+# Features
 
-O código de produto deve ser organizado em `features/{feature-name}`. Cada feature é dona de suas regras, estado e apresentação; adotar `data/`, `domain/` e `presentation/` quando aplicável, sem criar camadas vazias.
+O código de produto é organizado por ownership em `features/{feature-name}`. Cada feature contém Presentation, Domain e Data quando aplicável. As dependências entre features devem ocorrer por contratos públicos/use cases, nunca por entidades Room ou DAOs.
 
-Features planejadas: `captures`, `imageimport`, `search`, `categories`, `fullscreen`, `checklists`, `dashboard` e `settings`.
+Features ativas/estruturadas:
+- `captures`: ciclo de vida de referências, categorias de domínio e subtarefas.
+- `imageimport`: compartilhamento de conteúdo, metadados, importação de imagens e OCR.
+- `categories`: gerenciamento e seleção de categorias.
+- `search`: consulta e filtragem da biblioteca.
+- `dashboard`: resumo reativo do progresso.
+- `settings`: preferências locais do aplicativo.
+- `fullscreen`: visualização ampliada de referências.
 
-A estrutura é incremental: consulte `AGENTS.md` e cada README de feature antes de implementar. Features ainda não extraídas do fluxo legado não devem ser tratadas como concluídas.
+A tabela histórica `checklist_tasks` permanece no schema Room como compatibilidade de dados; não há feature/tela independente de Checklists. As subtarefas ativas pertencem a `captures` e usam `capture_subtasks`.
+
+Consulte o README de cada feature antes de alterar responsabilidades.

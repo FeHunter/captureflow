@@ -16,7 +16,7 @@ O aplicativo deve ser organizado por **funcionalidade (feature-first)**. Cada fe
 
 ### 2.1 Camadas e responsabilidades
 
-- **Presentation:** telas e componentes Compose, estado de UI, eventos e ViewModels. Não contém SQL, acesso direto a DAO, IO ou regras de negócio complexas.
+- **Presentation:** telas e componentes Compose, estado de UI, eventos e ViewModels. Não contém SQL, acesso direto a DAO, IO de rede/persistência ou regras de negócio complexas. Decodificação local de bitmap é permitida somente via `core/ui`, em dispatcher de background.
 - **ViewModel:** recebe eventos da UI, coordena casos de uso, expõe estado imutável por StateFlow/Flow e executa operações assíncronas com lifecycle apropriado. Não conhece DAO nem implementações concretas de persistência.
 - **Domain:** modelos de negócio, contratos de repositório e UseCases. Deve permanecer independente de Android, Compose, Room e frameworks externos sempre que possível.
 - **Data:** implementação dos contratos, DataSources, entidades Room, DTOs, mappers e integrações necessárias. É a única camada de feature que conhece detalhes de persistência.
@@ -43,52 +43,26 @@ Presentation (Compose + ViewModel)
 
 Domain não depende de Presentation ou Data. A implementação Data depende dos contratos Domain; Presentation depende de Domain, não de Room.
 
-### 2.2 Estrutura-alvo de pacotes
-
-A estrutura abaixo é o destino arquitetural. **Não pressupor que já esteja implementada**: a migração deve ser incremental e cada etapa deve compilar.
+### 2.2 Estrutura aplicada de pacotes
 
 ```text
 android-native/app/src/main/java/com/fehunter/captureflow/
+├── MainActivity.kt                  # entrada Android, permissões e lifecycle
 ├── app/
-│   ├── CaptureFlowApplication.kt
-│   ├── MainActivity.kt
-│   ├── CaptureFlowApp.kt
-│   ├── navigation/
-│   └── di/
-│
+│   ├── di/AppContainer.kt            # composição manual das dependências
+│   └── navigation/                   # shell + composição cross-feature
 ├── core/
-│   ├── database/       # RoomDatabase, configuração e migrations compartilhadas
-│   ├── designsystem/   # tema, tokens e componentes realmente genéricos
-│   ├── storage/        # abstrações/infraestrutura de armazenamento reutilizável
-│   ├── android/        # integrações Android compartilhadas (intents/permissões etc.)
-│   ├── navigation/     # contratos/helpers de navegação compartilhados, se necessários
-│   └── common/         # Result, dispatchers e utilitários sem regra de feature
-│
+│   ├── storage/                      # PrivateImageStorage + implementação
+│   └── ui/                           # carregamento limitado de bitmaps
 └── features/
-    ├── captures/
-    │   ├── data/
-    │   │   ├── datasource/
-    │   │   ├── mapper/
-    │   │   └── repository/
-    │   ├── domain/
-    │   │   ├── model/
-    │   │   ├── repository/
-    │   │   └── usecase/
-    │   └── presentation/
-    │       ├── components/
-    │       ├── screens/
-    │       ├── state/
-    │       └── viewmodel/
-    ├── imageimport/
-    ├── search/
-    ├── categories/
-    ├── fullscreen/
-    ├── checklists/
-    ├── dashboard/
-    └── settings/
+    ├── captures/                     # Domain, Room Data, UseCases, ViewModel e biblioteca
+    ├── imageimport/                  # gateway, parser Android, OCR, metadata e ViewModel
+    ├── categories/                   # ViewModel e componentes de categorias
+    ├── search/                       # filtro, estado e campo de pesquisa
+    ├── fullscreen/                   # diálogo e página fullscreen
+    ├── dashboard/                    # resumo, UseCase e ViewModel
+    └── settings/                     # preferências, UseCases e ViewModel
 ```
-
-Cada feature deve adotar a separação `data/`, `domain/` e `presentation/` quando houver responsabilidades correspondentes. Não criar arquivos/pastas vazios ou abstrações artificiais apenas para preencher o padrão. Componentes específicos permanecem dentro da feature proprietária.
 
 ### 2.3 Responsabilidade de cada feature
 
@@ -97,11 +71,11 @@ Cada feature deve adotar a separação `data/`, `domain/` e `presentation/` quan
 - **search:** consulta, busca textual, combinação de filtros e apresentação dos resultados. Consome contratos de consulta de Captures; não acessa seu DAO ou banco diretamente.
 - **categories:** regras e operações de categorias, incluindo validações, ordenação e reatribuição segura de referências quando uma categoria é removida.
 - **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações e ações disponíveis no detalhe. Usa casos de uso/contratos de domínio, nunca DAO diretamente.
-- **checklists:** subtarefas persistidas e vinculadas a uma referência por `captureId`. Não reintroduzir uma tela independente de tarefas sem decisão explícita de produto.
+- **captures:** é proprietária das referências e das subtarefas persistidas em `capture_subtasks`, vinculadas por `captureId` e apresentadas no fullscreen. A entidade/DAO histórica `checklist_tasks` permanece apenas para compatibilidade do schema Room, sem feature ou tela ativa.
 - **dashboard:** indicadores e estatísticas de referências/categorias. Somente consulta; não modifica Captures diretamente.
 - **settings:** tema, preferências e configurações do aplicativo, incluindo a experiência de configuração de monitoramento/permissões quando apropriado.
 
-A divisão final de um serviço entre features/core deve seguir sua responsabilidade real. Ex.: OCR é específico de Image Import; armazenamento genérico privado pode ser infraestrutura Core; monitoramento de screenshots pertence à integração de importação/Android. Não mover serviços indiscriminadamente para Core.
+A divisão final de um serviço entre features/core deve seguir sua responsabilidade real. Ex.: OCR, download de capas, cópia de imagens compartilhadas e exclusão best-effort de screenshots pertencem a Image Import; Core mantém apenas o contrato mínimo de armazenamento privado usado por Captures. Não mover serviços indiscriminadamente para Core.
 
 ### 2.4 Comunicação e limites entre features
 
@@ -120,7 +94,7 @@ A divisão final de um serviço entre features/core deve seguir sua responsabili
 - Composables devem ser tão stateless quanto possível: recebem estado e callbacks. Estado puramente visual/local pode permanecer em Compose quando não representa regra ou dado de negócio.
 - ViewModels não devem acumular responsabilidades de várias features.
 - Não mover lógica para um UseCase sem benefício real: UseCases representam operações/regras de domínio identificáveis, não wrappers artificiais para cada chamada.
-- Dispatchers e trabalho de IO devem ser tratados fora da UI; não bloquear a main thread.
+- Dispatchers e IO de rede/persistência devem ser tratados fora da UI; nunca bloquear a main thread. A única exceção de UI é decodificação local e limitada de imagens via `core/ui`, sempre em dispatcher de background.
 
 ### 2.6 DI e módulos Gradle
 
@@ -131,12 +105,11 @@ A divisão final de um serviço entre features/core deve seguir sua responsabili
 
 ## 3. Organização do código atual e migração
 
-O código ativo fica em `android-native/app/src/main/java/com/fehunter/captureflow/`. A organização atual ainda pode conter `ui/`, `data/` e `services/`; isso é legado de estrutura durante a migração, não o destino arquitetural.
+O código ativo fica em `android-native/app/src/main/java/com/fehunter/captureflow/` e a migração inicial Feature-first + MVVM foi aplicada nos pacotes descritos acima. `legacy-expo/` é histórico e não deve receber novas funcionalidades.
 
-- Não fazer uma reescrita big-bang.
-- Migrar incrementalmente, mantendo o aplicativo compilável e funcional após cada etapa.
-- Ordem recomendada: (0) baseline/inventário; (1) app/core/composition root; (2) Captures como feature piloto; (3) Image Import; (4) Categories e Search; (5) Fullscreen e Checklists; (6) Dashboard e Settings; (7) limpeza e validação.
-- Captures é a implementação de referência para estabelecer convenções reutilizáveis.
+- Preservar o comportamento observado e manter o app compilável após cada mudança.
+- A migração dos principais fluxos foi concluída estruturalmente; novas mudanças devem seguir os limites de Domain/Data/Presentation já estabelecidos.
+- Captures é a feature de referência para convenções de modelos, repositórios, UseCases, ViewModels e testes.
 - Durante a transição, evitar duas implementações ativas da mesma regra. Remover código antigo somente depois de migrar chamadas e validar equivalência.
 - Mover arquivos sem alterar comportamento sempre que possível; separar refatoração estrutural de mudanças de produto.
 - Antes de alterar um fluxo, localizar seus chamadores, estados, persistência, integrações e documentação.
@@ -250,7 +223,7 @@ Conforme a migração avançar, criar/fortalecer verificações para garantir:
 - Features não importam pacotes internos de outras features.
 - Core não depende de features.
 - Não existem ciclos de dependência.
-- Composables não executam IO nem acessam persistência.
+- Composables não acessam persistência nem rede. Decodificação local e limitada de bitmap é permitida via `core/ui`, com trabalho em dispatcher de background.
 - Cada ViewModel tem responsabilidade delimitada.
 
 ## 11. Documentação e manutenção
@@ -261,7 +234,7 @@ Manter documentação alinhada com o código real:
 - `docs/architecture.md`: visão arquitetural implementada e diagramas de dependência.
 - `docs/current-state.md`: comportamento atualmente observado, sem descrever planos como fatos.
 - `docs/project-overview.md`: visão do produto.
-- `docs/SD_captureflow.drawio`: diagramas atualizados; a aba **Architecture by Features** representa a arquitetura-alvo até que a migração esteja concluída.
+- `docs/SD_captureflow.drawio`: diagramas de referência; a aba **Architecture by Features** representa a organização feature-first aplicada, mantendo explícito que o app continua em um único módulo Gradle.
 - `docs/features/{feature}/`: contrato funcional, arquitetura, acesso a dados/ações, UI/UX, testes e decisões relevantes da feature.
 
 Para cada feature nova ou migrada, documentar:
@@ -284,14 +257,28 @@ Quando um comportamento mudar, atualizar documentação funcional, UI/UX, wirefr
 - Revisar o diff e executar os gates aplicáveis antes de considerar uma etapa concluída.
 
 
-## Estado da migração no código — branch feature-first
+## Atualização da migração Feature-first + MVVM — 30/10/2026
 
-A primeira realocação de pacotes foi aplicada:
-- `features/captures/data/local`: banco Room, entidades, DAOs e classificador separados em arquivos próprios.
-- `features/captures/presentation/viewmodel`: ViewModel atual de Captures (ainda transitório).
-- `features/captures/presentation/screens`: tela Compose atual (ainda agregada).
-- `features/imageimport/data/{ocr,metadata,android}`: OCR, metadados e integrações Android de screenshots.
-- `core/storage`: armazenamento privado compartilhado.
-- `app/di/AppContainer.kt` e `CaptureViewModelFactory` fazem a composição manual das dependências; `MainActivity.kt` permanece na raiz do pacote como entrada Android.
+A branch `refactor/complete-feature-architecture` avançou a migração para as features abaixo. Este checkpoint substitui as observações anteriores que diziam que o ViewModel principal ainda acessava DAOs ou que a tela raiz pertencia a Captures.
 
-A realocação de pacotes não equivale à conclusão de Clean Architecture: o ViewModel ainda acessa DAOs e serviços concretos, e a tela Compose ainda reúne múltiplas áreas do produto. Próximas mudanças devem extrair contratos Domain, repositórios, UseCases, ViewModels e telas por feature. Não adicionar novas responsabilidades ao ViewModel/tela transitórios. O schema Room permanece na versão declarada pelo código (8); esta etapa não deve criar migration.
+- **Captures:** modelos de domínio puros, contrato `CaptureRepository`, implementação Room, mappers, UseCases e `CaptureViewModel` sem referências a entidades/DAOs/Room.
+- **Image Import:** contrato de gateway sem tipos Android, implementação Android em Data e `ImageImportViewModel` próprio para compartilhamento, metadados, importação de imagens e OCR.
+- **Categories:** estado e operações em `CategoriesViewModel`; componentes Compose extraídos.
+- **Search:** estado em `SearchViewModel`, filtro puro em UseCase e campo Compose independente.
+- **Dashboard:** agregação em UseCase, estado em `DashboardViewModel` e componente Compose próprio.
+- **Settings:** persistência em `SettingsRepository`, UseCases e `SettingsViewModel`.
+- **Checklists:** a tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema dentro de Captures Data; subtarefas ativas são parte de Captures.
+- **Fullscreen:** composable extraído para sua feature.
+- **App/Core:** composição de dependências em `app/di`, shell Compose em `app/navigation` e carregamento de bitmaps em `core/ui`.
+
+A Presentation consome modelos de domínio, UseCases e contratos de gateway. Entidades Room e DAOs ficam em Data. O domínio não deve importar Android, Room ou implementações Data. `MainActivity` permanece como entrada Android e trata permissões/intenções de plataforma.
+
+Limites remanescentes conhecidos:
+- O app continua em um único módulo Gradle, conforme a estratégia incremental do projeto.
+- `CaptureLibraryCoordinator` em `app/navigation` coordena a composição cross-feature da biblioteca; não adicionar novas regras de negócio nela. As features não devem importar componentes ou ViewModels de Presentation umas das outras.
+- Fullscreen é um componente de apresentação e usa callbacks do fluxo de Captures; não há ViewModel independente enquanto não existir estado de negócio próprio. O diálogo fullscreen também expõe a sub-checklist vinculada ao `captureId`.
+- Checklists continua sendo compatibilidade de persistência e não deve ser reativado como experiência autônoma.
+- `SharedContentIntentParser` em `features/imageimport/data/android` adapta Sharesheet/Intent para payloads simples; regras de criação e classificação de Capture ficam no `CaptureFactory` puro.
+- Room permanece na versão 8; não criar migration nesta refatoração.
+
+Antes de declarar a migração validada, exigir CI verde para o HEAD atual (`testDebugUnitTest` e `assembleDebug`) e revisar fluxos de compartilhamento, importação de imagem, OCR, categorias, conclusão/restauração, anotações e fullscreen.

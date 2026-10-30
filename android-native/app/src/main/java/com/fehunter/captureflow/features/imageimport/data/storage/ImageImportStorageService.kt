@@ -1,4 +1,4 @@
-package com.fehunter.captureflow.core.storage
+package com.fehunter.captureflow.features.imageimport.data.storage
 
 import android.content.Context
 import android.net.Uri
@@ -9,12 +9,18 @@ import java.net.URL
 import java.util.UUID
 
 /**
- * Copies shared image content into app-private storage so OCR does not depend on a
- * temporary URI grant from the app that shared the image.
+ * Image Import storage adapter for shared-image copies, preview downloads and
+ * best-effort deletion of source screenshots. Generic private-file cleanup lives in Core.
  */
-class SharedImageStorageService {
-    fun copyToPrivateStorage(context: Context, source: Uri): Uri {
-        val resolver = context.contentResolver
+class ImageImportStorageService(context: Context) {
+    private val applicationContext = context.applicationContext
+
+    /**
+     * Copies shared image content into app-private storage so OCR does not depend on a
+     * temporary URI grant from the app that shared the image.
+     */
+    fun copyToPrivateStorage(source: Uri): Uri {
+        val resolver = applicationContext.contentResolver
         val input = resolver.openInputStream(source)
             ?: throw IOException("Não foi possível abrir a imagem compartilhada.")
 
@@ -25,7 +31,7 @@ class SharedImageStorageService {
             "image/bmp" -> "bmp"
             else -> "jpg"
         }
-        val directory = File(context.filesDir, "captures").apply { mkdirs() }
+        val directory = File(applicationContext.filesDir, "captures").apply { mkdirs() }
         val destination = File(directory, "capture-${UUID.randomUUID()}.$extension")
 
         try {
@@ -44,10 +50,11 @@ class SharedImageStorageService {
     }
 
     /** Downloads a webpage preview image into app-private storage. */
-    fun downloadToPrivateStorage(context: Context, rawUrl: String): Uri? {
+    fun downloadToPrivateStorage(rawUrl: String): Uri? {
         val parsed = runCatching { Uri.parse(rawUrl) }.getOrNull() ?: return null
         if (parsed.scheme !in setOf("http", "https") || parsed.host.isNullOrBlank()) return null
         val connection = runCatching { URL(rawUrl).openConnection() as? HttpURLConnection }.getOrNull() ?: return null
+        var partialFile: File? = null
         return try {
             connection.connectTimeout = 4_000
             connection.readTimeout = 5_000
@@ -64,8 +71,9 @@ class SharedImageStorageService {
                 "image/jpeg", "image/jpg" -> "jpg"
                 else -> return null
             }
-            val directory = File(context.filesDir, "captures").apply { mkdirs() }
+            val directory = File(applicationContext.filesDir, "captures").apply { mkdirs() }
             val destination = File(directory, "link-preview-${UUID.randomUUID()}.$extension")
+            partialFile = destination
             connection.inputStream.use { input ->
                 destination.outputStream().use { output ->
                     val buffer = ByteArray(8_192)
@@ -81,9 +89,14 @@ class SharedImageStorageService {
             }
             if (destination.length() == 0L) {
                 destination.delete()
+                partialFile = null
                 null
-            } else Uri.fromFile(destination)
+            } else {
+                partialFile = null
+                Uri.fromFile(destination)
+            }
         } catch (_: Exception) {
+            partialFile?.delete()
             null
         } finally {
             connection.disconnect()
@@ -95,20 +108,9 @@ class SharedImageStorageService {
      * Android may require explicit user consent to delete media owned by another app;
      * when blocked, the operation fails safely and the original remains in the gallery.
      */
-    fun deleteSourceScreenshot(context: Context, source: Uri): Boolean {
+    fun deleteSourceScreenshot(source: Uri): Boolean {
         if (source.scheme != "content") return false
-        return runCatching { context.contentResolver.delete(source, null, null) > 0 }.getOrDefault(false)
+        return runCatching { applicationContext.contentResolver.delete(source, null, null) > 0 }.getOrDefault(false)
     }
 
-    fun deletePrivateImage(context: Context, imageUri: String?) {
-        if (imageUri.isNullOrBlank()) return
-        val uri = runCatching { Uri.parse(imageUri) }.getOrNull() ?: return
-        if (uri.scheme != "file") return
-
-        val capturesDirectory = File(context.filesDir, "captures").canonicalFile
-        val imageFile = File(uri.path.orEmpty()).canonicalFile
-        if (imageFile.toPath().startsWith(capturesDirectory.toPath())) {
-            imageFile.delete()
-        }
-    }
 }

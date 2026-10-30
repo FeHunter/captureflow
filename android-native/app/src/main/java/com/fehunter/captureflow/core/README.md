@@ -1,3 +1,9 @@
 # Core
 
-Infraestrutura e componentes genuinamente compartilhados entre features. Não concentrar regras de negócio nem serviços exclusivos de uma feature. Atualmente `storage/` contém a implementação compartilhada de armazenamento privado de imagens.
+Código transversal sem ownership de feature.
+
+- `storage/PrivateImageStorage.kt`: contrato mínimo para remoção de imagens privadas, consumido por Captures.
+- `storage/LocalPrivateImageStorage.kt`: implementação genérica que só remove arquivos dentro do diretório privado do app.
+- `ui/ImageBitmapLoader.kt`: carregamento de imagem com decodificação limitada.
+
+Não mover regras específicas de Captures, Categories ou Image Import para Core.

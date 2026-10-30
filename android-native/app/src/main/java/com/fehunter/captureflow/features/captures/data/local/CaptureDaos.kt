@@ -44,6 +44,7 @@ interface CaptureSubtaskDao {
 @Dao
 interface CaptureDao {
     @Query("SELECT * FROM captures ORDER BY createdAt DESC") fun observeAll(): Flow<List<CaptureEntity>>
+    @Query("SELECT * FROM captures WHERE id = :id LIMIT 1") suspend fun findById(id: String): CaptureEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
     @Query("UPDATE captures SET isCompleted = 1, previousCategory = CASE WHEN category != 'Concluído' THEN category ELSE previousCategory END, category = 'Concluído' WHERE id = :id") suspend fun markCompleted(id: String)
     @Query("UPDATE captures SET isCompleted = 0, category = COALESCE(previousCategory, 'Salvar'), previousCategory = NULL WHERE id = :id") suspend fun markPending(id: String)

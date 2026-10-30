@@ -1,18 +1,16 @@
-# Feature: Captures
+# Captures
 
-**Responsabilidade:** ciclo de vida das referências salvas pelo usuário.
+Feature responsável pelo ciclo de vida das referências salvas.
 
-## Organização
-- `data/local`: Room, entidades, DAOs e migrations atuais (em decomposição).
-- `domain`: destino para modelos de domínio, contratos de repositório e UseCases.
-- `presentation`: telas Compose, estado e ViewModels.
+## Estrutura
+- `domain/model`: `Capture`, `CaptureCategory`, `CaptureSubtask`.
+- `domain/repository`: contrato `CaptureRepository`.
+- `domain/usecase`: operações de aplicação e regras de criação.
+- `data/local`: entidades, DAOs e Room.
+- `data/mapper`: conversão Room↔Domain.
+- `data/repository`: implementação Room.
+- `presentation/viewmodel`: estado e ações de Captures.
+- `presentation/components`: cards de categoria e thumbnails reutilizáveis.
+- A sub-checklist de cada referência é apresentada no fullscreen e permanece vinculada ao `captureId`.
 
-## Estado da migração
-A persistência e a apresentação existentes foram realocadas para esta feature. O `CaptureViewModel` permanece temporariamente como fachada legada e ainda coordena categorias, subtarefas e parte do fluxo de importação. Não adicionar novas responsabilidades a ele.
-
-## Próximos passos
-1. Separar entidades/DAOs e classificador.
-2. Criar `Capture` como modelo de domínio e mapper.
-3. Criar `CaptureRepository` e implementação Room.
-4. Introduzir UseCases e retirar DAO do ViewModel.
-5. Separar Search, Categories, Fullscreen e Checklists.
+O ViewModel consome `CaptureUseCases`; não deve importar entidades, DAOs ou implementações Data. A biblioteca é composta pelo `CaptureLibraryCoordinator` em `app/navigation`, que integra as features sem criar dependências entre suas camadas de Presentation. Categories, Search, Dashboard, Image Import e Fullscreen mantêm seus componentes e estados próprios.

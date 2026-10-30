@@ -1,9 +1,9 @@
-# App composition root
+# App
 
-Ponto de entrada e composição da aplicação: navegação de alto nível e resolução de dependências.
+Responsabilidades de aplicação:
+- `MainActivity`: entrada Android, permissões, intents e ciclo de vida de serviços.
+- `di/AppContainer.kt`: composição manual de repositórios, gateways e ViewModel factories.
+- `navigation/CaptureFlowNavigation.kt`: shell Compose, tema/ações globais e entrada da biblioteca.
+- `navigation/CaptureLibraryCoordinator.kt`: composição entre Captures, Image Import, Categories, Search, Dashboard e Fullscreen. A orquestração cross-feature pertence ao App, não a uma feature.
 
-- `app/di/AppContainer.kt` constrói o banco e serviços compartilhados e fornece a factory do ViewModel.
-- `CaptureViewModelFactory` injeta as dependências no ViewModel sem framework externo.
-- `MainActivity` permanece temporariamente na raiz do pacote como entrada Android para intents e permissões; movê-la em etapa isolada, validando os fluxos Android.
-
-Manter a composição explícita e pequena. Não colocar regras de negócio no AppContainer.
+A navegação/composição não deve conter regras de negócio ou acessar DAOs. A aplicação permanece em um módulo Gradle nesta etapa.

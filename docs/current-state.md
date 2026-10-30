@@ -91,7 +91,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Opcional e habilitado pelo usuário, com permissões de imagens e notificações quando aplicável.
 - Foreground service observa MediaStore e procura nomes/pastas que parecem screenshots recentes; é best-effort e varia por fabricante/restrições do sistema.
 - Não lê pixels de outros apps nem usa Accessibility Service.
-- **Inconsistência existente:** o serviço de notificação ainda contém nomes e textos históricos de tarefa (`ACTION_CREATE_TASK`, “pronta para tarefa”), embora o app ativo seja a biblioteca de referências. Corrigir as strings sem reintroduzir uma tela independente de tarefas.
+- A notificação apresenta a ação como **Salvar referência**. O valor interno do Intent mantém a string histórica `CREATE_SCREENSHOT_TASK` para compatibilidade com notificações já emitidas; o código usa o nome `ACTION_IMPORT_SCREENSHOT`.
 
 ## Banco de dados
 - `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, `notes` opcional (anotações de texto do usuário), createdAt, isCompleted e `previousCategory` opcional (categoria restaurada ao desfazer conclusão).
@@ -105,9 +105,12 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Validar em CI o commit exato e executar `.\gradlew.bat testDebugUnitTest` e `.\gradlew.bat assembleDebug` em `android-native/`.
 - Testar Sharesheet (URL, texto+URL, texto simples, imagem), H1/metadata fallbacks, imagem relativa, redirects, timeout/offline, cancelamento, quatro categorias, duplicatas, OCR, permissões, screenshot notification, Back nativo e telas estreitas/fonte ampliada.
 
+## Estado arquitetural — 30/10/2026
 
-## Estado da migração Feature-first + MVVM
+A branch `refactor/complete-feature-architecture` aplica os limites de domínio e dados e separa o estado das principais features. O ViewModel de Captures não acessa DAOs nem entidades Room. A importação de links/imagens e OCR foi movida para `ImageImportViewModel`; categorias, pesquisa, dashboard e tema têm ViewModels próprios. A Activity atua como entrada Android, encaminha Sharesheet através de `SharedContentIntentParser` em Image Import e delega a composição visual raiz a `app/navigation`.
 
-A primeira etapa de organização de pacotes moveu a persistência e apresentação principal de Captures para `features/captures`, as integrações de OCR/metadados/screenshots para `features/imageimport` e o armazenamento privado compartilhado para `core/storage`. O banco Room foi dividido em entidades, DAOs, database/migrations e classificador. `AppContainer` e `CaptureViewModelFactory` fazem a composição manual das dependências; `MainActivity` continua na raiz do pacote como entrada Android.
+A UI foi dividida entre shell de navegação e `CaptureLibraryCoordinator` no App, componentes de Captures, categorias, pesquisa, dashboard e fullscreen. O helper de carregamento de bitmap foi movido para `core/ui`. O fullscreen mantém conclusão, título, anotações, navegação paginada e sub-checklist por `captureId`; as subtarefas são recebidas e alteradas através do `CaptureViewModel`.
 
-Esta é uma etapa estrutural, não a conclusão da arquitetura. O ViewModel ainda agrega operações de Captures, categorias, subtarefas e importação; a tela Compose ainda reúne múltiplos fluxos; Room entities, DAOs, database/migrations e classificador já estão separados em arquivos, mas continuam sob a camada Data. A próxima etapa deve extrair Domain, contratos, repositórios e UseCases, preservando o schema Room v8 e os fluxos funcionais atuais.
+A tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema; as subtarefas ativas são propriedade de Captures e vinculadas por `captureId`. Fullscreen não tem ViewModel independente por não possuir estado de negócio isolado.
+
+Room permanece v8. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
