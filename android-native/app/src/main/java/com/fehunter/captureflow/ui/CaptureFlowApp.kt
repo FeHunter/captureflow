@@ -144,7 +144,6 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     var taskScreenshotCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
-    LaunchedEffect(taskScreenshotToConfirm) { taskScreenshotCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
     val activeCategories = categoryEntities.map { it.name }.filterNot { it == "Concluído" }
     LaunchedEffect(categoryEntities) {
@@ -163,6 +162,7 @@ private fun CaptureLibrary(viewModel: CaptureViewModel, hasScreenshotAccess: Boo
     LaunchedEffect(pendingTaskScreenshotUri) {
         taskScreenshotToConfirm = pendingTaskScreenshotUri
     }
+    LaunchedEffect(taskScreenshotToConfirm) { taskScreenshotCategory = null }
     val taskScreenshotPreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = null, taskScreenshotToConfirm,
     ) {
