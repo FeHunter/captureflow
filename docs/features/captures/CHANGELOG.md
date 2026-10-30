@@ -1,5 +1,9 @@
 # Changelog — Captures
 
+## 2026-10-30 — Dashboard simplificado por categoria
+- Removidos os indicadores de quantidade concluída versus total e as barras de progresso.
+- O dashboard agora apresenta somente o nome de cada categoria e a quantidade atual de referências nela, incluindo a categoria fixa **Concluído**.
+
 ## 2026-10-30 — Categoria fixa Concluído
 - Criada a categoria padrão **Concluído**, protegida contra renomeação e exclusão no gerenciador e bloqueada para atribuição manual em novos itens.
 - Ao marcar uma referência como concluída, o Room guarda sua categoria anterior e move o item para **Concluído**; ao desmarcá-la, restaura a categoria anterior.
