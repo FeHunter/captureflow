@@ -46,6 +46,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - **Anotações** abre um diálogo dentro da experiência fullscreen, com campo multilinha e limite de 10.000 caracteres.
 - Quando há anotação não vazia, o visualizador aberto pelo cartão também a apresenta sobre a imagem no canto inferior esquerdo, em um painel preto translúcido com texto branco (até cinco linhas visíveis e reticências para conteúdo maior). A anotação continua editável/removível pelo botão **Anotações**.
 - Salvar persiste o texto em `captures.notes` por meio do ViewModel/DAO. Texto vazio limpa as anotações; Cancelar não persiste alterações.
+- No Details Fullscreen ativo (`selectedCapture`), anotações não vazias também aparecem sobre a imagem no canto inferior esquerdo, em painel preto translúcido com texto branco (até cinco linhas visíveis); o painel acompanha a captura atual durante o swipe. A coluna de ações permanece no canto inferior direito.
 - As anotações pertencem à referência e continuam disponíveis após fechar/reabrir o visualizador.
 
 ## Visualizador fullscreen ativo
