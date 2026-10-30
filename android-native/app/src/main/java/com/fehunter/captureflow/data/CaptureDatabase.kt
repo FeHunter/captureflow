@@ -159,7 +159,7 @@ abstract class CaptureDatabase : RoomDatabase() {
         private val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE captures ADD COLUMN previousCategory TEXT")
-                database.execSQL("INSERT OR IGNORE INTO categories (name, sortOrder) VALUES ('Concluído', 4)")
+                database.execSQL("INSERT OR IGNORE INTO categories (name, sortOrder) VALUES ('Concluído', 999)")
                 database.execSQL("UPDATE captures SET previousCategory = category, category = 'Concluído' WHERE isCompleted = 1")
             }
         }
