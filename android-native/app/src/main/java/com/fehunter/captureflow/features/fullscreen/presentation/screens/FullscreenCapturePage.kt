@@ -3,6 +3,8 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
+import com.fehunter.captureflow.features.fullscreen.domain.YoutubeVideoIdParser
+import com.fehunter.captureflow.features.fullscreen.presentation.components.YoutubeEmbeddedPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
@@ -34,11 +36,17 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
             }
         }
     }
+    val youtubeVideoId = remember(capture.sourceUrl) { YoutubeVideoIdParser.extractVideoId(capture.sourceUrl) }
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        if (image != null) {
+        if (youtubeVideoId != null) {
+            YoutubeEmbeddedPlayer(
+                videoId = youtubeVideoId,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            )
+        } else if (image != null) {
             Image(
                 bitmap = image!!,
                 contentDescription = "Imagem completa da referência",
