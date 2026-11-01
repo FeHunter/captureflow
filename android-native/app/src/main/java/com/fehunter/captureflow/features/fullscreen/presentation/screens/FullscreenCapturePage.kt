@@ -4,7 +4,6 @@ import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
 import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
-import com.fehunter.captureflow.features.fullscreen.presentation.components.YoutubeEmbeddedPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -27,7 +26,6 @@ import kotlinx.coroutines.withContext
 fun FullscreenCapturePage(
     capture: Capture,
     showNavigationHint: Boolean,
-    isActivePage: Boolean = true,
 ) {
     val context = LocalContext.current
     val youtubeVideoId = remember(capture.sourceUrl) {
@@ -65,14 +63,8 @@ fun FullscreenCapturePage(
             if (capture.isCompleted) {
                 CompletedBadge(modifier = Modifier.padding(top = 4.dp))
             }
-            Spacer(Modifier.weight(1f))
-            if (isActivePage) {
-                YoutubeEmbeddedPlayer(
-                    videoId = youtubeVideoId,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Spacer(Modifier.weight(1f))
+            // The WebView is hosted by FullscreenCaptureDialog outside HorizontalPager.
+            // This page reserves the center for the sibling player without transforming it.
             if (showNavigationHint) {
                 Text(
                     "‹ Deslize para navegar ›",
