@@ -14,12 +14,12 @@
 3. Chips horizontais: Todas, Ler depois, Verificar, Salvar, Importante.
 4. Grupos de categoria em cartões de largura total, rolagem vertical. Cada grupo mostra até três thumbnails e “Ver todas”.
 - O filtro e a busca atuam juntos. “Todas” é filtro, não categoria persistida.
-- Categorias usadas em filtros/seletores: Ler depois, Verificar, Salvar, Importante.
+- Categorias usadas em filtros/seletores: Ler depois, Verificar, Salvar, Importante. Conclusão é estado independente, não categoria.
 
 ## Thumbnails e categoria expandida
 - Thumbnail quadrado com `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder “Sem imagem” quando não há capa.
 - Estado de OCR pode exibir ícone de processamento/erro.
-- “Ver todas” abre modal fullscreen da categoria, com botão de voltar/fechar, nome da categoria e contagem.
+- “Ver todas” abre modal fullscreen da categoria, com botão de voltar/fechar, nome, contagem e filtros Pendentes/Concluídas com contadores. Inicia em Pendentes; alternar o filtro não altera a categoria dos itens.
 - Grade expandida usa três colunas, espaçamento uniforme e rolagem vertical.
 - Tocar em thumbnail abre o visualizador fullscreen.
 
@@ -30,7 +30,7 @@
 - Dica “‹ Deslize para navegar ›” é uma sobreposição na parte inferior central; não reserva altura.
 - Swipe-left avança; swipe-right retorna dentro da mesma categoria filtrada. Não há loop nas extremidades.
 - A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada.
-- Referências concluídas exibem a categoria de origem em um selo nos thumbnails e no cabeçalho do fullscreen.
+- Referências concluídas permanecem na categoria original; concluir/reabrir altera somente o estado de conclusão.
 - O botão de anotações usa ícone de balão no canto inferior esquerdo e abre um modal amplo da feature Notes; salvar persiste no Capture e cancelar descarta o rascunho.
 - Back nativo fecha primeiro o visualizador e mantém a categoria expandida; Back novamente retorna à biblioteca. Botões explícitos continuam disponíveis.
 
