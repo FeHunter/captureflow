@@ -109,10 +109,20 @@ fun NotesEditorDialog(
 
     LaunchedEffect(cropSourceUri) {
         val sourceUri = cropSourceUri ?: return@LaunchedEffect
-        cropBitmap = withContext(Dispatchers.IO) {
-            runCatching { decodeOrientedBitmap(context, sourceUri) }.getOrNull()
+        // Clear the previous preview before loading another URI. Otherwise a slow
+        // provider could leave the previous bitmap actionable while the new image loads.
+        cropBitmap?.takeUnless(Bitmap::isRecycled)?.recycle()
+        cropBitmap = null
+        cropError = null
+        imageError = null
+        val decoded = withContext(Dispatchers.IO) {
+            runCatching { decodeOrientedBitmap(context, sourceUri) }
         }
-        if (cropBitmap == null) cropError = "Não foi possível abrir esta imagem."
+        decoded.onSuccess { cropBitmap = it }
+            .onFailure { error ->
+                cropError = error.localizedMessage?.takeIf(String::isNotBlank)
+                    ?: "Não foi possível abrir esta imagem."
+            }
     }
 
     fun closeAndDiscard() {
@@ -385,25 +395,31 @@ private fun NoteImagePreview(rawUri: String) {
 
 private fun decodeOrientedBitmap(context: android.content.Context, rawUri: String): Bitmap {
     val uri = Uri.parse(rawUri)
-    val resolver = context.contentResolver
     val bounds = Options().apply { inJustDecodeBounds = true }
-    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    openImageInputStream(context, uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        ?: throw IllegalStateException("Não foi possível abrir a imagem selecionada.")
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-        throw IllegalStateException("O arquivo selecionado não é uma imagem válida.")
+        throw IllegalStateException("O arquivo selecionado não é uma imagem raster válida.")
     }
+
     var sample = 1
     while (bounds.outWidth / sample > 2560 || bounds.outHeight / sample > 2560) sample *= 2
-    val bitmap = resolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, Options().apply { inSampleSize = sample })
-    } ?: throw IllegalStateException("Não foi possível decodificar a imagem.")
+    val bitmap = openImageInputStream(context, uri)?.use {
+        BitmapFactory.decodeStream(it, null, Options().apply {
+            inSampleSize = sample
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        })
+    } ?: throw IllegalStateException("Não foi possível decodificar a imagem selecionada.")
+
     val orientation = runCatching {
-        resolver.openInputStream(uri)?.use { stream ->
+        openImageInputStream(context, uri)?.use { stream ->
             ExifInterface(stream).getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,
                 ExifInterface.ORIENTATION_NORMAL,
             )
         } ?: ExifInterface.ORIENTATION_NORMAL
     }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
     val matrix = Matrix().apply {
         when (orientation) {
             ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(90f)
@@ -419,6 +435,34 @@ private fun decodeOrientedBitmap(context: android.content.Context, rawUri: Strin
     return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true).also {
         bitmap.recycle()
     }
+}
+
+/**
+ * Photo Picker providers and app-owned cache files expose different URI schemes.
+ * Read file:// directly and fall back to a provider file descriptor even when
+ * openInputStream throws, not only when it returns null.
+ */
+private fun openImageInputStream(
+    context: android.content.Context,
+    uri: Uri,
+): java.io.InputStream? {
+    if (uri.scheme.equals("file", ignoreCase = true)) {
+        val path = uri.path ?: throw IllegalStateException("A URI da imagem não contém um caminho válido.")
+        val file = File(path)
+        if (!file.isFile || !file.canRead() || file.length() <= 0L) {
+            throw IllegalStateException("O arquivo da imagem não existe ou não pode ser lido.")
+        }
+        return java.io.FileInputStream(file)
+    }
+
+    val resolver = context.contentResolver
+    val input = runCatching { resolver.openInputStream(uri) }.getOrNull()
+    if (input != null) return input
+    return runCatching {
+        resolver.openFileDescriptor(uri, "r")?.let {
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(it)
+        }
+    }.getOrNull()
 }
 
 private fun cropCenter(source: Bitmap, ratio: Float): Bitmap {
