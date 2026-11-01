@@ -62,8 +62,8 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), o fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles do player habilitados e sem autoplay. A renderização de vídeo mantém aceleração de hardware explicitamente habilitada no app, Activity e WebView. O cabeçalho HTTP `Referer` identifica o app com `https://{applicationId}/`, conforme a orientação de identidade de cliente do YouTube para WebViews Android. A capa não é carregada nem salva para novas capturas do YouTube; o link original continua disponível no cabeçalho. Vídeos que não permitem incorporação exigem abertura externa.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
-- Para imagens, o título fica sobre a região superior com gradiente preto forte que esmaece até transparente. Para vídeos YouTube, o título é exibido acima do player, sem sobrepor a viewport.
-- `HorizontalPager`: swipe-left avança e swipe-right retorna dentro das capturas da mesma categoria filtrada, sem loop nas extremidades. O player YouTube é instanciado somente para a página estabilizada.
+- O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
+- `HorizontalPager`: swipe-left avança e swipe-right retorna dentro das capturas da mesma categoria filtrada, sem loop nas extremidades.
 - A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada. Concluir/reabrir mantém a categoria original. A dica `‹ Deslize para navegar ›` é overlay e não reserva altura.
 - Back nativo fecha apenas o visualizador e mantém a categoria expandida por baixo; Back novamente retorna à biblioteca.
 - O modal **Editar título** permite alterar o título e, logo abaixo, selecionar a categoria da referência. A alteração de categoria é persistida pelo ViewModel de Captures e atualiza o detalhe ativo.
@@ -149,7 +149,7 @@ Room permanece v8. Não há sincronização cloud e as regras local-first contin
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
-- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), a área de mídia usa o player oficial IFrame em WebView com youtube-nocookie.com, sem autoplay e sem JavaScript bridge. O WebView mantém a aceleração de hardware padrão da Activity e é hospedado pelo FullscreenCaptureDialog fora da camada transformada do HorizontalPager; somente a página estabilizada instancia o player. Título e selo de conclusão ficam fora da viewport do player; os painéis flutuantes são substituídos por uma barra compacta de anotações e ações abaixo do vídeo, sem sobrepor o player. O link original continua disponível no cabeçalho; vídeos que não permitem incorporação exigem abertura externa.
+- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), a área de imagem usa o player oficial IFrame em WebView com youtube-nocookie.com, sem autoplay e sem JavaScript bridge. O link original continua disponível no cabeçalho; vídeos que não permitem incorporação exigem abertura externa.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
