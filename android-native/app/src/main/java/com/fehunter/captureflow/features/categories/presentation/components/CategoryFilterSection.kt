@@ -1,5 +1,6 @@
 package com.fehunter.captureflow.features.categories.presentation.components
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,8 +23,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
- * Keeps the most relevant category filters visible in two compact rows and
- * provides a dialog for the complete list when the user needs it.
+ * Displays every category across two independently scrollable horizontal rows.
+ * The dialog remains available as an alternative for selecting from the full list.
  */
 @Composable
 fun CategoryFilterSection(
@@ -32,36 +33,33 @@ fun CategoryFilterSection(
     onCategorySelected: (String) -> Unit,
 ) {
     var showAllCategories by remember { mutableStateOf(false) }
-    val visibleCategories = remember(categories, selectedCategory) {
-        val preview = categories.take(6).toMutableList()
-        if (selectedCategory !in preview && selectedCategory in categories && preview.isNotEmpty()) {
-            preview[preview.lastIndex] = selectedCategory
-        }
-        preview
+    val firstRowCategories = remember(categories) {
+        categories.filterIndexed { index, _ -> index % 2 == 0 }
+    }
+    val secondRowCategories = remember(categories) {
+        categories.filterIndexed { index, _ -> index % 2 != 0 }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        visibleCategories.chunked(3).forEach { rowCategories ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                rowCategories.forEach { item ->
-                    FilterChip(
-                        modifier = Modifier.weight(1f),
-                        selected = selectedCategory == item,
-                        onClick = { onCategorySelected(item) },
-                        label = {
-                            Text(
-                                item,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                    )
-                }
-                repeat((3 - rowCategories.size).coerceAtLeast(0)) {
-                    androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+        listOf(firstRowCategories, secondRowCategories).forEach { rowCategories ->
+            if (rowCategories.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    rowCategories.forEach { item ->
+                        FilterChip(
+                            selected = selectedCategory == item,
+                            onClick = { onCategorySelected(item) },
+                            label = {
+                                Text(
+                                    item,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }
