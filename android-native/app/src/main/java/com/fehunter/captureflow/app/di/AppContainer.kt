@@ -44,6 +44,7 @@ class AppContainer(application: Application) {
     val settingsViewModelFactory = SettingsViewModelFactory(
         getThemeMode = GetThemeModeUseCase(settingsRepository),
         setThemeMode = SetThemeModeUseCase(settingsRepository),
+        preferencesRepository = settingsRepository,
     )
 
     val categoriesViewModelFactory = CategoriesViewModelFactory(ManageCategoriesUseCase(captureRepository))
