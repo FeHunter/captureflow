@@ -47,8 +47,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
-import com.fehunter.captureflow.features.notes.domain.model.NoteBlock
-import com.fehunter.captureflow.features.notes.domain.model.NotesCodec
+import com.fehunter.captureflow.features.captures.domain.model.CaptureNote
+import com.fehunter.captureflow.features.captures.domain.model.CaptureCaptureNotesCodec
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -94,7 +94,7 @@ fun NotesEditorDialog(
         draftText = ""
         draftImageUri = null
     }
-    fun beginEdit(note: NoteBlock) {
+    fun beginEdit(note: CaptureNote) {
         editingId = note.id
         draftText = note.text
         draftImageUri = note.imageUri
