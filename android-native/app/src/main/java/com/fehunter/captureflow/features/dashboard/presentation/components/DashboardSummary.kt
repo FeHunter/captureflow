@@ -94,7 +94,7 @@ fun DashboardSummaryCard(summary: DashboardSummary) {
                     ) {
                         Text(item.category, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            item.count.toString(),
+                            "${item.completedCount}/${item.totalCount} itens",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
