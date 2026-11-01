@@ -65,6 +65,7 @@ fun FullscreenCapturePage(
             }
             // The WebView is hosted by FullscreenCaptureDialog outside HorizontalPager.
             // This page reserves the center for the sibling player without transforming it.
+            Spacer(Modifier.weight(1f))
             if (showNavigationHint) {
                 Text(
                     "‹ Deslize para navegar ›",
