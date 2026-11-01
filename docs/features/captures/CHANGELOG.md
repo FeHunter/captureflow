@@ -254,3 +254,8 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - `LinkMetadataService` faz requisição HTTP(S) do body HTML com timeout e limite de 512 KB; prioriza H1 para título e imagem de article/main para capa, com metadados Open Graph/Twitter como fallback.
 - Após confirmação, tenta baixar a imagem para armazenamento privado. Se metadados falharem, o link pode ser salvo com título de fallback.
 - Atualizados contratos de arquitetura, UI/UX, wireframes, segurança e teste.
+
+
+## 2026-11-01 — Correções adicionais
+- Compressão: URIs `file://` de recortes temporários passam a ser abertas diretamente por `FileInputStream`, evitando depender do `ContentResolver` para arquivos locais. URIs de provedores continuam usando `ContentResolver`, com fallback para `ParcelFileDescriptor` quando o stream retorna nulo.
+- Categorias: ordenação “Mais recentes”/“Mais antigas” agrupa capturas uma única vez e compara `createdAt` (máximo/mínimo) de cada categoria, com desempate temporal determinístico.
