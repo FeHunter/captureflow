@@ -45,7 +45,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Cada referência pode ter uma lista ordenada de blocos, cada um com texto de até 10.000 caracteres e uma imagem opcional.
 - O botão de balão abre diretamente o formulário de nova anotação, sem tela intermediária de gerenciamento. Toque prolongado em um bloco existente no fullscreen abre seu formulário de edição/remoção.
 - No fullscreen, os blocos aparecem no canto inferior esquerdo em painel que acompanha a altura natural do texto/imagem, limitado a 248 dp; a rolagem vertical só é necessária quando o conteúdo ultrapassa esse limite. O texto não é truncado artificialmente em duas linhas.
-- Ao selecionar ou trocar uma imagem, o usuário visualiza e ajusta o recorte (Original, 1:1, 4:5 ou 16:9) antes de comprimir para armazenamento privado com perfil Alto (JPEG quality 50). URIs file:// temporárias são lidas diretamente por FileInputStream; URIs content:// usam ContentResolver com fallback para file descriptor. A saída é JPEG, após normalização ARGB_8888. Entradas raster usuais: BMP, GIF, JPEG, PNG e WebP; HEIF/AVIF dependem da versão Android e do dispositivo. Falhas exibem o motivo real e preservam o recorte para nova tentativa. Imagens removidas da coleção são limpas do armazenamento privado.
+- Ao selecionar ou trocar uma imagem, o usuário visualiza e ajusta o recorte (Original, 1:1, 4:5 ou 16:9) antes de comprimir para armazenamento privado com perfil Alto (JPEG quality 50). A UI codifica o recorte em PNG lossless na memória e envia um ByteArray ao compressor, sem arquivo/URI intermediária. A saída é JPEG privada, com limite de 2560 px e normalização de transparência. Falhas exibem o motivo real e preservam o recorte para nova tentativa. Imagens removidas da coleção são limpas do armazenamento privado.
 - A coleção é serializada em formato versionado no campo Room captures.notes já existente. Anotações antigas em texto simples são lidas como um único bloco; não há migration destrutiva. Cancelar não persiste alterações.
 
 ## Ordenação da biblioteca
@@ -54,7 +54,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Essa preferência altera somente a posição dos containers. A prévia de thumbnails mantém a ordem natural da biblioteca. A grade expandida usa a ordem padrão de referências mais recentes, sem filtro de ordenação configurável.
 
 ## Anotações com imagem
-- Ao adicionar/trocar uma imagem na anotação, o usuário escolhe o recorte primeiro. O recorte intermediário é gravado em PNG lossless no cache e então comprimido uma única vez em JPEG com perfil Alto para o armazenamento privado.
+- Ao adicionar/trocar uma imagem na anotação, o usuário escolhe o recorte primeiro. O recorte intermediário é codificado como PNG lossless em memória (ByteArray) e então comprimido uma única vez em JPEG com perfil Alto para o armazenamento privado; não há arquivo ou URI intermediária.
 - Se o preparo ou a compressão falhar, o arquivo temporário é limpo e a imagem/recorte selecionado permanece disponível para nova tentativa. A anotação só persiste a URI privada após a compressão concluir com sucesso.
 
 ## Visualizador fullscreen ativo
