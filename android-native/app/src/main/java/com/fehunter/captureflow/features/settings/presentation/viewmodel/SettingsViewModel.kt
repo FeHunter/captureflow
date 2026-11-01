@@ -23,7 +23,7 @@ class SettingsViewModel(
     val imageCompressionProfile = _imageCompressionProfile.asStateFlow()
 
     fun setCategorySortOrder(order: String) {
-        val normalized = order.takeIf { it in setOf("manual", "name_asc", "name_desc") } ?: "manual"
+        val normalized = order.takeIf { it in setOf("manual", "newest", "oldest", "name_asc", "name_desc") } ?: "manual"
         preferencesRepository.setCategorySortOrder(normalized)
         _categorySortOrder.value = normalized
     }
