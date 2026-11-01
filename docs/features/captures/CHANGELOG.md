@@ -1,3 +1,11 @@
+## 2026-11-01 — Ajustes de progresso, categorias e fullscreen
+- Em **Todas**, cartões de categoria sem referências pendentes são omitidos; ao selecionar uma categoria específica, o cartão continua visível mesmo quando todas as referências estão concluídas, com mensagem de prévia vazia.
+- Criado o componente reutilizável `CompletedBadge` e aplicado aos thumbnails de referências concluídas.
+- O modal **Editar título** do fullscreen agora também permite alterar a categoria da referência, persistindo a mudança pela feature Captures.
+- O atalho para abrir URL válida permanece no cabeçalho e também está disponível na coluna vertical de ações.
+- O filtro de categorias foi reorganizado em até duas linhas e ganhou modal para acessar a lista completa.
+- Atualizados `AGENTS.md`, estado atual e READMEs das features Captures, Categories e Fullscreen.
+
 ## 2026-10-31 — Conclusão independente da categoria e progresso por categoria
 - Concluir ou reabrir uma referência agora altera somente `isCompleted`; a referência permanece na categoria original.
 - A migração Room 8→9 recupera a categoria original dos registros anteriormente movidos para `Concluído`, limpa `previousCategory` e remove a categoria especial.
