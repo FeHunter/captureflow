@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
@@ -41,6 +42,8 @@ fun FullscreenCaptureDialog(
     onCaptureSelected: (Capture) -> Unit,
     onCompleted: (String, Boolean) -> Unit,
     onTitleChange: (String, String) -> Unit,
+    categories: List<String>,
+    onCategoryChange: (String, String) -> Unit,
     onOpenNotes: (String) -> Unit,
     onDelete: (String) -> Unit,
     allSubtasks: List<CaptureSubtask>,
@@ -51,6 +54,8 @@ fun FullscreenCaptureDialog(
     val uriHandler = LocalUriHandler.current
     var showEditTitle by remember(capture?.id) { mutableStateOf(false) }
     var editedTitle by remember(capture?.id) { mutableStateOf(capture?.title.orEmpty()) }
+    var editedCategory by remember(capture?.id) { mutableStateOf(capture?.category.orEmpty()) }
+    var showCategoryMenu by remember(capture?.id) { mutableStateOf(false) }
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
 
@@ -204,8 +209,20 @@ fun FullscreenCaptureDialog(
                                         maxLines = 1,
                                     )
                                 }
+                                sourceUrl?.let { url ->
+                                    IconButton(
+                                        onClick = { runCatching { uriHandler.openUri(url) } },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Link,
+                                            contentDescription = "Abrir link original",
+                                            tint = MaterialTheme.colorScheme.onSurface,
+                                        )
+                                    }
+                                }
                                 IconButton(
-                                    onClick = { editedTitle = selected.title; showEditTitle = true },
+                                    onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
                                     modifier = Modifier.size(48.dp),
                                 ) { Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface) }
                                 IconButton(
@@ -292,13 +309,46 @@ fun FullscreenCaptureDialog(
             onDismissRequest = { showEditTitle = false },
             title = { Text("Editar título") },
             text = {
-                OutlinedTextField(
-                    value = editedTitle,
-                    onValueChange = { editedTitle = it.take(160) },
-                    label = { Text("Título principal") },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    OutlinedTextField(
+                        value = editedTitle,
+                        onValueChange = { editedTitle = it.take(160) },
+                        label = { Text("Título principal") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3,
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Categoria", style = MaterialTheme.typography.labelLarge)
+                        Box {
+                            OutlinedButton(
+                                onClick = { showCategoryMenu = true },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    editedCategory,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Icon(Icons.Default.ExpandMore, contentDescription = "Selecionar categoria")
+                            }
+                            DropdownMenu(
+                                expanded = showCategoryMenu,
+                                onDismissRequest = { showCategoryMenu = false },
+                            ) {
+                                categories.forEach { item ->
+                                    DropdownMenuItem(
+                                        text = { Text(item) },
+                                        onClick = {
+                                            editedCategory = item
+                                            showCategoryMenu = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             },
             confirmButton = {
                 Button(
@@ -306,7 +356,10 @@ fun FullscreenCaptureDialog(
                         val title = editedTitle.trim()
                         if (title.isNotBlank()) {
                             onTitleChange(capture.id, title)
-                            onCaptureSelected(capture.copy(title = title))
+                            if (editedCategory != capture.category) {
+                                onCategoryChange(capture.id, editedCategory)
+                            }
+                            onCaptureSelected(capture.copy(title = title, category = editedCategory))
                             showEditTitle = false
                         }
                     },
