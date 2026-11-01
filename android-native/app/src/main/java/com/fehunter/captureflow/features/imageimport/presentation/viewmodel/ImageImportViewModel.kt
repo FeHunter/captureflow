@@ -72,7 +72,7 @@ class ImageImportViewModel(
                     ?: extracted.lineSequence().firstOrNull(String::isNotBlank)?.take(72)
                     ?: "Nova captura"
                 val current = _pendingImageReview.value
-                if (current?.id != requestId) {
+                if (current == null || current.id != requestId) {
                     if (storedUri != uri) gateway.deleteTemporaryImage(storedUri)
                     return@launch
                 }
@@ -84,7 +84,7 @@ class ImageImportViewModel(
                 )
             } catch (error: Exception) {
                 val current = _pendingImageReview.value
-                if (current?.id == requestId) {
+                if (current != null && current.id == requestId) {
                     _pendingImageReview.value = current.copy(
                         imageUri = storedUri,
                         isProcessing = false,

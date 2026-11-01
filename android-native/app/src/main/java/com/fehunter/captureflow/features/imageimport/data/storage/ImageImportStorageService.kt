@@ -112,7 +112,7 @@ class ImageImportStorageService(context: Context) {
                 applicationContext.cacheDir.canonicalFile.path + File.separator,
                 File(applicationContext.filesDir, "captures").canonicalFile.path + File.separator,
             )
-            if (privateRoots.none(file.path::startsWith)) return false
+            if (privateRoots.none { root -> file.path.startsWith(root) }) return false
             file.delete()
         }.getOrDefault(false)
     }
