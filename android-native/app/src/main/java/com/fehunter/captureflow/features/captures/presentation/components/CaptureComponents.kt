@@ -107,6 +107,23 @@ fun CategoryThumbnail(
             }
         }
 
+        if (capture.isCompleted && !capture.previousCategory.isNullOrBlank()) {
+            Surface(
+                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.92f),
+            ) {
+                Text(
+                    "Origem: ${capture.previousCategory}",
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
         Box(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .background(
@@ -231,6 +248,23 @@ fun CategoryCard(
                                     if (ocrStates[capture.id]?.isError == true) "⚠" else "◌",
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        }
+
+                        if (capture.isCompleted && !capture.previousCategory.isNullOrBlank()) {
+                            Surface(
+                                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.92f),
+                            ) {
+                                Text(
+                                    "Origem: ${capture.previousCategory}",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }

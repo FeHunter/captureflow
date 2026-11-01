@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.*
@@ -41,7 +41,7 @@ fun FullscreenCaptureDialog(
     onCaptureSelected: (Capture) -> Unit,
     onCompleted: (String, Boolean) -> Unit,
     onTitleChange: (String, String) -> Unit,
-    onNotesChange: (String, String) -> Unit,
+    onOpenNotes: (String) -> Unit,
     onDelete: (String) -> Unit,
     allSubtasks: List<CaptureSubtask>,
     onAddSubtask: (String, String) -> Unit,
@@ -50,9 +50,7 @@ fun FullscreenCaptureDialog(
 ) {
     val uriHandler = LocalUriHandler.current
     var showEditTitle by remember(capture?.id) { mutableStateOf(false) }
-    var showNotes by remember(capture?.id) { mutableStateOf(false) }
     var editedTitle by remember(capture?.id) { mutableStateOf(capture?.title.orEmpty()) }
-    var editedNotes by remember(capture?.id) { mutableStateOf(capture?.notes.orEmpty()) }
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
 
@@ -109,6 +107,13 @@ fun FullscreenCaptureDialog(
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 )
                             }
+                            if (selected.isCompleted && !selected.previousCategory.isNullOrBlank()) {
+                                Text(
+                                    "Origem: ${selected.previousCategory}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         sourceUrl?.let { url ->
                             IconButton(
@@ -136,24 +141,46 @@ fun FullscreenCaptureDialog(
                                     capture = pageCapture,
                                     showNavigationHint = page == pagerState.currentPage,
                                 )
-                                pageCapture.notes?.trim()?.takeIf(String::isNotEmpty)?.let { note ->
-                                    Surface(
-                                        modifier = Modifier.align(Alignment.BottomStart)
-                                            .padding(start = 16.dp, bottom = 20.dp, end = 88.dp)
-                                            .fillMaxWidth(0.78f),
-                                        shape = MaterialTheme.shapes.medium,
-                                        color = Color.Black.copy(alpha = 0.72f),
-                                        shadowElevation = 4.dp,
-                                    ) {
-                                        Text(
-                                            note,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.White,
-                                            maxLines = 5,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
+                            }
+                        }
+                        Column(
+                            modifier = Modifier.align(Alignment.BottomStart)
+                                .padding(start = 16.dp, bottom = 20.dp)
+                                .fillMaxWidth(0.78f),
+                            horizontalAlignment = Alignment.Start,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            selected.notes?.trim()?.takeIf(String::isNotEmpty)?.let { note ->
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = Color.Black.copy(alpha = 0.72f),
+                                    shadowElevation = 4.dp,
+                                ) {
+                                    Text(
+                                        text = note,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White,
+                                        maxLines = 5,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                shadowElevation = 8.dp,
+                            ) {
+                                IconButton(
+                                    onClick = { onOpenNotes(selected.id) },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Default.ChatBubbleOutline,
+                                        contentDescription = if (selected.notes.isNullOrBlank()) "Adicionar anotações" else "Editar anotações",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
                                 }
                             }
                         }
@@ -188,10 +215,6 @@ fun FullscreenCaptureDialog(
                                     onClick = { editedTitle = selected.title; showEditTitle = true },
                                     modifier = Modifier.size(48.dp),
                                 ) { Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface) }
-                                IconButton(
-                                    onClick = { editedNotes = selected.notes.orEmpty(); showNotes = true },
-                                    modifier = Modifier.size(48.dp),
-                                ) { Icon(Icons.Default.Description, contentDescription = "Anotações", tint = MaterialTheme.colorScheme.onSurface) }
                                 IconButton(
                                     onClick = { onDelete(selected.id); onDismiss() },
                                     modifier = Modifier.size(48.dp),
@@ -269,32 +292,6 @@ fun FullscreenCaptureDialog(
                 }
             }
         }
-    }
-
-    if (showNotes && capture != null) {
-        AlertDialog(
-            onDismissRequest = { showNotes = false },
-            title = { Text("Anotações") },
-            text = {
-                OutlinedTextField(
-                    value = editedNotes,
-                    onValueChange = { editedNotes = it.take(10_000) },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Escreva suas anotações sobre esta referência…") },
-                    minLines = 5,
-                    maxLines = 10,
-                    supportingText = { Text("${editedNotes.length}/10000") },
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    onNotesChange(capture.id, editedNotes)
-                    onCaptureSelected(capture.copy(notes = editedNotes.trim().takeIf(String::isNotBlank)))
-                    showNotes = false
-                }) { Text("Salvar") }
-            },
-            dismissButton = { TextButton(onClick = { showNotes = false }) { Text("Cancelar") } },
-        )
     }
 
     if (showEditTitle && capture != null) {

@@ -6,6 +6,7 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.categories.presentation.components.CategorySelectionSection
 import com.fehunter.captureflow.features.categories.presentation.components.CategoryManagementDialog
 import com.fehunter.captureflow.features.fullscreen.presentation.screens.FullscreenCaptureDialog
+import com.fehunter.captureflow.features.notes.presentation.components.NotesEditorDialog
 import com.fehunter.captureflow.features.captures.presentation.components.CategoryCard
 import com.fehunter.captureflow.features.captures.presentation.components.CategoryThumbnail
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
@@ -76,6 +77,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var imageCategory by remember { mutableStateOf("Ler depois") }
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
+    var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var screenshotImportCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
@@ -304,13 +306,33 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         },
         onTitleChange = viewModel::updateCaptureTitle,
-        onNotesChange = viewModel::updateCaptureNotes,
+        onOpenNotes = { notesCaptureId = it },
         onDelete = viewModel::deleteCapture,
         allSubtasks = allSubtasks,
         onAddSubtask = viewModel::addCaptureSubtask,
         onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
         onDeleteSubtask = viewModel::deleteCaptureSubtask,
     )
+
+
+    notesCaptureId?.let { captureId ->
+        val notesCapture = captures.firstOrNull { it.id == captureId }
+            ?: selectedCapture?.takeIf { it.id == captureId }
+        notesCapture?.let { item ->
+            NotesEditorDialog(
+                captureTitle = item.title,
+                initialNotes = item.notes.orEmpty(),
+                onDismiss = { notesCaptureId = null },
+                onSave = { notes ->
+                    viewModel.updateCaptureNotes(captureId, notes)
+                    selectedCapture = selectedCapture?.takeIf { it.id == captureId }?.copy(
+                        notes = notes.trim().takeIf(String::isNotBlank),
+                    )
+                    notesCaptureId = null
+                },
+            )
+        }
+    }
 
 
 

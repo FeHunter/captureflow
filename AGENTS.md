@@ -128,7 +128,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Nome visível do produto: **Capture Flow** na top bar e no launcher.
 - A experiência principal é a biblioteca de referências.
 - Tags disponíveis nos filtros e seletores: `Ler depois`, `Verificar`, `Salvar` e `Importante`. `Todas` é filtro, não valor persistido.
-- `Concluído` é uma categoria/estado especial do sistema: não pode ser atribuída manualmente a uma nova referência, renomeada ou excluída. Ao concluir, guardar a categoria anterior; ao reabrir, restaurá-la.
+- `Concluído` é uma categoria/estado especial do sistema: não pode ser atribuída manualmente a uma nova referência, renomeada ou excluída. Ao concluir, guardar a categoria anterior; ao reabrir, restaurá-la. A categoria de origem deve continuar visível nas referências concluídas.
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
@@ -169,7 +169,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Manter proporção aproximada de 20% para cabeçalho e 80% para área de imagem.
 - Imagem deve preservar `ContentScale.Fit`; a dica `‹ Deslize para navegar ›` é overlay na área da imagem e não pode reservar altura nem alterar a escala.
 - Títulos longos podem sobrepor a imagem com gradiente escuro forte (quase opaco atrás do texto, dissolvendo para transparência), sem redimensionar a área reservada ao pager.
-- Anotações não vazias devem aparecer no Details Fullscreen no canto inferior esquerdo, em painel preto translúcido com texto branco, até cinco linhas visíveis e reticências para conteúdo maior. O painel acompanha a referência ativa durante o swipe.
+- O acesso às anotações fica no canto inferior esquerdo do fullscreen, com ícone de balão de conversa; abre o editor da feature `notes`, em modal amplo. A edição salva até 10.000 caracteres; cancelar não persiste.
 - A coluna de ações fullscreen permanece no canto inferior direito, conforme layout atual.
 - **Editar título** está disponível no fullscreen e altera somente o título persistido; não modificar conteúdo, categoria ou demais campos.
 - Anotações pertencem à referência; limite atual de 10.000 caracteres. Texto vazio limpa a anotação; cancelar não persiste.
@@ -282,3 +282,11 @@ Limites remanescentes conhecidos:
 - Room permanece na versão 8; não criar migration nesta refatoração.
 
 Antes de declarar a migração validada, exigir CI verde para o HEAD atual (`testDebugUnitTest` e `assembleDebug`) e revisar fluxos de compartilhamento, importação de imagem, OCR, categorias, conclusão/restauração, anotações e fullscreen.
+
+
+## Feature Notes — editor de anotações
+
+- A feature `notes` é responsável pela apresentação e edição das anotações de uma referência.
+- O dado continua pertencendo ao agregado `Capture` e é persistido pela feature `captures`; Notes não acessa Room nem mantém uma cópia da fonte de verdade.
+- `app/navigation` integra o callback do fullscreen com o editor Notes. Features não importam implementações internas de outras features.
+- O editor deve oferecer área de texto ampla, contador de até 10.000 caracteres e ações explícitas de salvar/cancelar.
