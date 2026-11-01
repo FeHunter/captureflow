@@ -19,6 +19,7 @@ import com.fehunter.captureflow.features.settings.domain.usecase.SetThemeModeUse
 import com.fehunter.captureflow.features.settings.presentation.viewmodel.SettingsViewModelFactory
 import com.fehunter.captureflow.features.imageimport.data.storage.ImageImportStorageService
 import com.fehunter.captureflow.core.storage.LocalPrivateImageStorage
+import com.fehunter.captureflow.features.imagecompression.data.ImageCompressionService
 
 /**
  * Manual composition root for the current single-module Android application.
