@@ -50,11 +50,14 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                             !(host == "youtube.com" || host.endsWith(".youtube.com") || host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com"))
                     }
                 }
-                loadUrl(embedUrl, mapOf("Referer" to "https://www.youtube.com/"))
+                loadUrl(embedUrl, mapOf("Referer" to "https://${context.packageName.lowercase()}/"))
             }
         },
         update = { webView ->
-            if (webView.url != embedUrl) webView.loadUrl(embedUrl, mapOf("Referer" to "https://www.youtube.com/"))
+            if (webView.url != embedUrl) webView.loadUrl(
+                embedUrl,
+                mapOf("Referer" to "https://${webView.context.packageName.lowercase()}/"),
+            )
         },
         onRelease = { webView ->
             webView.stopLoading()
