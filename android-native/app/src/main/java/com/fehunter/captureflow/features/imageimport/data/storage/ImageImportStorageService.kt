@@ -7,6 +7,8 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
+import com.fehunter.captureflow.features.imagecompression.data.ImageCompressionService
+import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 
 /**
  * Image Import storage adapter for shared-image copies, preview downloads and
@@ -14,40 +16,16 @@ import java.util.UUID
  */
 class ImageImportStorageService(context: Context) {
     private val applicationContext = context.applicationContext
+    private val compressionService = ImageCompressionService(applicationContext)
 
     /**
      * Copies shared image content into app-private storage so OCR does not depend on a
      * temporary URI grant from the app that shared the image.
      */
-    fun copyToPrivateStorage(source: Uri): Uri {
-        val resolver = applicationContext.contentResolver
-        val input = resolver.openInputStream(source)
-            ?: throw IOException("Não foi possível abrir a imagem compartilhada.")
-
-        val extension = when (resolver.getType(source)?.lowercase()) {
-            "image/png" -> "png"
-            "image/webp" -> "webp"
-            "image/gif" -> "gif"
-            "image/bmp" -> "bmp"
-            else -> "jpg"
-        }
-        val directory = File(applicationContext.filesDir, "captures").apply { mkdirs() }
-        val destination = File(directory, "capture-${UUID.randomUUID()}.$extension")
-
-        try {
-            input.use { stream ->
-                destination.outputStream().use { output -> stream.copyTo(output) }
-            }
-            if (destination.length() == 0L) {
-                destination.delete()
-                throw IOException("A imagem compartilhada está vazia.")
-            }
-            return Uri.fromFile(destination)
-        } catch (error: Exception) {
-            destination.delete()
-            throw error
-        }
-    }
+    fun copyToPrivateStorage(
+        source: Uri,
+        profile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM,
+    ): Uri = compressionService.compressToPrivateStorage(source, profile)
 
     /** Downloads a webpage preview image into app-private storage. */
     fun downloadToPrivateStorage(rawUrl: String): Uri? {
