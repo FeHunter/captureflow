@@ -7,16 +7,18 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
-import com.fehunter.captureflow.features.imagecompression.data.ImageCompressionService
+import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCompressor
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 
 /**
  * Image Import storage adapter for shared-image copies, preview downloads and
  * best-effort deletion of source screenshots. Generic private-file cleanup lives in Core.
  */
-class ImageImportStorageService(context: Context) {
+class ImageImportStorageService(
+    context: Context,
+    private val imageCompressor: ImageCompressor,
+) {
     private val applicationContext = context.applicationContext
-    private val compressionService = ImageCompressionService(applicationContext)
 
     /**
      * Copies shared image content into app-private storage so OCR does not depend on a
@@ -25,7 +27,7 @@ class ImageImportStorageService(context: Context) {
     fun copyToPrivateStorage(
         source: Uri,
         profile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM,
-    ): Uri = compressionService.compressToPrivateStorage(source, profile)
+    ): Uri = Uri.parse(imageCompressor.compressToPrivateStorage(source.toString(), profile))
 
     /** Downloads a webpage preview image into app-private storage. */
     fun downloadToPrivateStorage(rawUrl: String): Uri? {
