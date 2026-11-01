@@ -19,6 +19,6 @@ A sub-checklist usa `CaptureSubtask` e callbacks do `CaptureViewModel`; os itens
 ## Player incorporado do YouTube
 - URLs reconhecidas pelo `YoutubeVideoIdParser` são exibidas pelo player oficial IFrame em um `WebView` do Android, usando `youtube-nocookie.com`, controles visíveis, sem autoplay e com o cabeçalho `Referer` que identifica o app.
 - O WebView mantém a aceleração de hardware padrão da Activity; não forçar `LAYER_TYPE_HARDWARE` no próprio WebView.
-- O player só é instanciado para a página estabilizada do `HorizontalPager`, evitando múltiplos WebViews simultâneos durante a navegação.
+- O player é hospedado pelo `FullscreenCaptureDialog` como irmão do `HorizontalPager`, fora da camada transformada/clipped do pager, e só é instanciado para a página estabilizada. Isso evita múltiplos WebViews simultâneos e mantém a superfície de vídeo em uma composição estável.
 - Título e estado de conclusão ficam fora da viewport do player. Os painéis flutuantes de anotações e ações ficam ocultos enquanto uma referência YouTube está selecionada, para não cobrir o player.
 - O ciclo de vida do WebView termina em `AndroidView.onRelease`, com `stopLoading()` e `destroy()`.
