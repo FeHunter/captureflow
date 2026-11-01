@@ -48,6 +48,11 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Ao selecionar ou trocar uma imagem, o usuário visualiza e ajusta o recorte (Original, 1:1, 4:5 ou 16:9) antes de comprimir para armazenamento privado com perfil Alto (JPEG quality 50). A leitura suporta URIs content:// do Photo Picker e URIs file:// privadas. A compressão normaliza bitmaps para ARGB_8888 e grava diretamente no arquivo privado; falhas exibem o motivo real e preservam o recorte para nova tentativa. Imagens removidas da coleção são limpas do armazenamento privado.
 - A coleção é serializada em formato versionado no campo Room captures.notes já existente. Anotações antigas em texto simples são lidas como um único bloco; não há migration destrutiva. Cancelar não persiste alterações.
 
+## Ordenação da biblioteca
+- A seção **Categorias** permite ordenar os containers por ordem padrão/manual, data (mais recentes/mais antigas) e nome (A–Z/Z–A).
+- A ordenação por data usa a referência mais recente ou a mais antiga de cada categoria, respectivamente; categorias sem referências correspondentes ficam ao final. Empates preservam a ordem cadastrada.
+- Essa preferência altera somente a posição dos containers. A prévia de thumbnails mantém a ordem natural da biblioteca; a preferência independente de referências continua sendo aplicada na grade da categoria expandida.
+
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
 - Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), o fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles do player habilitados e sem autoplay. A renderização de vídeo mantém aceleração de hardware explicitamente habilitada no app, Activity e WebView. O cabeçalho HTTP `Referer` identifica o app com `https://{applicationId}/`, conforme a orientação de identidade de cliente do YouTube para WebViews Android. A capa não é carregada nem salva para novas capturas do YouTube; o link original continua disponível no cabeçalho. Vídeos que não permitem incorporação exigem abertura externa.
