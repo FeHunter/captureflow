@@ -164,13 +164,13 @@ fun FullscreenCaptureDialog(
                         ) {
                             val thoughtNotes = remember(selected.notes) { CaptureNotesCodec.decode(selected.notes) }
                             if (thoughtNotes.isNotEmpty()) {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp),
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp).verticalScroll(rememberScrollState()),
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
-                                    items(thoughtNotes, key = { it.id }) { note ->
+                                    thoughtNotes.forEach { note ->
                                         Surface(
-                                            modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp, max = 120.dp).combinedClickable(
+                                            modifier = Modifier.fillMaxWidth().combinedClickable(
                                                 onClick = { },
                                                 onLongClick = { onEditNote(selected.id, note.id) },
                                             ),
