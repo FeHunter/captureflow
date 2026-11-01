@@ -41,13 +41,12 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Estado de OCR pode exibir indicador de processamento/erro.
 - O botão/gesto Back fecha a categoria expandida quando nenhum visualizador está por cima.
 
-## Anotações da referência
-- O visualizador fullscreen ativo mantém uma coluna vertical de ações sobre a imagem: concluir, sub-checklist, abrir link (quando disponível), editar, excluir; anotações permanecem no canto inferior esquerdo.
-- **Anotações** abre um diálogo dentro da experiência fullscreen, com campo multilinha e limite de 10.000 caracteres.
-- Quando há anotação não vazia, o visualizador aberto pelo cartão também a apresenta sobre a imagem no canto inferior esquerdo, em um painel preto translúcido com texto branco (até cinco linhas visíveis e reticências para conteúdo maior). A anotação continua editável/removível pelo botão **Anotações**.
-- Salvar persiste o texto em `captures.notes` por meio do ViewModel/DAO. Texto vazio limpa as anotações; Cancelar não persiste alterações.
-- No Details Fullscreen ativo (`selectedCapture`), anotações não vazias também aparecem sobre a imagem no canto inferior esquerdo, em painel preto translúcido com texto branco (até cinco linhas visíveis); o painel acompanha a captura atual durante o swipe. A coluna de ações permanece no canto inferior direito.
-- As anotações pertencem à referência e continuam disponíveis após fechar/reabrir o visualizador.
+## Linha de pensamento / anotações
+- Cada referência pode ter uma lista ordenada de blocos, cada um com texto de até 10.000 caracteres e uma imagem opcional.
+- O botão de balão abre o CRUD da coleção. É possível adicionar, editar e excluir blocos; toque prolongado em um bloco na lista ou no fullscreen abre a edição desse bloco.
+- No fullscreen, os blocos aparecem no canto inferior esquerdo em área com altura limitada e rolagem vertical; a área comporta até dois blocos visíveis simultaneamente.
+- Imagens dos blocos são copiadas para armazenamento privado com compressão Alta (JPEG quality 50). Imagens removidas da coleção são limpas do armazenamento privado.
+- A coleção é serializada em formato versionado no campo Room captures.notes já existente. Anotações antigas em texto simples são lidas como um único bloco; não há migration destrutiva. Cancelar não persiste alterações.
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
@@ -80,6 +79,11 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Para referência de imagem, o título sugerido é persistido; texto OCR bruto não substitui o conteúdo principal. Erro de OCR não apaga a referência.
 - Visualizador usa imagem ajustada, sem recorte. Não excluir imagens escolhidas manualmente da galeria.
 
+## Compressão de imagens
+- A feature Image Compression aplica JPEG quality 70 (Médio) ou 50 (Alto), limita a maior dimensão a 2560 px e corrige orientação EXIF.
+- O perfil selecionado é aplicado à câmera e ao Photo Picker antes do OCR e persistência. O perfil Alto é obrigatório para imagens de notas.
+- Os valores representam qualidade JPEG, não uma redução fixa de bytes. A operação é local e não faz upload das imagens.
+
 ## Monitoramento e ação de screenshot
 - Serviço foreground opcional observa alterações no MediaStore e identifica imagens recentes por nome/caminho de screenshot.
 - A notificação abre a Activity com a ação `ACTION_CREATE_TASK` e a URI da imagem; também oferece ação direta **Salvar como tarefa**.
@@ -96,7 +100,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A notificação apresenta a ação como **Salvar referência**. O valor interno do Intent mantém a string histórica `CREATE_SCREENSHOT_TASK` para compatibilidade com notificações já emitidas; o código usa o nome `ACTION_IMPORT_SCREENSHOT`.
 
 ## Banco de dados
-- `captures`: id, title, content, kind, category, `sourceUrl` opcional, `imageUri` opcional, `notes` opcional, createdAt e `isCompleted`. A coluna legada `previousCategory` continua no schema para compatibilidade, mas é limpa e não participa mais das regras de negócio.
+- `captures`: id, title, content, kind, category, `sourceUrl` opcional, `imageUri` opcional, `notes` opcional (texto legado ou coleção versionada de blocos), createdAt e `isCompleted`. A coluna legada `previousCategory` continua no schema para compatibilidade, mas é limpa e não participa mais das regras de negócio.
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
 - Versão Room no código: **9**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adicionou historicamente `previousCategory` e a categoria `Concluído`; 7→8 adiciona `notes`; 8→9 restaura a categoria original dos registros que estavam em `Concluído`, limpa `previousCategory` e remove essa categoria da tabela. Concluir/desconcluir altera somente `isCompleted`.
