@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fehunter.captureflow.app.navigation.CaptureFlowApp
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
+import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.settings.presentation.viewmodel.SettingsViewModel
 import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
 import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
@@ -97,7 +98,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(shared) {
                     if (shared?.action == Intent.ACTION_SEND || shared?.action == Intent.ACTION_SEND_MULTIPLE) {
                         SharedContentIntentParser.parse(shared)?.let { incoming ->
-                            imageImportViewModel.receiveSharedContent(incoming.content, incoming.imageUri)
+                            imageImportViewModel.receiveSharedContent(incoming.content, incoming.imageUri, ImageCompressionProfile.fromPreference(imageCompressionProfile))
                         }
                         pendingShareIntent = null
                     }
