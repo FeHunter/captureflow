@@ -11,6 +11,9 @@ import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCo
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
+import java.io.FileInputStream
+import android.os.ParcelFileDescriptor
 import java.util.UUID
 
 /** Decodes, normalizes orientation, bounds dimensions and recompresses imported images locally. */
@@ -21,19 +24,19 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         val source = Uri.parse(sourceUri)
         val resolver = appContext.contentResolver
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        openSourceStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
             ?: throw IOException("Não foi possível abrir a imagem selecionada.")
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
             throw IOException("O arquivo não contém uma imagem válida.")
         }
 
         val sample = calculateSampleSize(bounds.outWidth, bounds.outHeight, MAX_DIMENSION)
-        val decoded = resolver.openInputStream(source)?.use {
+        val decoded = openSourceStream(source)?.use {
             BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply {
                 inSampleSize = sample
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             })
-        } ?: throw IOException("Não foi possível decodificar a imagem selecionada.")
+        } ?: throw IOException("O conteúdo da URI não possui um formato de imagem decodificável.")
 
         var oriented: Bitmap? = null
         var normalized: Bitmap? = null
@@ -72,9 +75,29 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         }
     }
 
+    /**
+     * File URIs are app-owned temporary files (for example, the lossless crop PNG).
+     * Read them directly instead of routing them through a ContentProvider. For provider
+     * URIs, keep the normal stream API and fall back to a file descriptor if a provider
+     * unexpectedly returns null.
+     */
+    private fun openSourceStream(source: Uri): InputStream? {
+        if (source.scheme == "file") {
+            val path = source.path ?: throw IOException("A URI do arquivo não contém um caminho válido.")
+            val file = File(path)
+            if (!file.isFile || !file.canRead() || file.length() == 0L) {
+                throw IOException("O arquivo temporário da imagem não existe ou não pode ser lido.")
+            }
+            return FileInputStream(file)
+        }
+        val resolver = appContext.contentResolver
+        return resolver.openInputStream(source) ?: resolver.openFileDescriptor(source, "r")
+            ?.let { descriptor -> ParcelFileDescriptor.AutoCloseInputStream(descriptor) }
+    }
+
     private fun applyExifOrientation(source: Uri, bitmap: Bitmap): Bitmap {
         val orientation = runCatching {
-            appContext.contentResolver.openInputStream(source)?.use { ExifInterface(it).getAttributeInt(
+            openSourceStream(source)?.use { ExifInterface(it).getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,
                 ExifInterface.ORIENTATION_NORMAL,
             ) } ?: ExifInterface.ORIENTATION_NORMAL
