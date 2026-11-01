@@ -52,6 +52,7 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 │   ├── di/AppContainer.kt            # composição manual das dependências
 │   └── navigation/                   # shell + composição cross-feature
 ├── core/
+│   ├── util/                         # utilitários compartilhados (ex.: parser de URL YouTube)
 │   ├── storage/                      # PrivateImageStorage + implementação
 │   └── ui/                           # carregamento limitado de bitmaps
 └── features/
