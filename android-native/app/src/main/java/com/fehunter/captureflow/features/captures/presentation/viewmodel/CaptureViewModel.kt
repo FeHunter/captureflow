@@ -83,7 +83,7 @@ class CaptureViewModel(
         val notes = rawNotes.takeIf(String::isNotBlank)
         viewModelScope.launch(Dispatchers.IO) {
             val previousImages = captureUseCases.findById(id)?.notes
-                ?.let(CaptureNotesCodec::decode).orEmpty().mapNotNull { it.imageUri }.toSet()
+                ?.let(CaptureCaptureNotesCodec::decode).orEmpty().mapNotNull { it.imageUri }.toSet()
             val retainedImages = CaptureNotesCodec.decode(notes).mapNotNull { it.imageUri }.toSet()
             captureUseCases.updateNotes(id, notes)
             (previousImages - retainedImages).forEach(privateImageStorage::deletePrivateImage)
