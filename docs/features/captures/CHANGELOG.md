@@ -1,7 +1,9 @@
-## 2026-11-01 — Modo de diagnóstico: Notes sem compressão
-- Desconectada temporariamente a feature Notes do `ImageCompressionService`.
-- Após selecionar e recortar, a imagem é gravada diretamente como PNG no armazenamento privado `files/captures`, preservando a qualidade original do recorte.
-- O objetivo é isolar o fluxo de seleção, recorte, persistência e leitura da imagem na anotação. A compressão deve ser reativada após o teste.
+## 2026-11-01 — Refatoração da compressão e reativação em Notes
+- Unificado o processamento da feature Image Compression para duas entradas: URIs `file://`/ `content://` (câmera, galeria e screenshot compartilhada) e bytes raster codificados em memória.
+- O serviço inspeciona dimensões antes da decodificação, usa amostragem para limitar memória, corrige orientação EXIF nas entradas URI, limita a maior dimensão a 2560 px, compõe transparência sobre branco e gera JPEG no armazenamento privado.
+- Notes voltou a usar o perfil Alto. O recorte é codificado como PNG lossless em memória e enviado ao compressor por `ByteArray`, removendo o arquivo PNG e a URI temporários que existiam entre o recorte e a compressão.
+- A anotação só recebe a URI final depois que o JPEG é criado com sucesso; falhas preservam a prévia/recorte para nova tentativa.
+- Adicionados testes instrumentados para entrada por URI de arquivo e bytes de recorte em memória.
 
 ## 2026-11-01 — Menu de ordenação e pipeline de imagem das anotações
 - O menu **Ordenar** da biblioteca agora apresenta exclusivamente os filtros de **Categorias**; removidas as opções de ordenação de **Referências** da interface.
