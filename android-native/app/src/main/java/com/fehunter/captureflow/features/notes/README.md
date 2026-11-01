@@ -5,8 +5,9 @@ Feature responsável pela linha de pensamento associada a cada referência.
 ## Responsabilidades
 - Criar, editar e excluir blocos ordenados com texto e imagem opcional.
 - Exibir blocos no fullscreen em área de altura limitada, com rolagem vertical e até dois blocos visíveis simultaneamente.
-- Abrir a edição de um bloco por toque prolongado; o botão de balão abre a gestão da coleção.
+- O botão de balão abre diretamente o formulário de nova anotação. Toque prolongado em um bloco existente abre seu formulário de edição/remoção, sem uma tela intermediária de gerenciamento.
 - Limitar o texto de cada bloco a 10.000 caracteres.
+- Ao selecionar ou trocar uma imagem, abrir uma etapa de recorte (Original, 1:1, 4:5 e 16:9); depois do recorte, comprimir no perfil Alto antes de salvar.
 
 ## Ownership e persistência
 - Os dados continuam associados ao agregado Capture e persistidos pela feature captures no campo captures.notes já existente.
@@ -16,5 +17,5 @@ Feature responsável pela linha de pensamento associada a cada referência.
 - O coordinator conecta a UI de Notes aos callbacks de Captures e Image Import.
 
 ## Ponto de entrada
-- presentation/components/NotesEditorDialog.kt: CRUD da linha de pensamento.
+- presentation/components/NotesEditorDialog.kt: formulário direto de criação/edição, seleção de imagem, recorte e compressão da linha de pensamento.
 - O modelo `CaptureNote` e o `CaptureNotesCodec` pertencem ao domínio de Captures, pois as anotações integram o agregado da referência.
