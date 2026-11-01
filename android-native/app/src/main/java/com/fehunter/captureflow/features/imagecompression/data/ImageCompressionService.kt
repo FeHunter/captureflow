@@ -3,112 +3,144 @@ package com.fehunter.captureflow.features.imagecompression.data
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Paint
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import androidx.exifinterface.media.ExifInterface
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCompressor
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.FileInputStream
-import android.os.ParcelFileDescriptor
 import java.util.UUID
+import kotlin.math.max
+import kotlin.math.roundToInt
 
-/** Decodes, normalizes orientation, bounds dimensions and recompresses imported images locally. */
+/**
+ * Single local image pipeline for provider URIs, app files and cropped bitmaps.
+ *
+ * URI input is decoded with bounds checking and EXIF normalization. Bitmap input is
+ * treated as already oriented (Notes passes its cropped preview bitmap directly).
+ * Both paths share the same dimension limit, alpha handling and JPEG encoder.
+ */
 class ImageCompressionService(context: Context) : ImageCompressor {
     private val appContext = context.applicationContext
 
-    override fun compressToPrivateStorage(sourceUri: String, profile: ImageCompressionProfile): String {
+    override fun compressToPrivateStorage(
+        sourceUri: String,
+        profile: ImageCompressionProfile,
+    ): String {
         val source = Uri.parse(sourceUri)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        openSourceStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            ?: throw IOException("Não foi possível abrir a imagem selecionada.")
+        openSourceStream(source).use { BitmapFactory.decodeStream(it, null, bounds) }
+
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-            throw IOException("O arquivo não contém uma imagem válida.")
+            throw IOException(
+                "A origem não contém uma imagem raster válida " +
+                    "(scheme=${source.scheme ?: "desconhecido"}, mime=${bounds.outMimeType ?: "desconhecido"})."
+            )
         }
 
-        val sample = calculateSampleSize(bounds.outWidth, bounds.outHeight, MAX_DIMENSION)
-        val decoded = openSourceStream(source)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply {
-                inSampleSize = sample
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            })
-        } ?: throw IOException("O conteúdo da URI não possui um formato de imagem decodificável.")
+        val sampleSize = calculateSampleSize(
+            width = bounds.outWidth,
+            height = bounds.outHeight,
+            maxDimension = MAX_DIMENSION,
+        )
+        val decoded = openSourceStream(source).use { input ->
+            BitmapFactory.decodeStream(
+                input,
+                null,
+                BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                },
+            )
+        } ?: throw IOException(
+            "O Android reconheceu as dimensões, mas não conseguiu decodificar a imagem " +
+                "(scheme=${source.scheme ?: "desconhecido"}, mime=${bounds.outMimeType ?: "desconhecido"})."
+        )
 
         var oriented: Bitmap? = null
-        var normalized: Bitmap? = null
-        val directory = File(appContext.filesDir, "captures")
-        if (!directory.exists() && !directory.mkdirs()) {
-            decoded.recycle()
-            throw IOException("Não foi possível preparar o armazenamento da imagem.")
-        }
-        val destination = File(directory, "capture-${UUID.randomUUID()}.jpg")
         try {
-            val orientedBitmap = applyExifOrientation(source, decoded)
-            oriented = orientedBitmap
-            val normalizedBitmap = if (orientedBitmap.config != Bitmap.Config.ARGB_8888) {
-                orientedBitmap.copy(Bitmap.Config.ARGB_8888, false)
-                    ?: throw IOException("Não foi possível preparar a imagem para compressão.")
-            } else orientedBitmap
-            normalized = normalizedBitmap
-
-            FileOutputStream(destination).use { output ->
-                if (!normalizedBitmap.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
-                    throw IOException("O Android não conseguiu codificar a imagem em JPEG.")
-                }
-                output.flush()
-            }
-            if (destination.length() == 0L) {
-                throw IOException("A imagem comprimida ficou vazia.")
-            }
-            return Uri.fromFile(destination).toString()
-        } catch (error: Exception) {
-            destination.delete()
-            throw error
+            oriented = applyExifOrientation(source, decoded)
+            return encodeJpegToPrivateStorage(oriented, profile)
         } finally {
-            if (normalized != null && normalized !== oriented) normalized.recycle()
-            if (oriented != null && oriented !== decoded) oriented.recycle()
+            if (oriented != null && oriented !== decoded && !oriented.isRecycled) oriented.recycle()
             if (!decoded.isRecycled) decoded.recycle()
         }
     }
 
-    /**
-     * File URIs are app-owned temporary files (for example, the lossless crop PNG).
-     * Read them directly instead of routing them through a ContentProvider. For provider
-     * URIs, keep the normal stream API and fall back to a file descriptor if a provider
-     * unexpectedly returns null.
-     */
-    private fun openSourceStream(source: Uri): InputStream? {
-        if (source.scheme.equals("file", ignoreCase = true)) {
-            val path = source.path ?: throw IOException("A URI do arquivo não contém um caminho válido.")
-            val file = File(path)
-            if (!file.isFile || !file.canRead() || file.length() <= 0L) {
-                throw IOException("O arquivo temporário da imagem não existe ou não pode ser lido.")
-            }
-            return FileInputStream(file)
+    override fun compressBitmapToPrivateStorage(
+        bitmap: Bitmap,
+        profile: ImageCompressionProfile,
+    ): String {
+        if (bitmap.isRecycled) {
+            throw IOException("O recorte recebido já foi liberado da memória. Selecione a imagem novamente.")
         }
+        if (bitmap.width <= 0 || bitmap.height <= 0) {
+            throw IOException("O recorte recebido possui dimensões inválidas.")
+        }
+        return encodeJpegToPrivateStorage(bitmap, profile)
+    }
 
-        val resolver = appContext.contentResolver
-        // Some Photo Picker/document providers throw from openInputStream instead of
-        // returning null. Treat both cases as a reason to try the file descriptor.
-        val input = runCatching { resolver.openInputStream(source) }.getOrNull()
-        if (input != null) return input
-        return runCatching {
-            resolver.openFileDescriptor(source, "r")?.let { descriptor ->
-                ParcelFileDescriptor.AutoCloseInputStream(descriptor)
+    /**
+     * Opens app-owned file URIs directly. Provider URIs use ContentResolver first and
+     * a ParcelFileDescriptor fallback, including providers that throw from openInputStream.
+     */
+    private fun openSourceStream(source: Uri): InputStream {
+        when (source.scheme?.lowercase()) {
+            "file" -> {
+                val path = source.path
+                    ?: throw IOException("A URI file:// não contém um caminho válido.")
+                val file = File(path)
+                if (!file.isFile || !file.canRead() || file.length() <= 0L) {
+                    throw IOException("O arquivo da imagem não existe, está vazio ou não pode ser lido.")
+                }
+                return FileInputStream(file)
             }
-        }.getOrNull()
+            "content" -> {
+                val resolver = appContext.contentResolver
+                val streamAttempt = runCatching { resolver.openInputStream(source) }
+                streamAttempt.getOrNull()?.let { return it }
+
+                val descriptorAttempt = runCatching {
+                    resolver.openFileDescriptor(source, "r")?.let { descriptor ->
+                        ParcelFileDescriptor.AutoCloseInputStream(descriptor)
+                    }
+                }
+                descriptorAttempt.getOrNull()?.let { return it }
+
+                val details = listOfNotNull(
+                    streamAttempt.exceptionOrNull()?.localizedMessage,
+                    descriptorAttempt.exceptionOrNull()?.localizedMessage,
+                ).joinToString("; ").ifBlank { "o provedor não disponibilizou um fluxo de leitura" }
+                throw IOException(
+                    "Não foi possível ler a imagem do provedor " +
+                        "(authority=${source.authority ?: "desconhecida"}): $details"
+                )
+            }
+            else -> throw IOException(
+                "Tipo de URI não suportado para compressão: ${source.scheme ?: "sem esquema"}. " +
+                    "São aceitos file:// e content://."
+            )
+        }
     }
 
     private fun applyExifOrientation(source: Uri, bitmap: Bitmap): Bitmap {
         val orientation = runCatching {
-            openSourceStream(source)?.use { ExifInterface(it).getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL,
-            ) } ?: ExifInterface.ORIENTATION_NORMAL
+            openSourceStream(source).use { stream ->
+                ExifInterface(stream).getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL,
+                )
+            }
         }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
         val matrix = Matrix().apply {
             when (orientation) {
                 ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(90f)
@@ -116,22 +148,99 @@ class ImageCompressionService(context: Context) : ImageCompressor {
                 ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(270f)
                 ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)
                 ExifInterface.ORIENTATION_FLIP_VERTICAL -> postScale(1f, -1f)
-                ExifInterface.ORIENTATION_TRANSPOSE -> { postRotate(90f); postScale(-1f, 1f) }
-                ExifInterface.ORIENTATION_TRANSVERSE -> { postRotate(270f); postScale(-1f, 1f) }
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    postRotate(90f)
+                    postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    postRotate(270f)
+                    postScale(-1f, 1f)
+                }
             }
         }
         return if (matrix.isIdentity) bitmap else Bitmap.createBitmap(
-            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true,
+            bitmap,
+            0,
+            0,
+            bitmap.width,
+            bitmap.height,
+            matrix,
+            true,
         )
+    }
+
+    /**
+     * Shared encoder for URI-decoded images and Notes' already-cropped bitmap.
+     * Transparent pixels are composited over white because JPEG has no alpha channel.
+     * The caller's bitmap is never recycled or mutated.
+     */
+    private fun encodeJpegToPrivateStorage(
+        source: Bitmap,
+        profile: ImageCompressionProfile,
+    ): String {
+        var working = source
+        var ownsWorking = false
+        try {
+            val largestDimension = max(source.width, source.height)
+            if (largestDimension > MAX_DIMENSION) {
+                val scale = MAX_DIMENSION.toFloat() / largestDimension.toFloat()
+                val targetWidth = (source.width * scale).roundToInt().coerceAtLeast(1)
+                val targetHeight = (source.height * scale).roundToInt().coerceAtLeast(1)
+                working = Bitmap.createScaledBitmap(source, targetWidth, targetHeight, true)
+                ownsWorking = working !== source
+            }
+
+            if (working.config != Bitmap.Config.ARGB_8888 || working.hasAlpha()) {
+                val normalized = Bitmap.createBitmap(
+                    working.width,
+                    working.height,
+                    Bitmap.Config.ARGB_8888,
+                )
+                Canvas(normalized).apply {
+                    drawColor(Color.WHITE)
+                    drawBitmap(working, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
+                }
+                if (ownsWorking && !working.isRecycled) working.recycle()
+                working = normalized
+                ownsWorking = true
+            }
+
+            val directory = File(appContext.filesDir, CAPTURES_DIRECTORY)
+            if (!directory.exists() && !directory.mkdirs()) {
+                throw IOException("Não foi possível preparar o armazenamento privado das imagens.")
+            }
+
+            val destination = File(directory, "capture-${UUID.randomUUID()}.jpg")
+            try {
+                FileOutputStream(destination).use { output ->
+                    if (!working.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
+                        throw IOException("O Android não conseguiu codificar a imagem em JPEG.")
+                    }
+                    output.flush()
+                }
+                if (!destination.isFile || destination.length() <= 0L) {
+                    throw IOException("O arquivo JPEG gerado está vazio ou inválido.")
+                }
+                return Uri.fromFile(destination).toString()
+            } catch (error: Exception) {
+                destination.delete()
+                throw error
+            }
+        } finally {
+            if (ownsWorking && !working.isRecycled) working.recycle()
+        }
     }
 
     private fun calculateSampleSize(width: Int, height: Int, maxDimension: Int): Int {
         var sample = 1
-        while (width / sample > maxDimension || height / sample > maxDimension) sample *= 2
+        while (width / sample > maxDimension || height / sample > maxDimension) {
+            sample *= 2
+        }
         return sample
     }
 
     private companion object {
         const val MAX_DIMENSION = 2560
+        const val CAPTURES_DIRECTORY = "captures"
     }
 }
