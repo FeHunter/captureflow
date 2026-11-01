@@ -64,6 +64,8 @@ import java.util.UUID
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 private const val MAX_NOTE_LENGTH = 10_000
 
@@ -74,10 +76,10 @@ fun NotesEditorDialog(
     initialEditingNoteId: String? = null,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
-    onCompressImage: (String, (String?, String?) -> Unit) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val existingNotes = remember(captureTitle, initialNotes) {
         CaptureNotesCodec.decode(initialNotes)
     }
@@ -91,7 +93,7 @@ fun NotesEditorDialog(
     var draftImageUri by remember(captureTitle, initialEditingNoteId, initialNotes) {
         mutableStateOf(editingNote?.imageUri)
     }
-    var isCompressingImage by remember { mutableStateOf(false) }
+    var isSavingImage by remember { mutableStateOf(false) }
     var generatedImageUris by remember { mutableStateOf(emptySet<String>()) }
     var cropSourceUri by remember { mutableStateOf<String?>(null) }
     var cropBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -178,63 +180,55 @@ fun NotesEditorDialog(
         onSave(CaptureNotesCodec.encode(updated).orEmpty())
     }
 
-    fun applyCropAndCompress() {
+    fun applyCropAndSaveImage() {
         val source = cropBitmap ?: return
-        if (isCompressingImage) return
-        isCompressingImage = true
+        if (isSavingImage) return
+        isSavingImage = true
         imageError = null
-        // Crop first so discarded pixels are never sent through compression. Use a
-        // lossless PNG cache intermediate; the private-storage compressor performs the
-        // only lossy JPEG encoding with the HIGH profile.
-        val cropFile = File(context.cacheDir, "captureflow-note-crop-${UUID.randomUUID()}.png")
-        val cropUri = runCatching {
-            val cropped = cropCenter(source, selectedRatio)
-            try {
-                FileOutputStream(cropFile).use { output ->
-                    if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, output)) {
-                        throw IllegalStateException("Não foi possível preparar o recorte.")
+
+        // Diagnostic mode: save the cropped bitmap as PNG directly in app-private storage.
+        // ImageCompressionService is intentionally bypassed for this test.
+        coroutineScope.launch {
+            val savedUri = withContext(Dispatchers.IO) {
+                val directory = File(context.filesDir, "captures")
+                val destination = File(directory, "capture-note-${UUID.randomUUID()}.png")
+                try {
+                    if (!directory.exists() && !directory.mkdirs()) {
+                        throw IOException("Não foi possível preparar o armazenamento privado.")
                     }
-                    output.flush()
+                    val cropped = cropCenter(source, selectedRatio)
+                    try {
+                        FileOutputStream(destination).use { output ->
+                            if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                                throw IOException("Não foi possível gravar a imagem recortada em PNG.")
+                            }
+                            output.flush()
+                        }
+                    } finally {
+                        if (cropped !== source && !cropped.isRecycled) cropped.recycle()
+                    }
+                    if (!destination.isFile || destination.length() <= 0L) {
+                        throw IOException("A imagem salva ficou vazia.")
+                    }
+                    Uri.fromFile(destination).toString()
+                } catch (error: Exception) {
+                    destination.delete()
+                    throw error
                 }
-            } finally {
-                if (cropped !== source && !cropped.isRecycled) cropped.recycle()
             }
-            if (!cropFile.exists() || cropFile.length() == 0L) {
-                throw IllegalStateException("O arquivo temporário do recorte ficou vazio.")
-            }
-            Uri.fromFile(cropFile).toString()
-        }.getOrNull()
 
-        if (cropUri == null) {
-            cropFile.delete()
-            isCompressingImage = false
-            imageError = "Não foi possível preparar o recorte. Tente novamente."
-            return
-        }
-
-        runCatching {
-            onCompressImage(cropUri) { compressedUri, compressionError ->
-                cropFile.delete()
-                if (compressedUri != null) {
-                    draftImageUri = compressedUri
-                    generatedImageUris = generatedImageUris + compressedUri
-                    imageError = null
-                    cropBitmap?.recycle()
-                    cropBitmap = null
-                    cropSourceUri = null
-                } else {
-                    // Keep the selected image and crop preview so the user can retry without
-                    // reopening the Photo Picker or losing the original selection.
-                    imageError = compressionError?.let { "Falha ao comprimir: $it" }
-                        ?: "Não foi possível comprimir a imagem. Tente novamente."
-                }
-                isCompressingImage = false
+            savedUri.onSuccess { uri ->
+                draftImageUri = uri
+                generatedImageUris = generatedImageUris + uri
+                imageError = null
+                cropBitmap?.let { if (!it.isRecycled) it.recycle() }
+                cropBitmap = null
+                cropSourceUri = null
+            }.onFailure { error ->
+                imageError = error.localizedMessage?.takeIf(String::isNotBlank)
+                    ?: "Não foi possível salvar a imagem sem compressão."
             }
-        }.onFailure { error ->
-            cropFile.delete()
-            isCompressingImage = false
-            imageError = error.localizedMessage?.takeIf(String::isNotBlank)
-                ?: "Não foi possível iniciar a compressão da imagem."
+            isSavingImage = false
         }
     }
 
@@ -316,7 +310,7 @@ fun NotesEditorDialog(
                             modifier = Modifier.weight(1f),
                         ) { Text("Voltar") }
                         Button(
-                            onClick = ::applyCropAndCompress,
+                            onClick = ::applyCropAndSaveImage,
                             enabled = cropBitmap != null && !isCompressingImage,
                             modifier = Modifier.weight(1f),
                         ) {
