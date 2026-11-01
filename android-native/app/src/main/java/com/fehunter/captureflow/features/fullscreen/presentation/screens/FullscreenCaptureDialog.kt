@@ -32,7 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
-import com.fehunter.captureflow.features.notes.domain.model.NotesCodec
+import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.foundation.Image
@@ -162,7 +162,7 @@ fun FullscreenCaptureDialog(
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            val thoughtNotes = remember(selected.notes) { NotesCodec.decode(selected.notes) }
+                            val thoughtNotes = remember(selected.notes) { CaptureNotesCodec.decode(selected.notes) }
                             if (thoughtNotes.isNotEmpty()) {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp),
