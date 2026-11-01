@@ -17,4 +17,4 @@ Feature responsável pela linha de pensamento associada a cada referência.
 
 ## Ponto de entrada
 - presentation/components/NotesEditorDialog.kt: CRUD da linha de pensamento.
-- O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures, pois as anotações integram o agregado da referência.
+- O modelo `CaptureNote` e o `CaptureNotesCodec` pertencem ao domínio de Captures, pois as anotações integram o agregado da referência.
