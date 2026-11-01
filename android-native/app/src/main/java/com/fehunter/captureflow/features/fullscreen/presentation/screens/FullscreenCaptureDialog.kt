@@ -2,6 +2,11 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -27,6 +32,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.notes.domain.model.NotesCodec
+import com.fehunter.captureflow.core.ui.loadCoverBitmap
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.Add
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -45,6 +58,7 @@ fun FullscreenCaptureDialog(
     categories: List<String>,
     onCategoryChange: (String, String) -> Unit,
     onOpenNotes: (String) -> Unit,
+    onEditNote: (String, String) -> Unit,
     onDelete: (String) -> Unit,
     allSubtasks: List<CaptureSubtask>,
     onAddSubtask: (String, String) -> Unit,
@@ -148,21 +162,36 @@ fun FullscreenCaptureDialog(
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            selected.notes?.trim()?.takeIf(String::isNotEmpty)?.let { note ->
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = MaterialTheme.shapes.medium,
-                                    color = Color.Black.copy(alpha = 0.72f),
-                                    shadowElevation = 4.dp,
+                            val thoughtNotes = remember(selected.notes) { NotesCodec.decode(selected.notes) }
+                            if (thoughtNotes.isNotEmpty()) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
-                                    Text(
-                                        text = note,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.White,
-                                        maxLines = 5,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                                    items(thoughtNotes, key = { it.id }) { note ->
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth().combinedClickable(
+                                                onClick = { },
+                                                onLongClick = { onEditNote(selected.id, note.id) },
+                                            ),
+                                            shape = MaterialTheme.shapes.medium,
+                                            color = Color.Black.copy(alpha = 0.76f),
+                                            shadowElevation = 4.dp,
+                                        ) {
+                                            Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                if (note.text.isNotBlank()) {
+                                                    Text(
+                                                        text = note.text,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = Color.White,
+                                                        maxLines = 4,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                    )
+                                                }
+                                                note.imageUri?.let { rawUri -> FullscreenNoteImage(rawUri) }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             Surface(
@@ -176,7 +205,7 @@ fun FullscreenCaptureDialog(
                                 ) {
                                     Icon(
                                         Icons.Default.ChatBubbleOutline,
-                                        contentDescription = if (selected.notes.isNullOrBlank()) "Adicionar anotações" else "Editar anotações",
+                                        contentDescription = if (thoughtNotes.isEmpty()) "Adicionar anotações" else "Editar anotações",
                                         tint = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
@@ -379,6 +408,23 @@ fun FullscreenCaptureDialog(
                 ) { Text("Salvar") }
             },
             dismissButton = { TextButton(onClick = { showEditTitle = false }) { Text("Cancelar") } },
+        )
+    }
+}
+
+
+@Composable
+private fun FullscreenNoteImage(rawUri: String) {
+    val context = LocalContext.current
+    val image by produceState<ImageBitmap?>(null, rawUri) {
+        value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri) }.getOrNull() }
+    }
+    image?.let {
+        Image(
+            bitmap = it,
+            contentDescription = "Imagem da anotação",
+            modifier = Modifier.fillMaxWidth().heightIn(max = 120.dp),
+            contentScale = ContentScale.Fit,
         )
     }
 }
