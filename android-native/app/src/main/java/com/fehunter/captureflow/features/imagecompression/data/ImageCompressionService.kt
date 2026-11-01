@@ -66,8 +66,9 @@ class ImageCompressionService(context: Context) : ImageCompressor {
 
         var oriented: Bitmap? = null
         try {
-            oriented = applyExifOrientation(source, decoded)
-            return encodeJpegToPrivateStorage(oriented, profile)
+            val orientedBitmap = applyExifOrientation(source, decoded)
+            oriented = orientedBitmap
+            return encodeJpegToPrivateStorage(orientedBitmap, profile)
         } finally {
             if (oriented != null && oriented !== decoded && !oriented.isRecycled) oriented.recycle()
             if (!decoded.isRecycled) decoded.recycle()
