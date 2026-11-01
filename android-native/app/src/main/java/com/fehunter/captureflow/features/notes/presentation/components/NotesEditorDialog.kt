@@ -65,7 +65,7 @@ fun NotesEditorDialog(
     onCompressImage: (String, (String?) -> Unit) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
 ) {
-    var notes by remember(captureTitle, initialNotes) { mutableStateOf(NotesCodec.decode(initialNotes)) }
+    var notes by remember(captureTitle, initialNotes) { mutableStateOf(CaptureNotesCodec.decode(initialNotes)) }
     var editingId by remember(captureTitle, initialEditingNoteId) { mutableStateOf(initialEditingNoteId) }
     var draftText by remember(captureTitle, initialEditingNoteId, initialNotes) {
         mutableStateOf(notes.firstOrNull { it.id == initialEditingNoteId }?.text.orEmpty())
@@ -218,7 +218,7 @@ fun NotesEditorDialog(
                     }) { Text("Cancelar") }
                     Spacer(Modifier.width(8.dp))
                     Button(onClick = {
-                        val encoded = NotesCodec.encode(notes).orEmpty()
+                        val encoded = CaptureNotesCodec.encode(notes).orEmpty()
                         val retainedImages = notes.mapNotNull { it.imageUri }.toSet()
                         (generatedImageUris - retainedImages).forEach(onDeleteTemporaryImage)
                         onSave(encoded)
