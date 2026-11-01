@@ -146,7 +146,7 @@ class TitleDetectionService {
             val plausibleText = candidate.text.length >= 3 &&
                 !isInterfaceNoise(candidate.text) &&
                 (looksLikeContentTitle(candidate.text) || candidate.height >= medianHeight * 1.2f)
-            return gap in 0..maxGap && similarHeight && aligned && plausibleText
+            return gap >= 0 && gap.toFloat() <= maxGap && similarHeight && aligned && plausibleText
         }
 
         val below = candidates.filter { it.top >= anchor.bottom && it.top < imageHeight * 0.92f }
