@@ -27,16 +27,20 @@ import kotlinx.coroutines.withContext
 @Composable
 fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
     val context = LocalContext.current
+    val youtubeVideoId = remember(capture.sourceUrl) { YoutubeVideoIdParser.extractVideoId(capture.sourceUrl) }
     val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null, capture.imageUri,
+        initialValue = null, capture.imageUri, youtubeVideoId,
     ) {
-        value = capture.imageUri?.let { raw ->
-            withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+        value = if (youtubeVideoId != null) {
+            null
+        } else {
+            capture.imageUri?.let { raw ->
+                withContext(Dispatchers.IO) {
+                    runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+                }
             }
         }
     }
-    val youtubeVideoId = remember(capture.sourceUrl) { YoutubeVideoIdParser.extractVideoId(capture.sourceUrl) }
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
