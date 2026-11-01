@@ -1,3 +1,8 @@
+## 2026-11-01 — Modo de diagnóstico: Notes sem compressão
+- Desconectada temporariamente a feature Notes do `ImageCompressionService`.
+- Após selecionar e recortar, a imagem é gravada diretamente como PNG no armazenamento privado `files/captures`, preservando a qualidade original do recorte.
+- O objetivo é isolar o fluxo de seleção, recorte, persistência e leitura da imagem na anotação. A compressão deve ser reativada após o teste.
+
 ## 2026-11-01 — Menu de ordenação e pipeline de imagem das anotações
 - O menu **Ordenar** da biblioteca agora apresenta exclusivamente os filtros de **Categorias**; removidas as opções de ordenação de **Referências** da interface.
 - O processamento de imagem das anotações mantém recorte antes da compressão, grava o recorte intermediário em PNG lossless no cache e executa uma única codificação JPEG no perfil Alto para o armazenamento privado.
