@@ -90,8 +90,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val sortedCategoryNames = remember(categoryEntities, categorySortOrder) {
         val names = categoryEntities.map { it.name }
         when (categorySortOrder) {
-            "name_asc" -> names.sortedBy(String::lowercase)
-            "name_desc" -> names.sortedByDescending(String::lowercase)
+            "name_asc" -> names.sortedBy { it.lowercase() }
+            "name_desc" -> names.sortedByDescending { it.lowercase() }
             else -> names
         }
     }
