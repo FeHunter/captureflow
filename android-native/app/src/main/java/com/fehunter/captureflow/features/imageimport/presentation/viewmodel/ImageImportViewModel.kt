@@ -6,6 +6,8 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.imageimport.domain.gateway.ImageImportGateway
+import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
+import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
 import com.fehunter.captureflow.features.imageimport.presentation.model.OcrUiState
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingSharedLink
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingImageReview
@@ -31,9 +33,13 @@ class ImageImportViewModel(
     private val _pendingImageReview = MutableStateFlow<PendingImageReview?>(null)
     val pendingImageReview = _pendingImageReview.asStateFlow()
 
-    fun receiveSharedContent(content: String, imageUri: String? = null) {
+    fun receiveSharedContent(
+        content: String,
+        imageUri: String? = null,
+        compressionProfile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM,
+    ) {
         if (imageUri != null) {
-            prepareImageReview(imageUri)
+            prepareImageReview(imageUri, compressionProfile)
             return
         }
         val normalized = CaptureFactory.normalize(content)
@@ -54,7 +60,7 @@ class ImageImportViewModel(
      * Copies an incoming image into app-private storage, runs on-device OCR and exposes
      * an editable draft. No Capture is persisted until confirmPendingImageReview is called.
      */
-    fun prepareImageReview(uri: String) {
+    fun prepareImageReview(uri: String, profile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM) {
         val requestId = UUID.randomUUID().toString()
         _pendingImageReview.value = PendingImageReview(
             id = requestId,
@@ -65,7 +71,7 @@ class ImageImportViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             var storedUri = uri
             try {
-                storedUri = runCatching { gateway.copyImageToPrivateStorage(uri) }.getOrDefault(uri)
+                storedUri = runCatching { gateway.copyImageToPrivateStorage(uri, profile) }.getOrDefault(uri)
                 val analysis = gateway.analyzeImage(storedUri)
                 val extracted = analysis.fullText.trim()
                 val suggestedTitle = analysis.title.trim().takeIf(String::isNotBlank)
@@ -93,6 +99,26 @@ class ImageImportViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun deleteTemporaryImage(uri: String) {
+        viewModelScope.launch(Dispatchers.IO) { gateway.deleteTemporaryImage(uri) }
+    }
+
+    /** Compresses Notes crop bytes without creating an intermediate PNG file or URI. */
+    fun compressNoteImage(encodedImage: ByteArray, onReady: (String?, String?) -> Unit) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    gateway.compressEncodedImageToPrivateStorage(encodedImage, ImageCompressionProfile.HIGH)
+                }
+            }
+            onReady(
+                result.getOrNull(),
+                result.exceptionOrNull()?.localizedMessage?.takeIf(String::isNotBlank)
+                    ?: if (result.isFailure) "Não foi possível comprimir a imagem da anotação." else null,
+            )
         }
     }
 
@@ -133,11 +159,12 @@ class ImageImportViewModel(
         uri: String,
         category: String = "Salvar",
         deleteSourceScreenshotAfterImport: Boolean = false,
+        compressionProfile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM,
     ) {
         val targetCategory = category.takeUnless { it == "Concluído" } ?: "Salvar"
         viewModelScope.launch(Dispatchers.IO) {
             val storedUri = runCatching {
-                gateway.copyImageToPrivateStorage(uri)
+                gateway.copyImageToPrivateStorage(uri, compressionProfile)
             }.getOrElse { uri.toString() }
             val capture = CaptureFactory.create("Imagem compartilhada", storedUri)
                 .copy(title = "Imagem selecionada", category = targetCategory)
@@ -210,9 +237,12 @@ class ImageImportViewModel(
                 sourceUrl = pending.url,
             )
             captureUseCases.save(capture)
-            pending.imageUrl?.let { imageUrl ->
-                gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
-                    captureUseCases.updateImage(capture.id, localImage)
+            // YouTube captures render the video player in fullscreen instead of storing its thumbnail as a cover.
+            if (YoutubeVideoIdParser.extractVideoId(pending.url) == null) {
+                pending.imageUrl?.let { imageUrl ->
+                    gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
+                        captureUseCases.updateImage(capture.id, localImage)
+                    }
                 }
             }
         }

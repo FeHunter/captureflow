@@ -19,6 +19,7 @@ import com.fehunter.captureflow.features.settings.domain.usecase.SetThemeModeUse
 import com.fehunter.captureflow.features.settings.presentation.viewmodel.SettingsViewModelFactory
 import com.fehunter.captureflow.features.imageimport.data.storage.ImageImportStorageService
 import com.fehunter.captureflow.core.storage.LocalPrivateImageStorage
+import com.fehunter.captureflow.features.imagecompression.data.ImageCompressionService
 
 /**
  * Manual composition root for the current single-module Android application.
@@ -31,7 +32,8 @@ class AppContainer(application: Application) {
     private val captureRepository = RoomCaptureRepository(database)
     val captureUseCases = CaptureUseCases(captureRepository)
     private val privateImageStorage = LocalPrivateImageStorage(application)
-    private val imageImportStorage = ImageImportStorageService(application)
+    private val imageCompressor = ImageCompressionService(application)
+    private val imageImportStorage = ImageImportStorageService(application, imageCompressor)
     private val imageImportGateway = ImageImportGatewayImpl(
         context = application,
         metadataService = LinkMetadataService(),
@@ -43,6 +45,7 @@ class AppContainer(application: Application) {
     val settingsViewModelFactory = SettingsViewModelFactory(
         getThemeMode = GetThemeModeUseCase(settingsRepository),
         setThemeMode = SetThemeModeUseCase(settingsRepository),
+        preferencesRepository = settingsRepository,
     )
 
     val categoriesViewModelFactory = CategoriesViewModelFactory(ManageCategoriesUseCase(captureRepository))

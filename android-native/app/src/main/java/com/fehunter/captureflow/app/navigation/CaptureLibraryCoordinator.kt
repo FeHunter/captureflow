@@ -13,6 +13,7 @@ import com.fehunter.captureflow.features.captures.presentation.components.Catego
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
 import com.fehunter.captureflow.features.captures.presentation.model.CaptureImageProcessingStatus
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
+import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imageimport.presentation.components.ImageCaptureScreen
 import com.fehunter.captureflow.features.search.presentation.components.CaptureSearchField
 import com.fehunter.captureflow.features.search.presentation.viewmodel.SearchViewModel
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
@@ -56,7 +58,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val ocrStates by imageImportViewModel.ocrStates.collectAsState()
@@ -79,11 +81,18 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
+    var editingNoteId by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var screenshotImportCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
+    fun sortCaptures(items: List<Capture>): List<Capture> = when (captureSortOrder) {
+        "oldest" -> items.sortedBy { it.createdAt }
+        "title_asc" -> items.sortedBy { it.title.lowercase() }
+        "title_desc" -> items.sortedByDescending { it.title.lowercase() }
+        else -> items.sortedByDescending { it.createdAt }
+    }
     val activeCategories = categoryEntities.map { it.name }
     LaunchedEffect(categoryEntities) {
         if (category != "Todas" && categoryEntities.none { it.name == category }) category = "Todas"
@@ -92,7 +101,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> uri?.let { imageImportViewModel.prepareImageReview(it.toString()) } },
+        onResult = { uri -> uri?.let { imageImportViewModel.prepareImageReview(it.toString(), ImageCompressionProfile.fromPreference(imageCompressionProfile)) } },
     )
     LaunchedEffect(detectedScreenshotUri) {
         detectedScreenshotUri?.let { selectedImageUri = it }
@@ -118,6 +127,34 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         category = category,
         showCompleted = true,
     )
+    val sortedCategoryNames = remember(categoryEntities, categorySortOrder, allMatchingCaptures) {
+        val names = categoryEntities.map { it.name }
+        val capturesByCategory = allMatchingCaptures.groupBy { it.category }
+        val newestCaptureAt = names.associateWith { name ->
+            capturesByCategory[name]?.maxOfOrNull { it.createdAt }
+        }
+        val oldestCaptureAt = names.associateWith { name ->
+            capturesByCategory[name]?.minOfOrNull { it.createdAt }
+        }
+        when (categorySortOrder) {
+            "name_asc" -> names.sortedBy { it.lowercase() }
+            "name_desc" -> names.sortedByDescending { it.lowercase() }
+            // Compare actual task timestamps, not category insertion order. The second
+            // timestamp is a deterministic tie-breaker when categories share the same
+            // newest/oldest task time.
+            "newest" -> names.sortedWith(
+                compareByDescending<String> { newestCaptureAt[it] ?: Long.MIN_VALUE }
+                    .thenByDescending { oldestCaptureAt[it] ?: Long.MIN_VALUE }
+                    .thenBy { names.indexOf(it) },
+            )
+            "oldest" -> names.sortedWith(
+                compareBy<String> { oldestCaptureAt[it] ?: Long.MAX_VALUE }
+                    .thenBy { newestCaptureAt[it] ?: Long.MAX_VALUE }
+                    .thenBy { names.indexOf(it) },
+            )
+            else -> names
+        }
+    }
     val filtered = filterCaptures(
         captures = captures,
         query = query,
@@ -181,8 +218,25 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         item(key = "dashboard") { DashboardSummaryCard(dashboardSummary) }
         item(key = "categories") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                var showSortMenu by remember { mutableStateOf(false) }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Categorias", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Box {
+                        TextButton(onClick = { showSortMenu = true }) {
+                            Icon(Icons.Default.Sort, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Ordenar")
+                        }
+                        DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                            DropdownMenuItem(text = { Text("Categorias") }, onClick = {}, enabled = false)
+                            listOf("manual" to "Ordem padrão", "newest" to "Mais recentes", "oldest" to "Mais antigas", "name_asc" to "Nome · A–Z", "name_desc" to "Nome · Z–A").forEach { (value, label) ->
+                                DropdownMenuItem(
+                                    text = { Text((if (categorySortOrder == value) "✓ " else "") + label) },
+                                    onClick = { onCategorySortOrderChange(value); showSortMenu = false },
+                                )
+                            }
+                        }
+                    }
                     TextButton(onClick = { showCategoryManager = true }) {
                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
@@ -213,8 +267,11 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                     )
                 }
             }
-            val visibleCategories = if (category == "Todas") categoryEntities.map { it.name } else listOf(category)
+            val visibleCategories = if (category == "Todas") sortedCategoryNames else listOf(category)
             items(visibleCategories, key = { "category-$it" }) { tag ->
+                // Category order controls these section containers only. Keep the
+                // preview thumbnails in the library's source order; captureSortOrder
+                // is applied inside the expanded category, not to the category preview.
                 val categoryCaptures = allMatchingCaptures.filter { it.category == tag }
                 if (categoryCaptures.isNotEmpty()) {
                     val previewCaptures = categoryCaptures.filterNot { it.isCompleted }
@@ -249,8 +306,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     LaunchedEffect(expandedCategory) {
         showCompletedInExpandedCategory = false
     }
-    val expandedCategoryCaptures = remember(allMatchingCaptures, expandedCategory) {
-        expandedCategory?.let { tag -> allMatchingCaptures.filter { it.category == tag } }.orEmpty()
+    val expandedCategoryCaptures = remember(allMatchingCaptures, expandedCategory, captureSortOrder) {
+        expandedCategory?.let { tag -> sortCaptures(allMatchingCaptures.filter { it.category == tag }) }.orEmpty()
     }
     val expandedCategoryVisibleCaptures = remember(expandedCategoryCaptures, showCompletedInExpandedCategory) {
         expandedCategoryCaptures.filter { it.isCompleted == showCompletedInExpandedCategory }
@@ -339,7 +396,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         }
     }
-    val viewerCandidates = if (expandedCategory != null) expandedCategoryVisibleCaptures else filtered
+    val viewerCandidates = if (expandedCategory != null) expandedCategoryVisibleCaptures else sortCaptures(filtered)
     val fullscreenCaptures = remember(viewerCandidates, selectedCapture) {
         val activeCapture = selectedCapture
         if (activeCapture != null && viewerCandidates.none { it.id == activeCapture.id }) {
@@ -368,7 +425,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             viewModel.updateCaptureCategory(id, newCategory)
             selectedCapture = selectedCapture?.takeIf { it.id == id }?.copy(category = newCategory)
         },
-        onOpenNotes = { notesCaptureId = it },
+        onOpenNotes = { notesCaptureId = it; editingNoteId = "new" },
+        onEditNote = { id, noteId -> notesCaptureId = id; editingNoteId = noteId },
         onDelete = viewModel::deleteCapture,
         allSubtasks = allSubtasks,
         onAddSubtask = viewModel::addCaptureSubtask,
@@ -384,13 +442,17 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             NotesEditorDialog(
                 captureTitle = item.title,
                 initialNotes = item.notes.orEmpty(),
-                onDismiss = { notesCaptureId = null },
+                initialEditingNoteId = editingNoteId,
+                onDismiss = { notesCaptureId = null; editingNoteId = null },
+                onDeleteTemporaryImage = imageImportViewModel::deleteTemporaryImage,
+                onCompressImage = imageImportViewModel::compressNoteImage,
                 onSave = { notes ->
                     viewModel.updateCaptureNotes(captureId, notes)
                     selectedCapture = selectedCapture?.takeIf { it.id == captureId }?.copy(
                         notes = notes.trim().takeIf(String::isNotBlank),
                     )
                     notesCaptureId = null
+                    editingNoteId = null
                 },
             )
         }
@@ -478,7 +540,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             ImageCaptureScreen(
                 onImageCaptured = { uri ->
                     showCameraCapture = false
-                    imageImportViewModel.prepareImageReview(uri)
+                    imageImportViewModel.prepareImageReview(uri, ImageCompressionProfile.fromPreference(imageCompressionProfile))
                 },
                 onClose = { showCameraCapture = false },
             )
@@ -521,6 +583,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                                 uri.toString(),
                                 category = selectedCategory,
                                 deleteSourceScreenshotAfterImport = true,
+                                compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile),
                             )
                             screenshotToConfirm = null
                             onScreenshotImportHandled()
@@ -618,7 +681,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         }, confirmButton = {
             Button(onClick = {
-                imageImportViewModel.addImageCapture(uri.toString(), imageCategory)
+                imageImportViewModel.addImageCapture(uri.toString(), imageCategory, compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile))
                 selectedImageUri = null
                 if (uri == detectedScreenshotUri) onScreenshotHandled()
             }) { Text("Enviar para o app") }

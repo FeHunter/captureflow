@@ -3,6 +3,8 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
+import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
+import com.fehunter.captureflow.features.fullscreen.presentation.components.YoutubeEmbeddedPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
@@ -25,12 +27,17 @@ import kotlinx.coroutines.withContext
 @Composable
 fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
     val context = LocalContext.current
+    val youtubeVideoId = remember(capture.sourceUrl) { YoutubeVideoIdParser.extractVideoId(capture.sourceUrl) }
     val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null, capture.imageUri,
+        initialValue = null, capture.imageUri, youtubeVideoId,
     ) {
-        value = capture.imageUri?.let { raw ->
-            withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+        value = if (youtubeVideoId != null) {
+            null
+        } else {
+            capture.imageUri?.let { raw ->
+                withContext(Dispatchers.IO) {
+                    runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+                }
             }
         }
     }
@@ -38,7 +45,12 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
         modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        if (image != null) {
+        if (youtubeVideoId != null) {
+            YoutubeEmbeddedPlayer(
+                videoId = youtubeVideoId,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            )
+        } else if (image != null) {
             Image(
                 bitmap = image!!,
                 contentDescription = "Imagem completa da referência",

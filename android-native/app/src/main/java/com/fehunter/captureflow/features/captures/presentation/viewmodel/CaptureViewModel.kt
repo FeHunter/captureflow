@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.core.storage.PrivateImageStorage
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -79,9 +80,13 @@ class CaptureViewModel(
     }
 
     fun updateCaptureNotes(id: String, rawNotes: String) {
-        val notes = rawNotes.trim().take(10_000).takeIf(String::isNotBlank)
+        val notes = rawNotes.takeIf(String::isNotBlank)
         viewModelScope.launch(Dispatchers.IO) {
+            val previousImages = captureUseCases.findById(id)?.notes
+                ?.let(CaptureNotesCodec::decode).orEmpty().mapNotNull { it.imageUri }.toSet()
+            val retainedImages = CaptureNotesCodec.decode(notes).mapNotNull { it.imageUri }.toSet()
             captureUseCases.updateNotes(id, notes)
+            (previousImages - retainedImages).forEach(privateImageStorage::deletePrivateImage)
         }
     }
 
@@ -90,6 +95,9 @@ class CaptureViewModel(
             val capture = captureUseCases.findById(id)
             captureUseCases.delete(id)
             privateImageStorage.deletePrivateImage(capture?.imageUri)
+            capture?.notes?.let(CaptureNotesCodec::decode).orEmpty()
+                .mapNotNull { it.imageUri }
+                .forEach(privateImageStorage::deletePrivateImage)
         }
     }
 }

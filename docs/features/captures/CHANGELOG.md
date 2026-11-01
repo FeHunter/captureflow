@@ -1,3 +1,42 @@
+## 2026-11-01 — Refatoração da compressão e reativação em Notes
+- Unificado o processamento da feature Image Compression para duas entradas: URIs `file://`/ `content://` (câmera, galeria e screenshot compartilhada) e bytes raster codificados em memória.
+- O serviço inspeciona dimensões antes da decodificação, usa amostragem para limitar memória, corrige orientação EXIF nas entradas URI, limita a maior dimensão a 2560 px, compõe transparência sobre branco e gera JPEG no armazenamento privado.
+- Notes voltou a usar o perfil Alto. O recorte é codificado como PNG lossless em memória e enviado ao compressor por `ByteArray`, removendo o arquivo PNG e a URI temporários que existiam entre o recorte e a compressão.
+- A anotação só recebe a URI final depois que o JPEG é criado com sucesso; falhas preservam a prévia/recorte para nova tentativa.
+- Adicionados testes instrumentados para entrada por URI de arquivo e bytes de recorte em memória.
+
+## 2026-11-01 — Menu de ordenação e pipeline de imagem das anotações
+- O menu **Ordenar** da biblioteca agora apresenta exclusivamente os filtros de **Categorias**; removidas as opções de ordenação de **Referências** da interface.
+- O processamento de imagem das anotações mantém recorte antes da compressão, grava o recorte intermediário em PNG lossless no cache e executa uma única codificação JPEG no perfil Alto para o armazenamento privado.
+- Adicionadas validações do arquivo temporário, limpeza em falhas e preservação da seleção/prévia para permitir nova tentativa sem reabrir a galeria.
+
+## 2026-11-01 — Ordenação temporal das seções de categorias
+- Adicionadas as opções **Mais recentes** e **Mais antigas** à ordenação dos containers de categoria na biblioteca inicial.
+- A ordenação recente usa a data da referência mais nova de cada categoria; a antiga usa a data da referência mais antiga. Empates preservam a ordem cadastrada.
+- Preferência de categoria mantém-se independente da ordenação das referências na categoria expandida; previews continuam sem reordenação.
+
+## 2026-11-01 — Correção da renderização do player e escopo da ordenação
+- Aceleração de hardware explicitamente habilitada no nível da aplicação e da MainActivity; WebView do YouTube permanece em camada de hardware para preservar a composição dos frames de vídeo.
+- `categorySortOrder` ordena somente os containers `CategoryCard` da biblioteca inicial. Os thumbnails de preview mantêm a ordem natural da biblioteca; `captureSortOrder` continua controlando as referências dentro da categoria expandida.
+
+## 2026-11-01 — Ajustes de reprodução e anotações após validação manual
+- O WebView do player YouTube envia um cabeçalho Referer ao carregar ou trocar o vídeo, atendendo à identificação de origem exigida pelo player em cenários que retornam erro 153.
+- O painel de anotações no fullscreen agora usa altura natural do texto e da imagem, limitado a 248 dp; somente quando ultrapassa esse limite o conteúdo rola. O texto não é truncado em duas linhas.
+- A compressão de imagens de anotação normaliza bitmaps para ARGB_8888 e grava diretamente em arquivo privado, com liberação segura dos bitmaps. A falha agora retorna o motivo real e mantém o recorte selecionado para nova tentativa.
+
+## 2026-11-01 — Ajustes de player YouTube e edição de anotações
+- O fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles explícitos, sem autoplay e permitindo navegação dos recursos internos do player. A capa não é carregada no fullscreen para links reconhecidos do YouTube.
+- Ao importar um link YouTube, a thumbnail retornada pelo oEmbed/HTML não é baixada nem salva como capa da captura; o player é a mídia exibida no Details Fullscreen.
+- O botão de balão abre diretamente o formulário de nova anotação. O toque prolongado em um bloco existente continua abrindo a edição/exclusão.
+- A seleção/troca de imagem na anotação agora abre prévia e recorte (Original, 1:1, 4:5 ou 16:9), suporta URIs content:// e file://, e só então aplica compressão Alta antes de armazenar a imagem.
+
+## 2026-11-01 — Player YouTube, ordenação, compressão e linha de pensamento
+- O fullscreen reconhece URLs YouTube comuns (watch, youtu.be, Shorts, live e embed) e apresenta o player oficial IFrame dentro de WebView do sistema, sem autoplay e sem JavaScript bridge; o link original permanece disponível como fallback.
+- Adicionado menu Ordenar para cartões de categorias (ordem padrão, nome A–Z/Z–A) e referências (recentes/antigas, título A–Z/Z–A), com preferências locais em SharedPreferences.
+- Criada a feature Image Compression: perfil Médio (JPEG quality 70) e Alto (JPEG quality 50), limite de dimensão 2560 px e correção de orientação EXIF. O perfil selecionado é aplicado à câmera e ao Photo Picker; imagens de anotações usam Alto.
+- A feature Notes agora gerencia uma linha de pensamento em blocos ordenados de texto e imagem opcional. O botão de balão abre o CRUD; toque prolongado edita blocos. O fullscreen mostra a lista em área limitada com rolagem vertical.
+- A serialização é versionada no campo captures.notes existente; anotações antigas em texto simples são lidas como um bloco para preservar dados. Documentação e testes de parser/codec atualizados.
+
 ## 2026-11-01 — Rolagem horizontal compartilhada no filtro de categorias
 - Todas as categorias continuam visíveis na biblioteca, organizadas em duas linhas dentro de um único container horizontalmente rolável; as linhas avançam juntas.
 - O botão **Ver todas as categorias** permanece como atalho para abrir o modal de seleção, sem recolher ou limitar as categorias exibidas na view principal.
@@ -222,3 +261,20 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - `LinkMetadataService` faz requisição HTTP(S) do body HTML com timeout e limite de 512 KB; prioriza H1 para título e imagem de article/main para capa, com metadados Open Graph/Twitter como fallback.
 - Após confirmação, tenta baixar a imagem para armazenamento privado. Se metadados falharem, o link pode ser salvo com título de fallback.
 - Atualizados contratos de arquitetura, UI/UX, wireframes, segurança e teste.
+
+
+## 2026-11-01 — Correções adicionais
+- Compressão: URIs `file://` de recortes temporários passam a ser abertas diretamente por `FileInputStream`, evitando depender do `ContentResolver` para arquivos locais. URIs de provedores continuam usando `ContentResolver`, com fallback para `ParcelFileDescriptor` quando o stream retorna nulo.
+- Categorias: ordenação “Mais recentes”/“Mais antigas” agrupa capturas uma única vez e compara `createdAt` (máximo/mínimo) de cada categoria, com desempate temporal determinístico.
+
+
+## 2026-11-01 — Correção adicional do fluxo de imagem em Notes
+- Padronizada a leitura das URIs na prévia/recorte e na compressão: arquivos `file://` são abertos diretamente e URIs de provedores tentam fallback por `ParcelFileDescriptor` mesmo quando `openInputStream` lança exceção.
+- A troca de imagem limpa a prévia anterior antes da decodificação assíncrona, evitando que um bitmap antigo permaneça disponível enquanto a nova seleção carrega.
+- A prévia mantém decodificação limitada a 2560 px, normalização ARGB_8888 e correção de orientação EXIF; o recorte PNG lossless continua sendo codificado uma única vez em JPEG no perfil Alto.
+
+
+## 2026-11-01 — Staging da imagem do Photo Picker em Notes
+- A seleção de imagem na feature Notes agora copia imediatamente os bytes da URI temporária `content://` para um arquivo temporário no cache privado antes de abrir a prévia/recorte. A decodificação usa o snapshot local, reduzindo dependência da validade da concessão temporária do Photo Picker.
+- A leitura tenta `ContentResolver.openInputStream()` e `ParcelFileDescriptor` como fallback; se ambos falharem, a mensagem preserva authority e causas técnicas em vez de mascarar tudo como imagem não suportada.
+- O snapshot temporário é removido após a decodificação; o pipeline de recorte PNG lossless e compressão JPEG Alto permanece inalterado.
