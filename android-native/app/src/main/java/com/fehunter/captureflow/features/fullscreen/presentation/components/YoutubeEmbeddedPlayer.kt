@@ -6,6 +6,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.view.View
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -29,6 +30,13 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(android.graphics.Color.BLACK)
+                // Video frames are composed by Chromium's hardware video pipeline.
+                // Keep the WebView on a hardware layer so the player surface is not
+                // flattened into a software-rendered Compose layer.
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                isVerticalScrollBarEnabled = false
+                isHorizontalScrollBarEnabled = false
+                overScrollMode = View.OVER_SCROLL_NEVER
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = true
