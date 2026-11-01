@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.features.captures.domain.model.Capture
+import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
@@ -75,6 +76,9 @@ fun FullscreenCaptureDialog(
 
     capture?.let { selected ->
         val viewerCaptures = captures.filter { it.category == selected.category }
+        val selectedYoutubeVideoId = remember(selected.sourceUrl) {
+            YoutubeVideoIdParser.extractVideoId(selected.sourceUrl)
+        }
         val initialPage = viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
         val sourceUrl = selected.sourceUrl?.takeIf { url ->
             runCatching {
@@ -152,123 +156,130 @@ fun FullscreenCaptureDialog(
                                 FullscreenCapturePage(
                                     capture = pageCapture,
                                     showNavigationHint = page == pagerState.currentPage,
+                                    isActivePage = page == pagerState.settledPage,
                                 )
                             }
                         }
-                        Column(
-                            modifier = Modifier.align(Alignment.BottomStart)
-                                .padding(start = 16.dp, bottom = 20.dp)
-                                .fillMaxWidth(0.78f),
-                            horizontalAlignment = Alignment.Start,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            val thoughtNotes = remember(selected.notes) { CaptureNotesCodec.decode(selected.notes) }
-                            if (thoughtNotes.isNotEmpty()) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp).verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    thoughtNotes.forEach { note ->
-                                        Surface(
-                                            modifier = Modifier.fillMaxWidth().combinedClickable(
-                                                onClick = { },
-                                                onLongClick = { onEditNote(selected.id, note.id) },
-                                            ),
-                                            shape = MaterialTheme.shapes.medium,
-                                            color = Color.Black.copy(alpha = 0.76f),
-                                            shadowElevation = 4.dp,
-                                        ) {
-                                            Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                if (note.text.isNotBlank()) {
-                                                    Text(
-                                                        text = note.text,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = Color.White,
-                                                    )
+                        if (selectedYoutubeVideoId == null) {
+                            Column(
+                                modifier = Modifier.align(Alignment.BottomStart)
+                                    .padding(start = 16.dp, bottom = 20.dp)
+                                    .fillMaxWidth(0.78f),
+                                horizontalAlignment = Alignment.Start,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                val thoughtNotes = remember(selected.notes) { CaptureNotesCodec.decode(selected.notes) }
+                                if (thoughtNotes.isNotEmpty()) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp).verticalScroll(rememberScrollState()),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        thoughtNotes.forEach { note ->
+                                            Surface(
+                                                modifier = Modifier.fillMaxWidth().combinedClickable(
+                                                    onClick = { },
+                                                    onLongClick = { onEditNote(selected.id, note.id) },
+                                                ),
+                                                shape = MaterialTheme.shapes.medium,
+                                                color = Color.Black.copy(alpha = 0.76f),
+                                                shadowElevation = 4.dp,
+                                            ) {
+                                                Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    if (note.text.isNotBlank()) {
+                                                        Text(
+                                                            text = note.text,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = Color.White,
+                                                        )
+                                                    }
+                                                    note.imageUri?.let { rawUri -> FullscreenNoteImage(rawUri) }
                                                 }
-                                                note.imageUri?.let { rawUri -> FullscreenNoteImage(rawUri) }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            Surface(
-                                shape = MaterialTheme.shapes.extraLarge,
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                                shadowElevation = 8.dp,
-                            ) {
-                                IconButton(
-                                    onClick = { onOpenNotes(selected.id) },
-                                    modifier = Modifier.size(48.dp),
+                                Surface(
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                    shadowElevation = 8.dp,
                                 ) {
-                                    Icon(
-                                        Icons.Default.ChatBubbleOutline,
-                                        contentDescription = if (thoughtNotes.isEmpty()) "Adicionar anotações" else "Editar anotações",
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                }
-                            }
-                        }
-                        Surface(
-                            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
-                            shape = MaterialTheme.shapes.extraLarge,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                            shadowElevation = 8.dp,
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                if (selected.isCompleted) {
-                                    Checkbox(
-                                        checked = true,
-                                        onCheckedChange = { onCompleted(selected.id, it) },
+                                    IconButton(
+                                        onClick = { onOpenNotes(selected.id) },
                                         modifier = Modifier.size(48.dp),
-                                    )
-                                } else {
-                                    Checkbox(
-                                        checked = false,
-                                        onCheckedChange = { onCompleted(selected.id, it) },
-                                        modifier = Modifier.size(48.dp),
-                                    )
-                                    TextButton(
-                                        onClick = { showSubtasks = true },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                                     ) {
-                                        val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
-                                        Text(
-                                            "☰ ${selectedSubtasks.count { it.isCompleted }}/${selectedSubtasks.size}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            maxLines = 1,
+                                        Icon(
+                                            Icons.Default.ChatBubbleOutline,
+                                            contentDescription = if (thoughtNotes.isEmpty()) "Adicionar anotações" else "Editar anotações",
+                                            tint = MaterialTheme.colorScheme.onSurface,
                                         )
                                     }
-                                    sourceUrl?.let { url ->
-                                        IconButton(
-                                            onClick = { runCatching { uriHandler.openUri(url) } },
+                                }
+                            }
+    
+                        }
+                        if (selectedYoutubeVideoId == null) {
+                            Surface(
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                shadowElevation = 8.dp,
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                                ) {
+                                    if (selected.isCompleted) {
+                                        Checkbox(
+                                            checked = true,
+                                            onCheckedChange = { onCompleted(selected.id, it) },
                                             modifier = Modifier.size(48.dp),
+                                        )
+                                    } else {
+                                        Checkbox(
+                                            checked = false,
+                                            onCheckedChange = { onCompleted(selected.id, it) },
+                                            modifier = Modifier.size(48.dp),
+                                        )
+                                        TextButton(
+                                            onClick = { showSubtasks = true },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                                         ) {
-                                            Icon(
-                                                Icons.Default.Link,
-                                                contentDescription = "Abrir link original",
-                                                tint = MaterialTheme.colorScheme.onSurface,
+                                            val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
+                                            Text(
+                                                "☰ ${selectedSubtasks.count { it.isCompleted }}/${selectedSubtasks.size}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                maxLines = 1,
                                             )
                                         }
-                                    }
-                                    IconButton(
-                                        onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
-                                        modifier = Modifier.size(48.dp),
-                                    ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
-                                    }
-                                    IconButton(
-                                        onClick = { onDelete(selected.id); onDismiss() },
-                                        modifier = Modifier.size(48.dp),
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
+                                        sourceUrl?.let { url ->
+                                            IconButton(
+                                                onClick = { runCatching { uriHandler.openUri(url) } },
+                                                modifier = Modifier.size(48.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Link,
+                                                    contentDescription = "Abrir link original",
+                                                    tint = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                            }
+                                        }
+                                        IconButton(
+                                            onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
+                                            modifier = Modifier.size(48.dp),
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
+                                        }
+                                        IconButton(
+                                            onClick = { onDelete(selected.id); onDismiss() },
+                                            modifier = Modifier.size(48.dp),
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
+                                        }
                                     }
                                 }
                             }
+    
                         }
                     }
                 }
