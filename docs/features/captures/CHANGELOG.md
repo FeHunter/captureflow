@@ -1,3 +1,8 @@
+## 2026-11-01 — Ajustes de reprodução e anotações após validação manual
+- O WebView do player YouTube envia um cabeçalho Referer ao carregar ou trocar o vídeo, atendendo à identificação de origem exigida pelo player em cenários que retornam erro 153.
+- O painel de anotações no fullscreen agora usa altura natural do texto e da imagem, limitado a 248 dp; somente quando ultrapassa esse limite o conteúdo rola. O texto não é truncado em duas linhas.
+- A compressão de imagens de anotação normaliza bitmaps para ARGB_8888 e grava diretamente em arquivo privado, com liberação segura dos bitmaps. A falha agora retorna o motivo real e mantém o recorte selecionado para nova tentativa.
+
 ## 2026-11-01 — Ajustes de player YouTube e edição de anotações
 - O fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles explícitos, sem autoplay e permitindo navegação dos recursos internos do player. A capa não é carregada no fullscreen para links reconhecidos do YouTube.
 - Ao importar um link YouTube, a thumbnail retornada pelo oEmbed/HTML não é baixada nem salva como capa da captura; o player é a mídia exibida no Details Fullscreen.
