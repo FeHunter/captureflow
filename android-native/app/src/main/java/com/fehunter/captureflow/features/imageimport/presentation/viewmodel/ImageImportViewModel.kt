@@ -8,6 +8,7 @@ import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.imageimport.domain.gateway.ImageImportGateway
 import com.fehunter.captureflow.features.imageimport.presentation.model.OcrUiState
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingSharedLink
+import com.fehunter.captureflow.features.imageimport.presentation.model.PendingImageReview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,9 +28,12 @@ class ImageImportViewModel(
     private val _pendingSharedLink = MutableStateFlow<PendingSharedLink?>(null)
     val pendingSharedLink = _pendingSharedLink.asStateFlow()
 
+    private val _pendingImageReview = MutableStateFlow<PendingImageReview?>(null)
+    val pendingImageReview = _pendingImageReview.asStateFlow()
+
     fun receiveSharedContent(content: String, imageUri: String? = null) {
         if (imageUri != null) {
-            addImageCapture(imageUri)
+            prepareImageReview(imageUri)
             return
         }
         val normalized = CaptureFactory.normalize(content)
@@ -43,6 +47,85 @@ class ImageImportViewModel(
             if (normalized.isNotBlank() && !captureUseCases.findByContent(normalized)) {
                 captureUseCases.save(CaptureFactory.create(normalized))
             }
+        }
+    }
+
+    /**
+     * Copies an incoming image into app-private storage, runs on-device OCR and exposes
+     * an editable draft. No Capture is persisted until confirmPendingImageReview is called.
+     */
+    fun prepareImageReview(uri: String) {
+        val requestId = UUID.randomUUID().toString()
+        _pendingImageReview.value = PendingImageReview(
+            id = requestId,
+            imageUri = uri,
+            title = "Nova captura",
+            isProcessing = true,
+        )
+        viewModelScope.launch(Dispatchers.IO) {
+            var storedUri = uri
+            try {
+                storedUri = runCatching { gateway.copyImageToPrivateStorage(uri) }.getOrDefault(uri)
+                val analysis = gateway.analyzeImage(storedUri)
+                val extracted = analysis.fullText.trim()
+                val suggestedTitle = analysis.title.trim().takeIf(String::isNotBlank)
+                    ?: extracted.lineSequence().firstOrNull(String::isNotBlank)?.take(72)
+                    ?: "Nova captura"
+                val current = _pendingImageReview.value
+                if (current?.id != requestId) {
+                    if (storedUri != uri) gateway.deleteTemporaryImage(storedUri)
+                    return@launch
+                }
+                _pendingImageReview.value = current.copy(
+                    imageUri = storedUri,
+                    title = suggestedTitle.take(160),
+                    isProcessing = false,
+                    error = if (extracted.isBlank()) "Não identificamos texto. Você pode definir o título manualmente." else null,
+                )
+            } catch (error: Exception) {
+                val current = _pendingImageReview.value
+                if (current?.id == requestId) {
+                    _pendingImageReview.value = current.copy(
+                        imageUri = storedUri,
+                        isProcessing = false,
+                        error = error.localizedMessage?.takeIf(String::isNotBlank)
+                            ?: "Não foi possível analisar a imagem. Você ainda pode definir o título manualmente.",
+                    )
+                }
+            }
+        }
+    }
+
+    fun updatePendingImageTitle(title: String) {
+        _pendingImageReview.value = _pendingImageReview.value?.copy(title = title.take(160))
+    }
+
+    fun updatePendingImageCategory(category: String) {
+        if (category == "Concluído") return
+        _pendingImageReview.value = _pendingImageReview.value?.copy(category = category)
+    }
+
+    fun cancelPendingImageReview() {
+        val pending = _pendingImageReview.value ?: return
+        _pendingImageReview.value = null
+        viewModelScope.launch(Dispatchers.IO) {
+            gateway.deleteTemporaryImage(pending.imageUri)
+        }
+    }
+
+    fun confirmPendingImageReview() {
+        val pending = _pendingImageReview.value ?: return
+        if (pending.isProcessing || pending.title.isBlank() || pending.category == "Concluído") return
+        viewModelScope.launch(Dispatchers.IO) {
+            val availableCategories = captureUseCases.observeCategories().first().map { it.name }
+            if (pending.category !in availableCategories) return@launch
+            if (_pendingImageReview.value?.id != pending.id) return@launch
+            val capture = CaptureFactory.create("Foto capturada", pending.imageUri).copy(
+                title = pending.title.trim().take(160),
+                category = pending.category,
+            )
+            captureUseCases.save(capture)
+            _pendingImageReview.value = null
         }
     }
 
