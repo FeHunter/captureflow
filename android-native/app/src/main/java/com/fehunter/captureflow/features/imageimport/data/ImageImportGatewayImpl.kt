@@ -1,7 +1,6 @@
 package com.fehunter.captureflow.features.imageimport.data
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import com.fehunter.captureflow.features.imageimport.data.storage.ImageImportStorageService
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
@@ -32,8 +31,8 @@ class ImageImportGatewayImpl(
     override fun copyImageToPrivateStorage(uri: String, profile: ImageCompressionProfile): String =
         storageService.copyToPrivateStorage(Uri.parse(uri), profile).toString()
 
-    override fun compressBitmapToPrivateStorage(bitmap: Bitmap, profile: ImageCompressionProfile): String =
-        storageService.compressBitmapToPrivateStorage(bitmap, profile).toString()
+    override fun compressEncodedImageToPrivateStorage(encodedImage: ByteArray, profile: ImageCompressionProfile): String =
+        storageService.compressEncodedImageToPrivateStorage(encodedImage, profile).toString()
 
     override fun downloadPreviewToPrivateStorage(url: String): String? =
         storageService.downloadToPrivateStorage(url)?.toString()
