@@ -1,3 +1,8 @@
+## 2026-11-01 — Dashboard com progresso horizontal por categoria
+- Restauradas as barras horizontais de progresso para cada categoria, proporcionais à fração de referências concluídas.
+- Exibidas as quantidades de referências concluídas e pendentes por categoria.
+- A lista mostra cinco categorias inicialmente e permite expandir/recolher todas pelo botão no rodapé do container.
+
 ## 2026-11-01 — Ajustes de progresso, categorias e fullscreen
 - Em **Todas**, cartões de categoria sem referências pendentes são omitidos; ao selecionar uma categoria específica, o cartão continua visível mesmo quando todas as referências estão concluídas, com mensagem de prévia vazia.
 - Criado o componente reutilizável `CompletedBadge` e aplicado aos thumbnails de referências concluídas.
