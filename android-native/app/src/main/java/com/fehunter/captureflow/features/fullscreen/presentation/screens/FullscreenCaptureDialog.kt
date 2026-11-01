@@ -175,6 +175,41 @@ fun FullscreenCaptureDialog(
                                         videoId = videoId,
                                         modifier = Modifier.fillMaxWidth(),
                                     )
+                                    val youtubeNotes = remember(selected.notes) {
+                                        CaptureNotesCodec.decode(selected.notes)
+                                    }
+                                    if (youtubeNotes.isNotEmpty()) {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth().heightIn(max = 88.dp)
+                                                .verticalScroll(rememberScrollState()),
+                                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            youtubeNotes.forEach { note ->
+                                                Surface(
+                                                    modifier = Modifier.fillMaxWidth().combinedClickable(
+                                                        onClick = { },
+                                                        onLongClick = { onEditNote(selected.id, note.id) },
+                                                    ),
+                                                    shape = MaterialTheme.shapes.small,
+                                                    color = Color.Black.copy(alpha = 0.78f),
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                                    ) {
+                                                        if (note.text.isNotBlank()) {
+                                                            Text(
+                                                                text = note.text,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = Color.White,
+                                                            )
+                                                        }
+                                                        note.imageUri?.let { rawUri -> FullscreenNoteImage(rawUri) }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceEvenly,
