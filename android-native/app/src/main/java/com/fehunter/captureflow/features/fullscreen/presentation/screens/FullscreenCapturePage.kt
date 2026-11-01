@@ -4,7 +4,6 @@ import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
 import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
-import com.fehunter.captureflow.features.fullscreen.presentation.components.YoutubeEmbeddedPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
@@ -45,19 +44,14 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
         modifier = Modifier.fillMaxSize().background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        if (youtubeVideoId != null) {
-            YoutubeEmbeddedPlayer(
-                videoId = youtubeVideoId,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-            )
-        } else if (image != null) {
+        if (youtubeVideoId == null && image != null) {
             Image(
                 bitmap = image!!,
                 contentDescription = "Imagem completa da referência",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )
-        } else {
+        } else if (youtubeVideoId == null) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
