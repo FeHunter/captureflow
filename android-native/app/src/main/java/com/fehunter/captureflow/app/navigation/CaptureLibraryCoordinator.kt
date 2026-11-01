@@ -58,7 +58,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, onImageCompressionProfileChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val ocrStates by imageImportViewModel.ocrStates.collectAsState()
