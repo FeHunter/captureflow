@@ -139,8 +139,8 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
-- Ordenação dos containers de categoria na biblioteca: padrão/manual, mais recentes, mais antigas, nome A–Z ou Z–A. Mais recentes prioriza a categoria cuja referência mais nova tem o maior `createdAt`; mais antigas prioriza a categoria cuja referência mais antiga tem o menor `createdAt`. Empates preservam a ordem cadastrada. A ordenação não altera a ordem dos thumbnails de preview.
-- Ordenação das referências dentro da categoria expandida: mais recentes, mais antigas, título A–Z ou Z–A. As duas preferências são independentes e persistidas localmente em SharedPreferences.
+- O menu **Ordenar** da biblioteca oferece somente filtros para os containers de categoria: padrão/manual, mais recentes, mais antigas, nome A–Z ou Z–A. Não exibir filtros de ordenação de referências nesse menu. Mais recentes prioriza a categoria cuja referência mais nova tem o maior `createdAt`; mais antigas prioriza a categoria cuja referência mais antiga tem o menor `createdAt`. Empates preservam a ordem cadastrada. A ordenação não altera a ordem dos thumbnails de preview.
+- A grade de referências dentro da categoria expandida mantém a ordenação padrão mais recentes; não há controles de ordenação de referências na biblioteca.
 - Perfis de compressão: Médio usa JPEG quality 70 e Alto usa JPEG quality 50; esses valores representam qualidade de codificação, não uma garantia de redução exata do tamanho em bytes.
 - Cartões compactos atualmente usam 272 dp conforme a diretriz visual registrada; não alterar dimensões sem validar o layout atual e a decisão de produto.
 
@@ -173,7 +173,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Baixar a imagem de capa somente após confirmação do usuário e armazenar privadamente quando possível.
 - A câmera própria deve permitir foco por toque no preview e oferecer revisão/recorte antes de encaminhar a foto ao OCR. O recorte não deve persistir a captura automaticamente; a confirmação de categoria/título continua sendo obrigatória.
 - Fotografar e selecionar imagens pelo Photo Picker aplicam o perfil escolhido (Médio/Alto) antes do OCR e do armazenamento privado. A compressão é local; se falhar, manter o fluxo de importação com a URI original sem apagar a origem.
-- Imagens adicionadas aos blocos de anotação sempre usam o perfil Alto. Nunca apagar imagem original selecionada pelo usuário.
+- Imagens adicionadas aos blocos de anotação são recortadas antes da compressão; o recorte é preparado em PNG lossless no cache e passa por uma única codificação JPEG no perfil Alto antes do armazenamento privado. Falhas mantêm a seleção e a prévia para nova tentativa. Nunca apagar imagem original selecionada pelo usuário.
 - Não fazer requisição ilimitada nem baixar HTML/imagens sem limites.
 
 ## 7. Regras de fullscreen e navegação
