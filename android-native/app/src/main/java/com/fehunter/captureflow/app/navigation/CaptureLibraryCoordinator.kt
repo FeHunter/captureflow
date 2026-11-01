@@ -138,7 +138,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Analisar imagem do dispositivo", style = MaterialTheme.typography.titleMedium,
+                            Text("Adicionar imagem", style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                             Text("Escolha uma foto ou captura de tela para extrair o texto no próprio aparelho.",
                                 style = MaterialTheme.typography.bodySmall,
