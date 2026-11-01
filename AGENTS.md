@@ -180,11 +180,17 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 
 ## 8. OCR e processamento de imagem
 
-- Ao ajustar a extração de título por OCR, considerar a região central da tela como sinal prioritário, sem eliminar sinais de perfil de interface, tamanho, qualidade e conteúdo do texto.
-- Manter heurísticas testáveis e independentes da UI sempre que possível.
+- OCR é executado localmente pelo ML Kit em Image Import. `OcrService` pertence a Data e adapta resultados da plataforma; `TitleDetectionService` pertence a Domain e mantém a seleção de título pura, testável e sem dependências Android.
+- Para escolher o título, combinar altura relativa, área da caixa (largura × altura), largura com peso menor, posição vertical/central, perfil aproximado da interface, forma textual e confiança do OCR quando disponível.
+- A confiança igual a zero deve ser tratada como indisponível/neutra, não como falha do reconhecimento.
+- Agrupar linhas acima/abaixo da linha âncora somente quando distância, altura e alinhamento forem compatíveis; manter os demais textos na descrição.
+- Filtrar ruído de interface com regras específicas e conservadoras. Não descartar manchetes apenas por conterem palavras genéricas como "share", "views" ou "more".
+- ML Kit não expõe um atributo confiável de peso tipográfico/bold. Não afirmar que negrito foi detectado; altura e área são apenas proxies de destaque. Qualquer análise de pixels/OpenCV exige validação e justificativa antes de adicionar dependência.
+- Considerar a região central como sinal prioritário, sem eliminar títulos legítimos próximos ao topo.
 - OCR vazio/falho não deve remover referência nem imagem; expor estado de processamento/erro de forma recuperável.
 - Para referências de imagem, persistir título sugerido e manter conteúdo OCR bruto fora do campo de conteúdo, conforme contrato atual.
 - Executar OCR fora da main thread e evitar processamento duplicado simultâneo para a mesma referência.
+- Manter casos de regressão e critérios de seleção em `docs/features/image-import/ocr-title-detection.md`; executar testes unitários do detector sem depender do ML Kit.
 
 ## 9. Persistência, Room e migrações
 
