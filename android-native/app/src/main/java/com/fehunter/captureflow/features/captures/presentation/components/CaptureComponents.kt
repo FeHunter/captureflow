@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
+import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
 import com.fehunter.captureflow.features.captures.presentation.model.CaptureImageProcessingStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -91,6 +92,12 @@ fun CategoryThumbnail(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+
+        if (capture.isCompleted) {
+            CompletedBadge(
+                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+            )
         }
 
         if (ocrState.isProcessing || ocrState.isError) {
@@ -219,6 +226,12 @@ fun CategoryCard(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
+                        }
+
+                        if (capture.isCompleted) {
+                            CompletedBadge(
+                                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                            )
                         }
 
                         if (ocrStates[capture.id]?.isProcessing == true ||
