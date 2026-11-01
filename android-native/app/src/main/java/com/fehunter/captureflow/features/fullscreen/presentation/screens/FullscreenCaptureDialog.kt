@@ -32,6 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
+import com.fehunter.captureflow.features.fullscreen.presentation.components.YoutubeEmbeddedPlayer
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
@@ -76,9 +77,6 @@ fun FullscreenCaptureDialog(
 
     capture?.let { selected ->
         val viewerCaptures = captures.filter { it.category == selected.category }
-        val selectedYoutubeVideoId = remember(selected.sourceUrl) {
-            YoutubeVideoIdParser.extractVideoId(selected.sourceUrl)
-        }
         val initialPage = viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
         val sourceUrl = selected.sourceUrl?.takeIf { url ->
             runCatching {
@@ -146,6 +144,10 @@ fun FullscreenCaptureDialog(
                         }
                     }
                     Box(Modifier.weight(1f).fillMaxWidth()) {
+                        val activeCapture = viewerCaptures.getOrNull(pagerState.settledPage)
+                        val activeYoutubeVideoId = remember(activeCapture?.sourceUrl) {
+                            YoutubeVideoIdParser.extractVideoId(activeCapture?.sourceUrl)
+                        }
                         HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.fillMaxSize(),
@@ -156,11 +158,21 @@ fun FullscreenCaptureDialog(
                                 FullscreenCapturePage(
                                     capture = pageCapture,
                                     showNavigationHint = page == pagerState.currentPage,
-                                    isActivePage = page == pagerState.settledPage,
                                 )
                             }
                         }
-                        if (selectedYoutubeVideoId == null) {
+                        // Keep the WebView outside HorizontalPager. Pager pages are translated
+                        // and clipped during gestures; Chromium video frames need a stable host
+                        // view to compose correctly.
+                        if (pagerState.currentPage == pagerState.settledPage) {
+                            activeYoutubeVideoId?.let { videoId ->
+                                YoutubeEmbeddedPlayer(
+                                    videoId = videoId,
+                                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 12.dp),
+                                )
+                            }
+                        }
+                        if (activeYoutubeVideoId == null) {
                             Column(
                                 modifier = Modifier.align(Alignment.BottomStart)
                                     .padding(start = 16.dp, bottom = 20.dp)
@@ -217,7 +229,7 @@ fun FullscreenCaptureDialog(
                             }
     
                         }
-                        if (selectedYoutubeVideoId == null) {
+                        if (activeYoutubeVideoId == null) {
                             Surface(
                                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
                                 shape = MaterialTheme.shapes.extraLarge,
