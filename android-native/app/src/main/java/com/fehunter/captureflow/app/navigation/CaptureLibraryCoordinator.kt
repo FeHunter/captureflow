@@ -458,6 +458,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 initialEditingNoteId = editingNoteId,
                 onDismiss = { notesCaptureId = null; editingNoteId = null },
                 onDeleteTemporaryImage = imageImportViewModel::deleteTemporaryImage,
+                onCompressImage = imageImportViewModel::compressNoteImage,
                 onSave = { notes ->
                     viewModel.updateCaptureNotes(captureId, notes)
                     selectedCapture = selectedCapture?.takeIf { it.id == captureId }?.copy(
