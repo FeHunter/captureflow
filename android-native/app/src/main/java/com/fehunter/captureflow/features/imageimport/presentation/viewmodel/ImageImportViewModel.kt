@@ -106,14 +106,17 @@ class ImageImportViewModel(
         viewModelScope.launch(Dispatchers.IO) { gateway.deleteTemporaryImage(uri) }
     }
 
-    fun compressNoteImage(uri: String, onReady: (String?) -> Unit) {
+    fun compressNoteImage(uri: String, onReady: (String?, String?) -> Unit) {
         viewModelScope.launch {
-            val compressed = withContext(Dispatchers.IO) {
+            val result = withContext(Dispatchers.IO) {
                 runCatching {
                     gateway.copyImageToPrivateStorage(uri, ImageCompressionProfile.HIGH)
-                }.getOrNull()
+                }
             }
-            onReady(compressed)
+            onReady(
+                result.getOrNull(),
+                result.exceptionOrNull()?.localizedMessage?.takeIf(String::isNotBlank),
+            )
         }
     }
 
