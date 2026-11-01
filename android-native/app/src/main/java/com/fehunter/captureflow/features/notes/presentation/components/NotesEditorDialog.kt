@@ -189,7 +189,7 @@ fun NotesEditorDialog(
         // Diagnostic mode: save the cropped bitmap as PNG directly in app-private storage.
         // ImageCompressionService is intentionally bypassed for this test.
         coroutineScope.launch {
-            val savedUri = withContext(Dispatchers.IO) {
+            val savedUri = runCatching { withContext(Dispatchers.IO) {
                 val directory = File(context.filesDir, "captures")
                 val destination = File(directory, "capture-note-${UUID.randomUUID()}.png")
                 try {
@@ -215,7 +215,7 @@ fun NotesEditorDialog(
                     destination.delete()
                     throw error
                 }
-            }
+            } }
 
             savedUri.onSuccess { uri ->
                 draftImageUri = uri
