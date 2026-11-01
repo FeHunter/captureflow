@@ -113,7 +113,6 @@ class MainActivity : ComponentActivity() {
                     categorySortOrder = categorySortOrder,
                     onCategorySortOrderChange = settingsViewModel::setCategorySortOrder,
                     captureSortOrder = captureSortOrder,
-                    onCaptureSortOrderChange = settingsViewModel::setCaptureSortOrder,
                     imageCompressionProfile = imageCompressionProfile,
                     onImageCompressionProfileChange = settingsViewModel::setImageCompressionProfile,
                     hasScreenshotAccess = hasScreenshotAccess,
