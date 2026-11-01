@@ -12,7 +12,7 @@
 1. Cartão para analisar imagem do dispositivo, selecionar imagem e configurar/ativar/desativar monitoramento de screenshots.
 2. Busca por título e conteúdo, com X para limpar.
 3. Chips horizontais: Todas, Ler depois, Verificar, Salvar, Importante.
-4. Grupos de categoria em cartões de largura total, rolagem vertical. Cada grupo mostra até três thumbnails, concluídas/total (ex.: `1/2 itens`) e “Ver todas · quantidade”.
+4. Grupos de categoria em cartões de largura total, rolagem vertical. Cada grupo mostra até três thumbnails somente de referências pendentes, concluídas/total (ex.: `1/2 itens`) e “Ver todas · quantidade”. A prévia não muda quando a preferência global de exibir concluídas é ativada; concluídas permanecem contabilizadas e acessíveis em “Ver todas”.
 - O filtro e a busca atuam juntos. “Todas” é filtro, não categoria persistida.
 - Categorias usadas em filtros/seletores: Ler depois, Verificar, Salvar, Importante. Conclusão é estado independente, não categoria.
 
