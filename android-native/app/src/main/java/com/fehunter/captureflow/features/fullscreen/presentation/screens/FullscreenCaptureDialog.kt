@@ -184,8 +184,6 @@ fun FullscreenCaptureDialog(
                                                         text = note.text,
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color = Color.White,
-                                                        maxLines = 2,
-                                                        overflow = TextOverflow.Ellipsis,
                                                     )
                                                 }
                                                 note.imageUri?.let { rawUri -> FullscreenNoteImage(rawUri) }
