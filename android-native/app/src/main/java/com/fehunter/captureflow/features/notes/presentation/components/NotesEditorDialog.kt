@@ -3,6 +3,7 @@ package com.fehunter.captureflow.features.notes.presentation.components
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.graphics.BitmapFactory.Options
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -232,7 +233,7 @@ fun NotesEditorDialog(
                             modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp),
                             contentScale = ContentScale.Fit,
                         )
-                    } ?: CircularProgressIndicator()
+                    } ?: if (cropError == null) CircularProgressIndicator() else Text(cropError!!, color = MaterialTheme.colorScheme.error)
                     Text("Formato do recorte", style = MaterialTheme.typography.labelMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("Original" to 0f, "1:1" to 1f, "4:5" to 0.8f, "16:9" to (16f / 9f))
@@ -358,8 +359,16 @@ private fun NoteImagePreview(rawUri: String) {
 private fun decodeOrientedBitmap(context: android.content.Context, rawUri: String): Bitmap {
     val uri = Uri.parse(rawUri)
     val resolver = context.contentResolver
-    val bitmap = resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
-        ?: throw IllegalStateException("Não foi possível decodificar a imagem.")
+    val bounds = Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        throw IllegalStateException("O arquivo selecionado não é uma imagem válida.")
+    }
+    var sample = 1
+    while (bounds.outWidth / sample > 2560 || bounds.outHeight / sample > 2560) sample *= 2
+    val bitmap = resolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, Options().apply { inSampleSize = sample })
+    } ?: throw IllegalStateException("Não foi possível decodificar a imagem.")
     val orientation = runCatching {
         resolver.openInputStream(uri)?.use { stream ->
             ExifInterface(stream).getAttributeInt(
