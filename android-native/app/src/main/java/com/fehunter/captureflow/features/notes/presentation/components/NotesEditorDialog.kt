@@ -48,7 +48,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNote
-import com.fehunter.captureflow.features.captures.domain.model.CaptureCaptureNotesCodec
+import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -105,7 +105,7 @@ fun NotesEditorDialog(
             if (editingId != "new") notes = notes.filterNot { it.id == editingId }
         } else {
             val existing = notes.firstOrNull { it.id == editingId }
-            val item = NoteBlock(
+            val item = CaptureNote(
                 id = existing?.id ?: UUID.randomUUID().toString(),
                 text = text,
                 imageUri = draftImageUri,
