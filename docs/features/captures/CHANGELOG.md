@@ -1,3 +1,10 @@
+## 2026-11-01 — Player YouTube, ordenação, compressão e linha de pensamento
+- O fullscreen reconhece URLs YouTube comuns (watch, youtu.be, Shorts, live e embed) e apresenta o player oficial IFrame dentro de WebView do sistema, sem autoplay e sem JavaScript bridge; o link original permanece disponível como fallback.
+- Adicionado menu Ordenar para cartões de categorias (ordem padrão, nome A–Z/Z–A) e referências (recentes/antigas, título A–Z/Z–A), com preferências locais em SharedPreferences.
+- Criada a feature Image Compression: perfil Médio (JPEG quality 70) e Alto (JPEG quality 50), limite de dimensão 2560 px e correção de orientação EXIF. O perfil selecionado é aplicado à câmera e ao Photo Picker; imagens de anotações usam Alto.
+- A feature Notes agora gerencia uma linha de pensamento em blocos ordenados de texto e imagem opcional. O botão de balão abre o CRUD; toque prolongado edita blocos. O fullscreen mostra a lista em área limitada com rolagem vertical.
+- A serialização é versionada no campo captures.notes existente; anotações antigas em texto simples são lidas como um bloco para preservar dados. Documentação e testes de parser/codec atualizados.
+
 ## 2026-11-01 — Rolagem horizontal compartilhada no filtro de categorias
 - Todas as categorias continuam visíveis na biblioteca, organizadas em duas linhas dentro de um único container horizontalmente rolável; as linhas avançam juntas.
 - O botão **Ver todas as categorias** permanece como atalho para abrir o modal de seleção, sem recolher ou limitar as categorias exibidas na view principal.
