@@ -6,7 +6,9 @@ Feature responsável pela entrada de conteúdo externo e processamento de imagen
 - `data/ImageImportGatewayImpl.kt`: adaptação para OCR, metadados e armazenamento.
 - `data/storage/ImageImportStorageService.kt`: cópia para armazenamento privado, download de capas e exclusão best-effort da screenshot original; delega a remoção genérica de arquivos ao contrato Core.
 - `data/metadata`: extração best-effort de metadados de links.
-- `data/ocr`: análise local via ML Kit.
+- `data/ocr/OcrService.kt`: reconhecimento local via ML Kit e adaptação dos resultados para o domínio.
+- `domain/ocr/TitleDetectionService.kt`: seleção testável do título por geometria, área, posição, confiança e perfil aproximado da interface.
+- `docs/features/image-import/ocr-title-detection.md`: critérios, limitações e casos de teste da detecção de títulos.
 - `data/android`: monitoramento e notificações de screenshots.
 - `presentation/model`: estados de importação e OCR.
 - `presentation/viewmodel`: compartilhamento, prévia de links, revisão de imagens, confirmação por categoria, cópia privada e OCR.
