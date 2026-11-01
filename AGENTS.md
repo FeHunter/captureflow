@@ -129,6 +129,8 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - A experiência principal é a biblioteca de referências.
 - Tags disponíveis nos filtros e seletores: `Ler depois`, `Verificar`, `Salvar` e `Importante`. `Todas` é filtro, não valor persistido.
 - A conclusão é um estado independente da categoria (`isCompleted`). Concluir/reabrir uma referência não altera sua categoria; não criar nem usar uma categoria especial `Concluído`. O Dashboard e os cartões calculam pendentes/concluídas dentro de cada categoria.
+- Na biblioteca, o filtro de categorias ocupa no máximo duas linhas (até seis opções visíveis) e oferece modal com a lista completa. Em `Todas`, renderizar um cartão de categoria somente se houver ao menos uma referência pendente; com uma categoria específica selecionada, manter o cartão mesmo sem pendentes e explicar o estado vazio da prévia.
+- Referências concluídas exibidas em thumbnails devem usar o componente reutilizável `CompletedBadge` da feature Captures. Não duplicar estilos/selo localmente em cada card.
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
@@ -171,7 +173,8 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Títulos longos podem sobrepor a imagem com gradiente escuro forte (quase opaco atrás do texto, dissolvendo para transparência), sem redimensionar a área reservada ao pager.
 - O acesso às anotações fica no canto inferior esquerdo do fullscreen, com ícone de balão de conversa; abre o editor da feature `notes`, em modal amplo. A edição salva até 10.000 caracteres; cancelar não persiste.
 - A coluna de ações fullscreen permanece no canto inferior direito, conforme layout atual.
-- **Editar título** está disponível no fullscreen e altera somente o título persistido; não modificar conteúdo, categoria ou demais campos.
+- O modal **Editar título** no fullscreen permite editar o título e selecionar outra categoria no mesmo formulário. Persistir cada campo pela operação correspondente de Captures, sem alterar conteúdo, URL ou imagem.
+- Quando `sourceUrl` for HTTP(S) válida, o atalho para abrir o link permanece no cabeçalho e também aparece na coluna vertical de ações fullscreen.
 - Anotações pertencem à referência; limite atual de 10.000 caracteres. Texto vazio limpa a anotação; cancelar não persiste.
 - O acesso à sub-checklist permanece no cartão de referência; não restaurar atalho no cabeçalho fullscreen.
 - Android system Back (botão/gesto/predictive back) fecha primeiro o visualizador ativo e só depois retorna de categoria expandida à biblioteca. Não fechar a categoria subjacente ao dispensar apenas o viewer.
