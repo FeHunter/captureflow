@@ -32,7 +32,8 @@ class AppContainer(application: Application) {
     private val captureRepository = RoomCaptureRepository(database)
     val captureUseCases = CaptureUseCases(captureRepository)
     private val privateImageStorage = LocalPrivateImageStorage(application)
-    private val imageImportStorage = ImageImportStorageService(application)
+    private val imageCompressor = ImageCompressionService(application)
+    private val imageImportStorage = ImageImportStorageService(application, imageCompressor)
     private val imageImportGateway = ImageImportGatewayImpl(
         context = application,
         metadataService = LinkMetadataService(),
