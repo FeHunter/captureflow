@@ -76,7 +76,7 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 - **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações, player YouTube incorporado e ações disponíveis no detalhe. Usa casos de uso/contratos de domínio, nunca DAO diretamente.
 - **captures:** é proprietária das referências e das subtarefas persistidas em `capture_subtasks`, vinculadas por `captureId` e apresentadas no fullscreen. A entidade/DAO histórica `checklist_tasks` permanece apenas para compatibilidade do schema Room, sem feature ou tela ativa.
 - **dashboard:** indicadores e estatísticas de referências/categorias. Somente consulta; não modifica Captures diretamente.
-- **imagecompression:** compressão local de imagens antes do armazenamento privado; oferece perfis Médio (JPEG quality 70) e Alto (JPEG quality 50), preservando orientação EXIF e limitando dimensões.
+- **imagecompression:** compressão local de imagens antes do armazenamento privado; oferece perfis Médio (JPEG quality 70) e Alto (JPEG quality 50), preservando orientação EXIF para URIs e limitando dimensões. O contrato aceita URI (`file://`/`content://`) ou bytes raster codificados, sem depender de Android no Domain.
 - **notes:** edição da linha de pensamento em blocos ordenados de texto e imagem. O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures; o campo captures.notes armazena a coleção em formato versionado e mantém leitura retrocompatível de anotações antigas.
 - **settings:** tema, ordenação da biblioteca e perfil padrão de compressão, persistidos localmente em SharedPreferences.
 
@@ -173,7 +173,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Baixar a imagem de capa somente após confirmação do usuário e armazenar privadamente quando possível.
 - A câmera própria deve permitir foco por toque no preview e oferecer revisão/recorte antes de encaminhar a foto ao OCR. O recorte não deve persistir a captura automaticamente; a confirmação de categoria/título continua sendo obrigatória.
 - Fotografar e selecionar imagens pelo Photo Picker aplicam o perfil escolhido (Médio/Alto) antes do OCR e do armazenamento privado. A compressão é local; se falhar, manter o fluxo de importação com a URI original sem apagar a origem.
-- Imagens adicionadas aos blocos de anotação são recortadas antes da compressão; o recorte é preparado em PNG lossless no cache e passa por uma única codificação JPEG no perfil Alto antes do armazenamento privado. Falhas mantêm a seleção e a prévia para nova tentativa. Nunca apagar imagem original selecionada pelo usuário.
+- Imagens adicionadas aos blocos de anotação são recortadas antes da compressão; o recorte é codificado como PNG lossless em memória (`ByteArray`) e passa pelo mesmo encoder JPEG no perfil Alto, sem arquivo ou URI intermediária. A anotação só recebe a URI privada após sucesso; falhas mantêm a seleção e a prévia para nova tentativa. Nunca apagar imagem original selecionada pelo usuário.
 - Não fazer requisição ilimitada nem baixar HTML/imagens sem limites.
 
 ## 7. Regras de fullscreen e navegação
