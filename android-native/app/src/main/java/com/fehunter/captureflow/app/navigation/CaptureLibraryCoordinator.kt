@@ -129,17 +129,29 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     )
     val sortedCategoryNames = remember(categoryEntities, categorySortOrder, allMatchingCaptures) {
         val names = categoryEntities.map { it.name }
+        val capturesByCategory = allMatchingCaptures.groupBy { it.category }
+        val newestCaptureAt = names.associateWith { name ->
+            capturesByCategory[name]?.maxOfOrNull { it.createdAt }
+        }
+        val oldestCaptureAt = names.associateWith { name ->
+            capturesByCategory[name]?.minOfOrNull { it.createdAt }
+        }
         when (categorySortOrder) {
             "name_asc" -> names.sortedBy { it.lowercase() }
             "name_desc" -> names.sortedByDescending { it.lowercase() }
-            "newest" -> names.sortedByDescending { name ->
-                allMatchingCaptures.filter { it.category == name }.maxOfOrNull { it.createdAt }
-                    ?: Long.MIN_VALUE
-            }
-            "oldest" -> names.sortedBy { name ->
-                allMatchingCaptures.filter { it.category == name }.minOfOrNull { it.createdAt }
-                    ?: Long.MAX_VALUE
-            }
+            // Compare actual task timestamps, not category insertion order. The second
+            // timestamp is a deterministic tie-breaker when categories share the same
+            // newest/oldest task time.
+            "newest" -> names.sortedWith(
+                compareByDescending<String> { newestCaptureAt[it] ?: Long.MIN_VALUE }
+                    .thenByDescending { oldestCaptureAt[it] ?: Long.MIN_VALUE }
+                    .thenBy { names.indexOf(it) },
+            )
+            "oldest" -> names.sortedWith(
+                compareBy<String> { oldestCaptureAt[it] ?: Long.MAX_VALUE }
+                    .thenBy { newestCaptureAt[it] ?: Long.MAX_VALUE }
+                    .thenBy { names.indexOf(it) },
+            )
             else -> names
         }
     }
