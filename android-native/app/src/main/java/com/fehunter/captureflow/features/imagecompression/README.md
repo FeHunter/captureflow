@@ -16,4 +16,5 @@ Feature responsável pela compressão local de imagens antes do armazenamento pr
 
 ## Implementação
 - domain/model/ImageCompressionProfile.kt: perfis e qualidade JPEG.
-- data/ImageCompressionService.kt: decodificação limitada, orientação EXIF e escrita JPEG privada.
+- domain/service/ImageCompressor.kt: contrato público consumido por Image Import.
+- data/ImageCompressionService.kt: implementação Android com decodificação limitada, orientação EXIF e escrita JPEG privada; instanciada pelo AppContainer.
