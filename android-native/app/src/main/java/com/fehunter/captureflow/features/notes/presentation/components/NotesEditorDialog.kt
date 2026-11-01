@@ -9,12 +9,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -24,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Save
@@ -31,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -45,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -388,18 +395,65 @@ fun NotesEditorDialog(
 private fun NoteImagePreview(rawUri: String) {
     val context = LocalContext.current
     var bitmap by remember(rawUri) { mutableStateOf<Bitmap?>(null) }
+    var isExpanded by remember(rawUri) { mutableStateOf(false) }
+
     LaunchedEffect(rawUri) {
         bitmap = withContext(Dispatchers.IO) {
             runCatching { decodeOrientedBitmap(context, rawUri) }.getOrNull()
         }
     }
-    bitmap?.let {
+
+    bitmap?.let { image ->
         Image(
-            bitmap = it.asImageBitmap(),
-            contentDescription = "Imagem da anotação",
-            modifier = Modifier.fillMaxWidth().heightIn(max = 180.dp),
+            bitmap = image.asImageBitmap(),
+            contentDescription = "Ampliar imagem da anotação",
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 180.dp)
+                .clickable { isExpanded = true },
             contentScale = ContentScale.Fit,
         )
+
+        if (isExpanded) {
+            Dialog(
+                onDismissRequest = { isExpanded = false },
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true,
+                ),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.94f))
+                        .clickable { isExpanded = false },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = "Imagem da anotação ampliada",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .clickable { },
+                        contentScale = ContentScale.Fit,
+                    )
+                    IconButton(
+                        onClick = { isExpanded = false },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Fechar imagem ampliada",
+                            tint = Color.White,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
