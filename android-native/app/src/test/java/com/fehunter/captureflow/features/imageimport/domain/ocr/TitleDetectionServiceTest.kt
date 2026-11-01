@@ -101,7 +101,7 @@ class TitleDetectionServiceTest {
     fun toleratesMissingConfidenceValues() {
         val result = detector.detect(
             lines = listOf(
-                line("A visually prominent title with missing confidence", 80, 450, 970, 500),
+                line("A visually prominent title with missing confidence", 80, 450, 970, 500, confidence = 0f),
                 line("Small supporting copy.", 80, 560, 500, 580, confidence = 0f),
             ),
             imageSize = image,
