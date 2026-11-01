@@ -1,3 +1,8 @@
+## 2026-11-01 — Filtros de categoria e ações de fullscreen concluído
+- O filtro da biblioteca agora distribui todas as categorias em duas linhas com rolagem horizontal independente, mantendo o botão **Ver todas as categorias** e seu diálogo.
+- O fullscreen exibe o `CompletedBadge` sobre a imagem para referências concluídas.
+- Quando uma referência está concluída, a coluna vertical exibe somente o checkbox para reabri-la; sub-checklist, link, edição e exclusão ficam ocultos até a referência voltar ao estado pendente. O botão de anotações permanece independente no canto inferior esquerdo.
+
 ## 2026-11-01 — Foco, recorte de fotos e metadados do YouTube
 - A câmera CameraX agora permite tocar no preview para ajustar o foco automático.
 - Adicionada etapa pós-captura para manter a foto original ou recortar centralmente em 1:1, 4:5 ou 16:9 antes do OCR e da revisão de título/categoria.
