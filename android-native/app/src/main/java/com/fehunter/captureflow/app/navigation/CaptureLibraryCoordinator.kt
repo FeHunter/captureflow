@@ -76,6 +76,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCameraCapture by remember { mutableStateOf(false) }
     var imageCategory by remember { mutableStateOf("Ler depois") }
     var expandedCategory by remember { mutableStateOf<String?>(null) }
+    var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
@@ -83,7 +84,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
-    val activeCategories = categoryEntities.map { it.name }.filterNot { it == "Concluído" }
+    val activeCategories = categoryEntities.map { it.name }
     LaunchedEffect(categoryEntities) {
         if (category != "Todas" && categoryEntities.none { it.name == category }) category = "Todas"
         if (sharedLinkCategory != null && categoryEntities.none { it.name == sharedLinkCategory }) sharedLinkCategory = null
@@ -111,6 +112,12 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         }
     }
     val filterCaptures = remember { FilterCapturesUseCase() }
+    val allMatchingCaptures = filterCaptures(
+        captures = captures,
+        query = query,
+        category = category,
+        showCompleted = true,
+    )
     val filtered = filterCaptures(
         captures = captures,
         query = query,
@@ -192,7 +199,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 }
             }
         }
-        if (filtered.isEmpty()) {
+        if (allMatchingCaptures.isEmpty()) {
             item(key = "empty-state") {
                 Text(
                     if (captures.isEmpty()) "Selecione uma imagem acima ou compartilhe um link, texto ou imagem de outro app para começar."
@@ -203,13 +210,23 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         } else {
             val visibleCategories = if (category == "Todas") categoryEntities.map { it.name } else listOf(category)
             items(visibleCategories, key = { "category-$it" }) { tag ->
-                val categoryCaptures = filtered.filter { it.category == tag }
+                val categoryCaptures = allMatchingCaptures.filter { it.category == tag }
                 if (categoryCaptures.isNotEmpty()) {
+                    val previewCaptures = if (showCompletedCaptures) {
+                        categoryCaptures
+                    } else {
+                        categoryCaptures.filterNot { it.isCompleted }
+                    }
                     CategoryCard(
                         title = tag,
-                        captures = categoryCaptures,
+                        captures = previewCaptures,
+                        totalCount = categoryCaptures.size,
+                        completedCount = categoryCaptures.count { it.isCompleted },
                         ocrStates = captureImageProcessingStates,
-                        onExpand = { expandedCategory = tag },
+                        onExpand = {
+                            expandedCategory = tag
+                            showCompletedInExpandedCategory = false
+                        },
                         onOpenCapture = { selectedCapture = it },
                     )
                 }
@@ -219,7 +236,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     if (showCategoryManager) {
         CategoryManagementDialog(
             categories = categoryEntities.map { it.name },
-            fixedCategories = setOf("Concluído"),
             onAdd = categoriesViewModel::addCategory,
             onRename = categoriesViewModel::renameCategory,
             onDelete = categoriesViewModel::deleteCategory,
@@ -227,8 +243,16 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         )
     }
 
+    LaunchedEffect(expandedCategory) {
+        showCompletedInExpandedCategory = false
+    }
+    val expandedCategoryCaptures = remember(allMatchingCaptures, expandedCategory) {
+        expandedCategory?.let { tag -> allMatchingCaptures.filter { it.category == tag } }.orEmpty()
+    }
+    val expandedCategoryVisibleCaptures = remember(expandedCategoryCaptures, showCompletedInExpandedCategory) {
+        expandedCategoryCaptures.filter { it.isCompleted == showCompletedInExpandedCategory }
+    }
     expandedCategory?.let { tag ->
-        val categoryCaptures = filtered.filter { it.category == tag }
         Dialog(
             onDismissRequest = { expandedCategory = null },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
@@ -248,11 +272,35 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         }
                         Column(Modifier.weight(1f)) {
                             Text(tag, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            Text("${categoryCaptures.size} itens", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "${expandedCategoryCaptures.size} itens · ${expandedCategoryCaptures.count { it.isCompleted }} concluídas",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
-                    if (categoryCaptures.isEmpty()) {
-                        Text("Nenhum item nesta categoria.", modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = !showCompletedInExpandedCategory,
+                            onClick = { showCompletedInExpandedCategory = false },
+                            label = { Text("Pendentes · ${expandedCategoryCaptures.count { !it.isCompleted }}") },
+                        )
+                        FilterChip(
+                            selected = showCompletedInExpandedCategory,
+                            onClick = { showCompletedInExpandedCategory = true },
+                            label = { Text("Concluídas · ${expandedCategoryCaptures.count { it.isCompleted }}") },
+                        )
+                    }
+                    if (expandedCategoryVisibleCaptures.isEmpty()) {
+                        Text(
+                            if (showCompletedInExpandedCategory) "Nenhuma task concluída nesta categoria."
+                            else "Nenhuma task pendente nesta categoria.",
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     } else {
                         androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                             columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(3),
@@ -261,7 +309,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(categoryCaptures, key = { it.id }) { capture ->
+                            items(expandedCategoryVisibleCaptures, key = { it.id }) { capture ->
                                 CategoryThumbnail(
                                     capture = capture,
                                     ocrState = captureImageProcessingStates[capture.id] ?: CaptureImageProcessingStatus(),
@@ -274,12 +322,13 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         }
     }
-    val fullscreenCaptures = remember(filtered, selectedCapture) {
+    val viewerCandidates = if (expandedCategory != null) expandedCategoryVisibleCaptures else filtered
+    val fullscreenCaptures = remember(viewerCandidates, selectedCapture) {
         val activeCapture = selectedCapture
-        if (activeCapture != null && filtered.none { it.id == activeCapture.id }) {
-            filtered + activeCapture
+        if (activeCapture != null && viewerCandidates.none { it.id == activeCapture.id }) {
+            viewerCandidates + activeCapture
         } else {
-            filtered
+            viewerCandidates
         }
     }
     FullscreenCaptureDialog(
@@ -290,19 +339,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         onCompleted = { id, completed ->
             viewModel.setCaptureCompleted(id, completed)
             selectedCapture = selectedCapture?.takeIf { it.id == id }?.let { current ->
-                if (completed) {
-                    current.copy(
-                        isCompleted = true,
-                        previousCategory = if (current.category != "Concluído") current.category else current.previousCategory,
-                        category = "Concluído",
-                    )
-                } else {
-                    current.copy(
-                        isCompleted = false,
-                        category = current.previousCategory ?: "Salvar",
-                        previousCategory = null,
-                    )
-                }
+                current.copy(
+                    isCompleted = completed,
+                    previousCategory = null,
+                )
             }
         },
         onTitleChange = viewModel::updateCaptureTitle,
