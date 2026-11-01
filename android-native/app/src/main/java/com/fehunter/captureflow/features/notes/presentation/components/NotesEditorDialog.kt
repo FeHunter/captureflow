@@ -270,6 +270,9 @@ fun NotesEditorDialog(
                                 )
                             }
                     }
+                    imageError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
