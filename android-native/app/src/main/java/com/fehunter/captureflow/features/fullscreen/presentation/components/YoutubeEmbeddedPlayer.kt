@@ -47,7 +47,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                         if (!request.isForMainFrame) return false
                         val host = request.url.host?.lowercase().orEmpty().removePrefix("www.")
                         return request.url.scheme != "https" ||
-                            host !in setOf("youtube.com", "youtube-nocookie.com")
+                            !(host == "youtube.com" || host.endsWith(".youtube.com") || host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com"))
                     }
                 }
                 loadUrl(embedUrl)
