@@ -107,13 +107,6 @@ fun FullscreenCaptureDialog(
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 )
                             }
-                            if (selected.isCompleted && !selected.previousCategory.isNullOrBlank()) {
-                                Text(
-                                    "Origem: ${selected.previousCategory}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
                         }
                         sourceUrl?.let { url ->
                             IconButton(
