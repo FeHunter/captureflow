@@ -4,6 +4,7 @@ import com.fehunter.captureflow.core.ui.loadCoverBitmap
 
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.categories.presentation.components.CategorySelectionSection
+import com.fehunter.captureflow.features.categories.presentation.components.CategoryFilterSection
 import com.fehunter.captureflow.features.categories.presentation.components.CategoryManagementDialog
 import com.fehunter.captureflow.features.fullscreen.presentation.screens.FullscreenCaptureDialog
 import com.fehunter.captureflow.features.notes.presentation.components.NotesEditorDialog
@@ -26,7 +27,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
@@ -189,14 +189,11 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         Text("Gerenciar")
                     }
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    categories.forEach { item ->
-                        FilterChip(selected = category == item, onClick = { category = item }, label = { Text(item) })
-                    }
-                }
+                CategoryFilterSection(
+                    categories = categories,
+                    selectedCategory = category,
+                    onCategorySelected = { category = it },
+                )
             }
         }
         if (allMatchingCaptures.isEmpty()) {
@@ -208,23 +205,33 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 )
             }
         } else {
+            if (category == "Todas" && allMatchingCaptures.none { !it.isCompleted }) {
+                item(key = "completed-only-state") {
+                    Text(
+                        "Todas as referências encontradas estão concluídas.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             val visibleCategories = if (category == "Todas") categoryEntities.map { it.name } else listOf(category)
             items(visibleCategories, key = { "category-$it" }) { tag ->
                 val categoryCaptures = allMatchingCaptures.filter { it.category == tag }
                 if (categoryCaptures.isNotEmpty()) {
                     val previewCaptures = categoryCaptures.filterNot { it.isCompleted }
-                    CategoryCard(
-                        title = tag,
-                        captures = previewCaptures,
-                        totalCount = categoryCaptures.size,
-                        completedCount = categoryCaptures.count { it.isCompleted },
-                        ocrStates = captureImageProcessingStates,
-                        onExpand = {
-                            expandedCategory = tag
-                            showCompletedInExpandedCategory = false
-                        },
-                        onOpenCapture = { selectedCapture = it },
-                    )
+                    if (category != "Todas" || previewCaptures.isNotEmpty()) {
+                        CategoryCard(
+                            title = tag,
+                            captures = previewCaptures,
+                            totalCount = categoryCaptures.size,
+                            completedCount = categoryCaptures.count { it.isCompleted },
+                            ocrStates = captureImageProcessingStates,
+                            onExpand = {
+                                expandedCategory = tag
+                                showCompletedInExpandedCategory = false
+                            },
+                            onOpenCapture = { selectedCapture = it },
+                        )
+                    }
                 }
             }
         }
@@ -356,6 +363,11 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         },
         onTitleChange = viewModel::updateCaptureTitle,
+        categories = activeCategories,
+        onCategoryChange = { id, newCategory ->
+            viewModel.updateCaptureCategory(id, newCategory)
+            selectedCapture = selectedCapture?.takeIf { it.id == id }?.copy(category = newCategory)
+        },
         onOpenNotes = { notesCaptureId = it },
         onDelete = viewModel::deleteCapture,
         allSubtasks = allSubtasks,

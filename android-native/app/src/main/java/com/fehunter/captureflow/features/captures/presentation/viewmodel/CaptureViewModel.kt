@@ -70,6 +70,14 @@ class CaptureViewModel(
         }
     }
 
+    fun updateCaptureCategory(id: String, category: String) {
+        val normalizedCategory = category.trim()
+        if (normalizedCategory.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            captureUseCases.updateCategory(id, normalizedCategory)
+        }
+    }
+
     fun updateCaptureNotes(id: String, rawNotes: String) {
         val notes = rawNotes.trim().take(10_000).takeIf(String::isNotBlank)
         viewModelScope.launch(Dispatchers.IO) {

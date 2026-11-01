@@ -93,6 +93,12 @@ fun CategoryThumbnail(
             }
         }
 
+        if (capture.isCompleted) {
+            CompletedBadge(
+                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+            )
+        }
+
         if (ocrState.isProcessing || ocrState.isError) {
             Surface(
                 modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
@@ -169,96 +175,111 @@ fun CategoryCard(
                 )
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                captures.take(3).forEach { capture ->
-                    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-                        initialValue = null,
-                        capture.imageUri,
-                    ) {
-                        value = capture.imageUri?.let { raw ->
-                            withContext(Dispatchers.IO) {
-                                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+            if (captures.isEmpty()) {
+                Text(
+                    "Nenhuma task pendente nesta categoria.",
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    captures.take(3).forEach { capture ->
+                        val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+                            initialValue = null,
+                            capture.imageUri,
+                        ) {
+                            value = capture.imageUri?.let { raw ->
+                                withContext(Dispatchers.IO) {
+                                    runCatching { loadCoverBitmap(context, raw) }.getOrNull()
+                                }
                             }
                         }
-                    }
-                    val loadedBitmap = bitmap
-                    Box(
-                        modifier = Modifier.weight(1f).aspectRatio(1f)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                MaterialTheme.shapes.medium,
-                            )
-                            .clickable { onOpenCapture(capture) },
-                    ) {
-                        if (loadedBitmap != null) {
-                            Image(
-                                bitmap = loadedBitmap,
-                                contentDescription = capture.title,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                            )
-                        } else {
-                            Column(
-                                modifier = Modifier.fillMaxSize().padding(6.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                            ) {
-                                Icon(
-                                    Icons.Default.Image,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        val loadedBitmap = bitmap
+                        Box(
+                            modifier = Modifier.weight(1f).aspectRatio(1f)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.shapes.medium,
                                 )
+                                .clickable { onOpenCapture(capture) },
+                        ) {
+                            if (loadedBitmap != null) {
+                                Image(
+                                    bitmap = loadedBitmap,
+                                    contentDescription = capture.title,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Column(
+                                    modifier = Modifier.fillMaxSize().padding(6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Icon(
+                                        Icons.Default.Image,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Text(
+                                        "Sem imagem",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+
+                            if (capture.isCompleted) {
+                                CompletedBadge(
+                                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                                )
+                            }
+
+                            if (ocrStates[capture.id]?.isProcessing == true ||
+                                ocrStates[capture.id]?.isError == true
+                            ) {
+                                Surface(
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                ) {
+                                    Text(
+                                        if (ocrStates[capture.id]?.isError == true) "⚠" else "◌",
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
+                                        ),
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                            ) {
                                 Text(
-                                    "Sem imagem",
+                                    capture.title,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = Color.White,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
-
-                        if (ocrStates[capture.id]?.isProcessing == true ||
-                            ocrStates[capture.id]?.isError == true
-                        ) {
-                            Surface(
-                                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
-                                shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                            ) {
-                                Text(
-                                    if (ocrStates[capture.id]?.isError == true) "⚠" else "◌",
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
-                                    ),
-                                )
-                                .padding(horizontal = 6.dp, vertical = 5.dp),
-                        ) {
-                            Text(
-                                capture.title,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
                     }
-                }
 
-                repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) {
-                    Spacer(Modifier.weight(1f).aspectRatio(1f))
+                    repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) {
+                        Spacer(Modifier.weight(1f).aspectRatio(1f))
+                    }
                 }
             }
 
