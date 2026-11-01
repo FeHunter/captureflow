@@ -1,3 +1,9 @@
+## 2026-11-01 — Ajustes de player YouTube e edição de anotações
+- O fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles explícitos, sem autoplay e permitindo navegação dos recursos internos do player. A capa não é carregada no fullscreen para links reconhecidos do YouTube.
+- Ao importar um link YouTube, a thumbnail retornada pelo oEmbed/HTML não é baixada nem salva como capa da captura; o player é a mídia exibida no Details Fullscreen.
+- O botão de balão abre diretamente o formulário de nova anotação. O toque prolongado em um bloco existente continua abrindo a edição/exclusão.
+- A seleção/troca de imagem na anotação agora abre prévia e recorte (Original, 1:1, 4:5 ou 16:9), suporta URIs content:// e file://, e só então aplica compressão Alta antes de armazenar a imagem.
+
 ## 2026-11-01 — Player YouTube, ordenação, compressão e linha de pensamento
 - O fullscreen reconhece URLs YouTube comuns (watch, youtu.be, Shorts, live e embed) e apresenta o player oficial IFrame dentro de WebView do sistema, sem autoplay e sem JavaScript bridge; o link original permanece disponível como fallback.
 - Adicionado menu Ordenar para cartões de categorias (ordem padrão, nome A–Z/Z–A) e referências (recentes/antigas, título A–Z/Z–A), com preferências locais em SharedPreferences.
