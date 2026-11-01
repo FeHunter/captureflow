@@ -1,4 +1,4 @@
-## 2026-11-01 — Conclusão independente da categoria e progresso por categoria
+## 2026-10-31 — Conclusão independente da categoria e progresso por categoria
 - Concluir ou reabrir uma referência agora altera somente `isCompleted`; a referência permanece na categoria original.
 - A migração Room 8→9 recupera a categoria original dos registros anteriormente movidos para `Concluído`, limpa `previousCategory` e remove a categoria especial.
 - Os cartões de categoria mostram concluídas/total (ex.: `1/2 itens`) e mantêm a ação “Ver todas · quantidade”.
