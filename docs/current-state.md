@@ -1,6 +1,6 @@
 # Capture Flow — estado atual do aplicativo
 
-**Atualizado:** 2026-10-31. Este documento registra o comportamento observado no código; não é uma promessa de release.
+**Atualizado:** 2026-11-01. Este documento registra o comportamento observado no código; não é uma promessa de release.
 
 ## Produto e fonte de verdade
 Capture Flow guarda links, textos e imagens compartilhados como referências locais, organizáveis por categoria e com sub-checklists. O app ativo é Kotlin/Android/Jetpack Compose em `android-native/`; `legacy-expo/` é histórico. Banco local Room/SQLite em `captureflow.db`; sem sincronização em nuvem.
@@ -20,7 +20,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Nome do produto na barra superior e launcher: **Capture Flow**.
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
 - Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences.
-- Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, chips horizontais e biblioteca de cartões em duas colunas com rolagem vertical.
+- Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, filtro de categorias em até duas linhas e biblioteca de cartões por categoria com rolagem vertical. O filtro oferece modal com a lista completa.
 - Categorias padrão: `Ler depois`, `Verificar`, `Salvar` e `Importante`; `Todas` é somente filtro.
 - Conclusão é um estado independente da categoria (`isCompleted`). Marcar/desmarcar uma referência como concluída não altera sua categoria.
 - Não existe categoria especial `Concluído` nem filtro de categoria com esse nome. O estado concluído é acessado pelo controle de exibição e pelo filtro da view expandida.
@@ -34,14 +34,14 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - O resumo é derivado dos fluxos de Captures e categorias; Dashboard não mantém cópia persistida do estado.
 
 ## Grupos e thumbnails de referência
-- A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails, o progresso `concluídas/total` (ex.: `1/2 itens`) e a ação “Ver todas · quantidade”.
+- A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails pendentes, o progresso `concluídas/total` (ex.: `1/2 itens`) e a ação “Ver todas · quantidade”. Em `Todas`, cartões sem referências pendentes são omitidos; com uma categoria específica selecionada, o cartão continua visível e informa que não há pendentes.
 - Ao expandir uma categoria, a view apresenta filtros **Pendentes** e **Concluídas**, com contagens próprias, e mostra somente o estado selecionado em uma grade de três colunas. A view inicia em Pendentes e permite alternar sem alterar a categoria das referências.
-- Cada thumbnail usa `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder quando não há imagem acessível.
+- Os dois componentes ativos de referência são `CategoryCard` (cartão de categoria com até três prévias) e `CategoryThumbnail` (thumbnail da grade expandida). Ambos reutilizam `CompletedBadge` para identificar visualmente referências concluídas quando exibidas. Cada thumbnail usa `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder quando não há imagem acessível.
 - Estado de OCR pode exibir indicador de processamento/erro.
 - O botão/gesto Back fecha a categoria expandida quando nenhum visualizador está por cima.
 
 ## Anotações da referência
-- O visualizador fullscreen ativo mantém uma coluna vertical de ações sobre a imagem, na ordem: concluir, editar título, anotações e excluir.
+- O visualizador fullscreen ativo mantém uma coluna vertical de ações sobre a imagem: concluir, sub-checklist, abrir link (quando disponível), editar, excluir; anotações permanecem no canto inferior esquerdo.
 - **Anotações** abre um diálogo dentro da experiência fullscreen, com campo multilinha e limite de 10.000 caracteres.
 - Quando há anotação não vazia, o visualizador aberto pelo cartão também a apresenta sobre a imagem no canto inferior esquerdo, em um painel preto translúcido com texto branco (até cinco linhas visíveis e reticências para conteúdo maior). A anotação continua editável/removível pelo botão **Anotações**.
 - Salvar persiste o texto em `captures.notes` por meio do ViewModel/DAO. Texto vazio limpa as anotações; Cancelar não persiste alterações.
@@ -50,13 +50,13 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
-- A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido), checkbox de conclusão, excluir e fechar.
+- A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
 - `HorizontalPager`: swipe-left avança e swipe-right retorna dentro das capturas da mesma categoria filtrada, sem loop nas extremidades.
 - A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada. Concluir/reabrir mantém a categoria original. A dica `‹ Deslize para navegar ›` é overlay e não reserva altura.
 - Back nativo fecha apenas o visualizador e mantém a categoria expandida por baixo; Back novamente retorna à biblioteca.
-- Observação: existe um composable `CaptureCard` com outro layout fullscreen e edição de título no mesmo arquivo, mas ele não é referenciado pelo fluxo ativo atual. Não o tratar como funcionalidade visível até reativação explícita.
+- O modal **Editar título** permite alterar o título e, logo abaixo, selecionar a categoria da referência. A alteração de categoria é persistida pelo ViewModel de Captures e atualiza o detalhe ativo.
  
 ## Compartilhamento de link
 1. Android envia `ACTION_SEND` com `text/plain`; `CaptureClassifier` identifica URL HTTP(S).
