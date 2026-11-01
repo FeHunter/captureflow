@@ -19,7 +19,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 ## Tela principal
 - Nome do produto na barra superior e launcher: **Capture Flow**.
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
-- Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences.
+- Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences. O controle Ordenar na seção Categorias permite ordenar os cartões por ordem padrão, nome A–Z ou Z–A e as referências por data recente/antiga ou título A–Z/Z–A. Ambas as preferências são persistidas em SharedPreferences.
 - Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, filtro de categorias em duas linhas dentro de um único container com rolagem horizontal compartilhada e biblioteca de cartões por categoria com rolagem vertical. Todas as categorias ficam visíveis na view; o botão **Ver todas as categorias** abre também o modal com a lista completa.
 - Categorias padrão: `Ler depois`, `Verificar`, `Salvar` e `Importante`; `Todas` é somente filtro.
 - Conclusão é um estado independente da categoria (`isCompleted`). Marcar/desmarcar uma referência como concluída não altera sua categoria.
@@ -51,6 +51,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
+- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), a área de imagem usa o player oficial IFrame em WebView com youtube-nocookie.com, sem autoplay e sem JavaScript bridge. O link original continua disponível no cabeçalho; vídeos que não permitem incorporação exigem abertura externa.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
@@ -74,6 +75,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Imagens e OCR
 - Photo Picker ou compartilhamento fornece URI; o app tenta copiar a imagem para armazenamento privado, mantendo a URI original como fallback em caso de falha.
+- A feature Image Compression aplica JPEG quality 70 (Médio) ou 50 (Alto), com dimensão máxima de 2560 px e correção de orientação EXIF. O perfil é aplicado à câmera e ao Photo Picker antes do OCR e persistência. O valor representa qualidade JPEG, não uma redução fixa de bytes.
 - OCR usa ML Kit local. Heurísticas avaliam posição, tamanho, caixas delimitadoras, comprimento e sinais aproximados de interface de vídeo/social/notícias/compras/produtividade.
 - Para referência de imagem, o título sugerido é persistido; texto OCR bruto não substitui o conteúdo principal. Erro de OCR não apaga a referência.
 - Visualizador usa imagem ajustada, sem recorte. Não excluir imagens escolhidas manualmente da galeria.
