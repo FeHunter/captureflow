@@ -42,18 +42,6 @@ fun CategoryFilterSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text("Categorias", style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { showAllCategories = true }) {
-                    Text("Ver todas")
-                }
-            }
-        }
-
         visibleCategories.chunked(3).forEach { rowCategories ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -77,6 +65,12 @@ fun CategoryFilterSection(
                     androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
                 }
             }
+        }
+        TextButton(
+            onClick = { showAllCategories = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Ver todas as categorias")
         }
     }
 
