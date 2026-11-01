@@ -82,8 +82,9 @@ class ImageCompressionServiceTest {
             eraseColor(Color.CYAN)
         }
         try {
-            context.contentResolver.openOutputStream(sourceUri!!).use { output ->
-                assertNotNull(output)
+            val sourceOutput = context.contentResolver.openOutputStream(sourceUri!!)
+                ?: error("MediaStore não disponibilizou um fluxo de escrita.")
+            sourceOutput.use { output ->
                 assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
             }
 
