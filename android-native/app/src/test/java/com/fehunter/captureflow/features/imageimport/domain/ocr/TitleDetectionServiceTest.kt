@@ -65,6 +65,20 @@ class TitleDetectionServiceTest {
         assertFalseContains(result.title, "views")
     }
 
+
+    @Test
+    fun considersRelativeTextAreaWhenFontHeightsAreSimilar() {
+        val result = detector.detect(
+            lines = listOf(
+                line("A broad headline occupying more of the image", 80, 450, 980, 478),
+                line("Small secondary label", 80, 560, 360, 588),
+            ),
+            imageSize = image,
+        )
+
+        assertTrue(result.title.contains("broad headline"))
+    }
+
     @Test
     fun doesNotDiscardARealHeadlineThatContainsTheWordShare() {
         val result = detector.detect(
@@ -88,7 +102,7 @@ class TitleDetectionServiceTest {
         val result = detector.detect(
             lines = listOf(
                 line("A visually prominent title with missing confidence", 80, 450, 970, 500),
-                line("Small supporting copy.", 80, 560, 500, 580),
+                line("Small supporting copy.", 80, 560, 500, 580, confidence = 0f),
             ),
             imageSize = image,
         )
