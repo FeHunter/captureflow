@@ -156,12 +156,14 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Um link recebido por `ACTION_SEND` deve entrar em estado pendente; não persistir em Room antes da escolha explícita de uma categoria válida entre `Ler depois`, `Verificar`, `Salvar` e `Importante`.
 - Cancelar/fechar a confirmação descarta a captura pendente e não persiste.
 - Buscar metadados HTTP(S) fora da main thread, com connect/read timeout e limite de tamanho de HTML.
-- Prioridade de título: primeiro `H1`, depois Open Graph/Twitter/document title e host como fallback.
+- Prioridade de metadados para YouTube: consultar primeiro o endpoint oficial oEmbed (`youtube.com/oembed`) para obter título e thumbnail; se falhar, manter a extração HTML genérica como fallback.
+- Para os demais sites, prioridade de título: primeiro `H1`, depois Open Graph/Twitter/document title e host como fallback.
 - Prioridade de imagem: imagem de conteúdo em `article`, depois `main`, depois metadados Open Graph/Twitter.
 - Resolver URLs relativas usando a URL final após redirects. Não executar JavaScript.
 - Se uma nova URL compartilhada substituir a pendente, ignorar respostas antigas (stale) da requisição anterior.
 - Falha de metadados/rede não descarta a URL original: permitir salvar com título fallback.
 - Baixar a imagem de capa somente após confirmação do usuário e armazenar privadamente quando possível.
+- A câmera própria deve permitir foco por toque no preview e oferecer revisão/recorte antes de encaminhar a foto ao OCR. O recorte não deve persistir a captura automaticamente; a confirmação de categoria/título continua sendo obrigatória.
 - Não fazer requisição ilimitada nem baixar HTML/imagens sem limites.
 
 ## 7. Regras de fullscreen e navegação
