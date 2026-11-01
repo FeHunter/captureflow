@@ -128,7 +128,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Nome visível do produto: **Capture Flow** na top bar e no launcher.
 - A experiência principal é a biblioteca de referências.
 - Tags disponíveis nos filtros e seletores: `Ler depois`, `Verificar`, `Salvar` e `Importante`. `Todas` é filtro, não valor persistido.
-- A conclusão é um estado independente da categoria (`isCompleted`). Concluir/reabrir uma referência não altera sua categoria; não criar nem usar uma categoria especial `Concluído`. O Dashboard e os cartões calculam pendentes/concluídas dentro de cada categoria.
+- A conclusão é um estado independente da categoria (`isCompleted`). Concluir/reabrir uma referência não altera sua categoria; não criar nem usar uma categoria especial `Concluído`. O Dashboard e os cartões calculam pendentes/concluídas dentro de cada categoria. No Dashboard, exibir progresso horizontal concluído/total e quantidades explícitas de concluídas e pendentes; limitar a lista inicial a cinco categorias, com expansão/recolhimento no rodapé quando houver mais.
 - Na biblioteca, o filtro de categorias ocupa no máximo duas linhas (até seis opções visíveis) e oferece modal com a lista completa. Em `Todas`, renderizar um cartão de categoria somente se houver ao menos uma referência pendente; com uma categoria específica selecionada, manter o cartão mesmo sem pendentes e explicar o estado vazio da prévia.
 - Referências concluídas exibidas em thumbnails devem usar o componente reutilizável `CompletedBadge` da feature Captures. Não duplicar estilos/selo localmente em cada card.
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
