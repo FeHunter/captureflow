@@ -165,12 +165,12 @@ fun FullscreenCaptureDialog(
                             val thoughtNotes = remember(selected.notes) { NotesCodec.decode(selected.notes) }
                             if (thoughtNotes.isNotEmpty()) {
                                 LazyColumn(
-                                    modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
+                                    modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     items(thoughtNotes, key = { it.id }) { note ->
                                         Surface(
-                                            modifier = Modifier.fillMaxWidth().combinedClickable(
+                                            modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp, max = 120.dp).combinedClickable(
                                                 onClick = { },
                                                 onLongClick = { onEditNote(selected.id, note.id) },
                                             ),
@@ -184,7 +184,7 @@ fun FullscreenCaptureDialog(
                                                         text = note.text,
                                                         style = MaterialTheme.typography.bodyMedium,
                                                         color = Color.White,
-                                                        maxLines = 4,
+                                                        maxLines = 2,
                                                         overflow = TextOverflow.Ellipsis,
                                                     )
                                                 }
@@ -423,7 +423,7 @@ private fun FullscreenNoteImage(rawUri: String) {
         Image(
             bitmap = it,
             contentDescription = "Imagem da anotação",
-            modifier = Modifier.fillMaxWidth().heightIn(max = 120.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp),
             contentScale = ContentScale.Fit,
         )
     }
