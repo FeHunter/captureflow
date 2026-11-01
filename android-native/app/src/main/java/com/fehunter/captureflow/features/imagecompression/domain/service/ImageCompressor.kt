@@ -1,17 +1,14 @@
 package com.fehunter.captureflow.features.imagecompression.domain.service
 
-import android.graphics.Bitmap
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 
-/**
- * Converts either an Android URI or an already-decoded/cropped bitmap into a JPEG
- * stored in app-private storage. The implementation owns only bitmaps it creates.
- */
+/** Compresses provider URIs or encoded raster bytes into app-private JPEG files. */
 interface ImageCompressor {
     fun compressToPrivateStorage(sourceUri: String, profile: ImageCompressionProfile): String
 
-    fun compressBitmapToPrivateStorage(
-        bitmap: Bitmap,
+    /** Accepts encoded image bytes (for example, a lossless PNG crop from Notes). */
+    fun compressEncodedImageToPrivateStorage(
+        encodedImage: ByteArray,
         profile: ImageCompressionProfile,
     ): String
 }
