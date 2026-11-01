@@ -32,9 +32,13 @@ class ImageImportViewModel(
     private val _pendingImageReview = MutableStateFlow<PendingImageReview?>(null)
     val pendingImageReview = _pendingImageReview.asStateFlow()
 
-    fun receiveSharedContent(content: String, imageUri: String? = null) {
+    fun receiveSharedContent(
+        content: String,
+        imageUri: String? = null,
+        compressionProfile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM,
+    ) {
         if (imageUri != null) {
-            prepareImageReview(imageUri)
+            prepareImageReview(imageUri, compressionProfile)
             return
         }
         val normalized = CaptureFactory.normalize(content)
