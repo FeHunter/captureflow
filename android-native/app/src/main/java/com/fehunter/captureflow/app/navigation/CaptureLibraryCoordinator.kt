@@ -81,6 +81,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
+    var editingNoteId by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var screenshotImportCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
@@ -421,7 +422,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             viewModel.updateCaptureCategory(id, newCategory)
             selectedCapture = selectedCapture?.takeIf { it.id == id }?.copy(category = newCategory)
         },
-        onOpenNotes = { notesCaptureId = it },
+        onOpenNotes = { notesCaptureId = it; editingNoteId = null },
+        onEditNote = { id, noteId -> notesCaptureId = id; editingNoteId = noteId },
         onDelete = viewModel::deleteCapture,
         allSubtasks = allSubtasks,
         onAddSubtask = viewModel::addCaptureSubtask,
@@ -437,13 +439,16 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             NotesEditorDialog(
                 captureTitle = item.title,
                 initialNotes = item.notes.orEmpty(),
-                onDismiss = { notesCaptureId = null },
+                initialEditingNoteId = editingNoteId,
+                onDismiss = { notesCaptureId = null; editingNoteId = null },
+                onCompressImage = { uri, callback -> imageImportViewModel.compressNoteImage(uri, callback) },
                 onSave = { notes ->
                     viewModel.updateCaptureNotes(captureId, notes)
                     selectedCapture = selectedCapture?.takeIf { it.id == captureId }?.copy(
                         notes = notes.trim().takeIf(String::isNotBlank),
                     )
                     notesCaptureId = null
+                    editingNoteId = null
                 },
             )
         }
