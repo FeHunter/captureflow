@@ -176,13 +176,15 @@ fun NotesEditorDialog(
                 draftImageUri = compressedUri
                 generatedImageUris = generatedImageUris + compressedUri
                 imageError = null
+                cropBitmap?.recycle()
+                cropBitmap = null
+                cropSourceUri = null
             } else {
+                // Keep the selected image and crop preview so the user can retry without
+                // reopening the Photo Picker or losing the original selection.
                 imageError = compressionError?.let { "Falha ao comprimir: $it" }
-                    ?: "Não foi possível comprimir a imagem. Tente selecionar novamente."
+                    ?: "Não foi possível comprimir a imagem. Tente novamente."
             }
-            cropBitmap?.recycle()
-            cropBitmap = null
-            cropSourceUri = null
             isCompressingImage = false
         }
     }
