@@ -1,7 +1,6 @@
 package com.fehunter.captureflow.features.imagecompression.data
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
@@ -75,17 +74,40 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         }
     }
 
-    override fun compressBitmapToPrivateStorage(
-        bitmap: Bitmap,
+    override fun compressEncodedImageToPrivateStorage(
+        encodedImage: ByteArray,
         profile: ImageCompressionProfile,
     ): String {
-        if (bitmap.isRecycled) {
-            throw IOException("O recorte recebido já foi liberado da memória. Selecione a imagem novamente.")
+        if (encodedImage.isEmpty()) {
+            throw IOException("O recorte recebido está vazio.")
         }
-        if (bitmap.width <= 0 || bitmap.height <= 0) {
-            throw IOException("O recorte recebido possui dimensões inválidas.")
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(encodedImage, 0, encodedImage.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            throw IOException(
+                "Os bytes recebidos não representam uma imagem raster válida " +
+                    "(mime=${bounds.outMimeType ?: "desconhecido"})."
+            )
         }
-        return encodeJpegToPrivateStorage(bitmap, profile)
+
+        val sampleSize = calculateSampleSize(bounds.outWidth, bounds.outHeight, MAX_DIMENSION)
+        val decoded = BitmapFactory.decodeByteArray(
+            encodedImage,
+            0,
+            encodedImage.size,
+            BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            },
+        ) ?: throw IOException("O Android não conseguiu decodificar o recorte recebido.")
+
+        return try {
+            // Notes decodes and applies EXIF before cropping; its encoded PNG has no pending EXIF transform.
+            encodeJpegToPrivateStorage(decoded, profile)
+        } finally {
+            if (!decoded.isRecycled) decoded.recycle()
+        }
     }
 
     /**
