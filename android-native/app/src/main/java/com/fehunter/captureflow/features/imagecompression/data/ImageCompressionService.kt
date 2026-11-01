@@ -8,8 +8,8 @@ import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCompressor
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.UUID
 
@@ -22,37 +22,51 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         val resolver = appContext.contentResolver
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            ?: throw IOException("Não foi possível abrir a imagem.")
+            ?: throw IOException("Não foi possível abrir a imagem selecionada.")
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
             throw IOException("O arquivo não contém uma imagem válida.")
         }
 
         val sample = calculateSampleSize(bounds.outWidth, bounds.outHeight, MAX_DIMENSION)
-        val bitmap = resolver.openInputStream(source)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-        } ?: throw IOException("Não foi possível decodificar a imagem.")
+        val decoded = resolver.openInputStream(source)?.use {
+            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            })
+        } ?: throw IOException("Não foi possível decodificar a imagem selecionada.")
 
-        val oriented = applyExifOrientation(source, bitmap)
-        val output = ByteArrayOutputStream()
-        if (!oriented.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
-            if (oriented !== bitmap) oriented.recycle()
-            bitmap.recycle()
-            throw IOException("Não foi possível comprimir a imagem.")
+        var oriented: Bitmap? = null
+        var normalized: Bitmap? = null
+        val directory = File(appContext.filesDir, "captures")
+        if (!directory.exists() && !directory.mkdirs()) {
+            decoded.recycle()
+            throw IOException("Não foi possível preparar o armazenamento da imagem.")
         }
-        if (oriented !== bitmap) oriented.recycle()
-        bitmap.recycle()
-
-        val directory = File(appContext.filesDir, "captures").apply { mkdirs() }
         val destination = File(directory, "capture-${UUID.randomUUID()}.jpg")
         try {
-            destination.writeBytes(output.toByteArray())
-            if (destination.length() == 0L) throw IOException("A imagem comprimida ficou vazia.")
+            oriented = applyExifOrientation(source, decoded)
+            normalized = if (oriented.config != Bitmap.Config.ARGB_8888) {
+                oriented.copy(Bitmap.Config.ARGB_8888, false)
+                    ?: throw IOException("Não foi possível preparar a imagem para compressão.")
+            } else oriented
+
+            FileOutputStream(destination).use { output ->
+                if (!normalized.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
+                    throw IOException("O Android não conseguiu codificar a imagem em JPEG.")
+                }
+                output.flush()
+            }
+            if (destination.length() == 0L) {
+                throw IOException("A imagem comprimida ficou vazia.")
+            }
             return Uri.fromFile(destination).toString()
         } catch (error: Exception) {
             destination.delete()
             throw error
         } finally {
-            output.close()
+            if (normalized != null && normalized !== oriented) normalized.recycle()
+            if (oriented != null && oriented !== decoded) oriented.recycle()
+            if (!decoded.isRecycled) decoded.recycle()
         }
     }
 
