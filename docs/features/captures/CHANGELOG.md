@@ -1,6 +1,6 @@
 ## 2026-11-01 — Reestruturação da renderização do player YouTube
 - Removida a camada de hardware forçada no WebView; o componente usa o caminho de aceleração de hardware padrão da Activity para preservar a composição de vídeo do Chromium.
-- O player só é criado para a página estabilizada do HorizontalPager, evitando WebViews concorrentes em páginas adjacentes.
+- O player é hospedado fora do HorizontalPager, em uma camada irmã estável, e só é criado para a página estabilizada; isso evita a transformação/clipping do pager sobre a superfície de vídeo e impede WebViews concorrentes.
 - Título e selo de conclusão foram reposicionados fora da viewport do player; os painéis flutuantes de anotações e ações não são exibidos enquanto um vídeo YouTube está selecionado, evitando cobrir o player.
 - O endpoint `youtube-nocookie.com`, o cabeçalho Referer, os controles e a reprodução iniciada pelo usuário foram preservados.
 
