@@ -1,3 +1,9 @@
+## 2026-11-01 — Foco, recorte de fotos e metadados do YouTube
+- A câmera CameraX agora permite tocar no preview para ajustar o foco automático.
+- Adicionada etapa pós-captura para manter a foto original ou recortar centralmente em 1:1, 4:5 ou 16:9 antes do OCR e da revisão de título/categoria.
+- Links do YouTube passam primeiro pelo endpoint oficial oEmbed, que fornece título e thumbnail sem API key; a extração HTML genérica permanece como fallback.
+- Documentação de arquitetura e Image Import atualizada.
+
 ## 2026-11-01 — Dashboard com progresso horizontal por categoria
 - Restauradas as barras horizontais de progresso para cada categoria, proporcionais à fração de referências concluídas.
 - Exibidas as quantidades de referências concluídas e pendentes por categoria.
