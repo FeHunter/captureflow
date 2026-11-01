@@ -58,6 +58,8 @@ import com.fehunter.captureflow.features.captures.domain.model.CaptureNote
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
 import java.util.UUID
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -115,8 +117,28 @@ fun NotesEditorDialog(
         cropBitmap = null
         cropError = null
         imageError = null
+
+        // Photo Picker URIs are temporary ContentProvider grants. Snapshot the selected
+        // bytes into app cache while the grant is active, then decode only the app-owned
+        // file. This also makes the crop step independent of provider-specific URI behavior.
         val decoded = withContext(Dispatchers.IO) {
-            runCatching { decodeOrientedBitmap(context, sourceUri) }
+            val stagedFile = File(context.cacheDir, "captureflow-note-source-${UUID.randomUUID()}.image")
+            try {
+                openImageInputStream(context, Uri.parse(sourceUri)).use { input ->
+                    FileOutputStream(stagedFile).use { output ->
+                        input.copyTo(output)
+                        output.flush()
+                    }
+                }
+                if (!stagedFile.isFile || stagedFile.length() <= 0L) {
+                    throw IOException("O seletor retornou um arquivo vazio ou indisponível.")
+                }
+                Result.success(decodeOrientedBitmap(context, Uri.fromFile(stagedFile).toString()))
+            } catch (error: Exception) {
+                Result.failure<Bitmap>(error)
+            } finally {
+                stagedFile.delete()
+            }
         }
         decoded.onSuccess { cropBitmap = it }
             .onFailure { error ->
@@ -396,28 +418,27 @@ private fun NoteImagePreview(rawUri: String) {
 private fun decodeOrientedBitmap(context: android.content.Context, rawUri: String): Bitmap {
     val uri = Uri.parse(rawUri)
     val bounds = Options().apply { inJustDecodeBounds = true }
-    openImageInputStream(context, uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-        ?: throw IllegalStateException("Não foi possível abrir a imagem selecionada.")
+    openImageInputStream(context, uri).use { BitmapFactory.decodeStream(it, null, bounds) }
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-        throw IllegalStateException("O arquivo selecionado não é uma imagem raster válida.")
+        throw IOException("O arquivo selecionado não contém uma imagem raster suportada.")
     }
 
     var sample = 1
     while (bounds.outWidth / sample > 2560 || bounds.outHeight / sample > 2560) sample *= 2
-    val bitmap = openImageInputStream(context, uri)?.use {
+    val bitmap = openImageInputStream(context, uri).use {
         BitmapFactory.decodeStream(it, null, Options().apply {
             inSampleSize = sample
             inPreferredConfig = Bitmap.Config.ARGB_8888
         })
-    } ?: throw IllegalStateException("Não foi possível decodificar a imagem selecionada.")
+    } ?: throw IOException("O Android não conseguiu decodificar o conteúdo da imagem.")
 
     val orientation = runCatching {
-        openImageInputStream(context, uri)?.use { stream ->
+        openImageInputStream(context, uri).use { stream ->
             ExifInterface(stream).getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,
                 ExifInterface.ORIENTATION_NORMAL,
             )
-        } ?: ExifInterface.ORIENTATION_NORMAL
+        }
     }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
 
     val matrix = Matrix().apply {
@@ -445,24 +466,38 @@ private fun decodeOrientedBitmap(context: android.content.Context, rawUri: Strin
 private fun openImageInputStream(
     context: android.content.Context,
     uri: Uri,
-): java.io.InputStream? {
+): InputStream {
     if (uri.scheme.equals("file", ignoreCase = true)) {
-        val path = uri.path ?: throw IllegalStateException("A URI da imagem não contém um caminho válido.")
+        val path = uri.path ?: throw IOException("A URI da imagem não contém um caminho válido.")
         val file = File(path)
         if (!file.isFile || !file.canRead() || file.length() <= 0L) {
-            throw IllegalStateException("O arquivo da imagem não existe ou não pode ser lido.")
+            throw IOException("O arquivo da imagem não existe ou não pode ser lido: $path")
         }
         return java.io.FileInputStream(file)
     }
 
+    if (!uri.scheme.equals("content", ignoreCase = true)) {
+        throw IOException("Tipo de URI não suportado para imagem: ${uri.scheme ?: "sem esquema"}.")
+    }
+
     val resolver = context.contentResolver
-    val input = runCatching { resolver.openInputStream(uri) }.getOrNull()
-    if (input != null) return input
-    return runCatching {
+    val streamFailure = runCatching { resolver.openInputStream(uri) }
+    streamFailure.getOrNull()?.let { return it }
+
+    val descriptorAttempt = runCatching {
         resolver.openFileDescriptor(uri, "r")?.let {
             android.os.ParcelFileDescriptor.AutoCloseInputStream(it)
         }
-    }.getOrNull()
+    }
+    descriptorAttempt.getOrNull()?.let { return it }
+
+    val streamMessage = streamFailure.exceptionOrNull()?.localizedMessage
+    val descriptorMessage = descriptorAttempt.exceptionOrNull()?.localizedMessage
+    throw IOException(
+        "O Android não conseguiu ler a imagem do seletor (authority=${uri.authority ?: "desconhecida"}). " +
+            listOfNotNull(streamMessage, descriptorMessage).joinToString("; ")
+                .ifBlank { "O provedor não disponibilizou um fluxo de leitura." }
+    )
 }
 
 private fun cropCenter(source: Bitmap, ratio: Float): Bitmap {
