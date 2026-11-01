@@ -97,6 +97,17 @@ class ImageImportViewModel(
         }
     }
 
+    fun compressNoteImage(uri: String, onReady: (String?) -> Unit) {
+        viewModelScope.launch {
+            val compressed = withContext(Dispatchers.IO) {
+                runCatching {
+                    gateway.copyImageToPrivateStorage(uri, ImageCompressionProfile.HIGH)
+                }.getOrNull()
+            }
+            onReady(compressed)
+        }
+    }
+
     fun updatePendingImageTitle(title: String) {
         _pendingImageReview.value = _pendingImageReview.value?.copy(title = title.take(160))
     }
