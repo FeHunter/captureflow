@@ -20,7 +20,7 @@ O aplicativo deve ser organizado por **funcionalidade (feature-first)**. Cada fe
 - **ViewModel:** recebe eventos da UI, coordena casos de uso, expõe estado imutável por StateFlow/Flow e executa operações assíncronas com lifecycle apropriado. Não conhece DAO nem implementações concretas de persistência.
 - **Domain:** modelos de negócio, contratos de repositório e UseCases. Deve permanecer independente de Android, Compose, Room e frameworks externos sempre que possível.
 - **Data:** implementação dos contratos, DataSources, entidades Room, DTOs, mappers e integrações necessárias. É a única camada de feature que conhece detalhes de persistência.
-- **Core:** infraestrutura e componentes realmente compartilhados entre features. Não deve virar depósito genérico de regras de negócio ou serviços exclusivos de uma feature.
+- **Core:** infraestrutura e componentes realmente compartilhados entre features, incluindo utilitários de identificação de URLs YouTube usados tanto pelo Image Import quanto pelo Fullscreen. Não deve virar depósito genérico de regras de negócio ou serviços exclusivos de uma feature.
 - **App:** ponto de entrada, composição das features, configuração global, navegação de alto nível e resolução de dependências.
 
 Direção de dependência esperada:
@@ -69,10 +69,10 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 ### 2.3 Responsabilidade de cada feature
 
 - **captures:** ciclo de vida das referências: criar, observar, consultar por identificador, editar, concluir/restaurar e excluir. É a proprietária do modelo e das regras de referência.
-- **imageimport:** entrada de links/textos/imagens quando aplicável ao fluxo de importação, Photo Picker, compartilhamento, screenshots, OCR e estado de processamento. Entrega dados validados/enriquecidos para persistência por Captures; não duplica a lógica de persistência de referências.
+- **imageimport:** entrada de links/textos/imagens quando aplicável ao fluxo de importação, Photo Picker, compartilhamento, screenshots, OCR e estado de processamento. Links do YouTube não persistem thumbnail como capa; o player é responsabilidade do Fullscreen. Entrega dados validados/enriquecidos para persistência por Captures; não duplica a lógica de persistência de referências.
 - **search:** consulta, busca textual, combinação de filtros e apresentação dos resultados. Consome contratos de consulta de Captures; não acessa seu DAO ou banco diretamente.
 - **categories:** regras e operações de categorias, incluindo validações, ordenação e reatribuição segura de referências quando uma categoria é removida.
-- **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações e ações disponíveis no detalhe. Usa casos de uso/contratos de domínio, nunca DAO diretamente.
+- **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações, player YouTube incorporado e ações disponíveis no detalhe. Usa casos de uso/contratos de domínio, nunca DAO diretamente.
 - **captures:** é proprietária das referências e das subtarefas persistidas em `capture_subtasks`, vinculadas por `captureId` e apresentadas no fullscreen. A entidade/DAO histórica `checklist_tasks` permanece apenas para compatibilidade do schema Room, sem feature ou tela ativa.
 - **dashboard:** indicadores e estatísticas de referências/categorias. Somente consulta; não modifica Captures diretamente.
 - **imagecompression:** compressão local de imagens antes do armazenamento privado; oferece perfis Médio (JPEG quality 70) e Alto (JPEG quality 50), preservando orientação EXIF e limitando dimensões.
