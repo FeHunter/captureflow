@@ -6,7 +6,6 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.view.View
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -16,7 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
- * Loads YouTube's official privacy-enhanced embed endpoint directly in WebView.
+ * Loads YouTube's official privacy-enhanced embed endpoint directly in the system WebView.
+ *
+ * The WebView keeps its default hardware-accelerated rendering path. Forcing an additional
+ * hardware layer can interfere with Chromium's video-surface composition on some devices.
  * No JavaScript bridge is exposed to the page.
  */
 @SuppressLint("SetJavaScriptEnabled")
@@ -30,13 +32,11 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(android.graphics.Color.BLACK)
-                // Video frames are composed by Chromium's hardware video pipeline.
-                // Keep the WebView on a hardware layer so the player surface is not
-                // flattened into a software-rendered Compose layer.
-                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                // Do not call setLayerType here: WebView already uses the Activity's
+                // hardware acceleration and must retain Chromium's native video composition.
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
-                overScrollMode = View.OVER_SCROLL_NEVER
+                overScrollMode = android.view.View.OVER_SCROLL_NEVER
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = true
@@ -51,25 +51,26 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                        // Allow iframe/player subresources. Restrict only top-level navigation.
                         if (!request.isForMainFrame) return false
                         val host = request.url.host?.lowercase().orEmpty().removePrefix("www.")
                         return request.url.scheme != "https" ||
-                            !(host == "youtube.com" || host.endsWith(".youtube.com") || host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com"))
+                            !(host == "youtube.com" || host.endsWith(".youtube.com") ||
+                                host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com"))
                     }
                 }
                 loadUrl(embedUrl, mapOf("Referer" to "https://${context.packageName.lowercase()}/"))
             }
         },
         update = { webView ->
-            if (webView.url != embedUrl) webView.loadUrl(
-                embedUrl,
-                mapOf("Referer" to "https://${webView.context.packageName.lowercase()}/"),
-            )
+            if (webView.url != embedUrl) {
+                webView.loadUrl(
+                    embedUrl,
+                    mapOf("Referer" to "https://${webView.context.packageName.lowercase()}/"),
+                )
+            }
         },
         onRelease = { webView ->
             webView.stopLoading()
-            webView.loadUrl("about:blank")
             webView.destroy()
         },
     )
