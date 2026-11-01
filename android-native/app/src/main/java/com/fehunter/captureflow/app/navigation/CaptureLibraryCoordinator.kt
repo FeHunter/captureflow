@@ -191,6 +191,19 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             Text("Galeria")
                         }
                     }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Compressão", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    FilterChip(
+                        selected = imageCompressionProfile == "MEDIUM",
+                        onClick = { onImageCompressionProfileChange("MEDIUM") },
+                        label = { Text("Médio · 70%") },
+                    )
+                    FilterChip(
+                        selected = imageCompressionProfile == "HIGH",
+                        onClick = { onImageCompressionProfileChange("HIGH") },
+                        label = { Text("Alto · 50%") },
+                    )
+                }
                 }
             }
         }
@@ -229,19 +242,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         Spacer(Modifier.width(6.dp))
                         Text("Gerenciar")
                     }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Compressão", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FilterChip(
-                        selected = imageCompressionProfile == "MEDIUM",
-                        onClick = { onImageCompressionProfileChange("MEDIUM") },
-                        label = { Text("Médio · 70%") },
-                    )
-                    FilterChip(
-                        selected = imageCompressionProfile == "HIGH",
-                        onClick = { onImageCompressionProfileChange("HIGH") },
-                        label = { Text("Alto · 50%") },
-                    )
                 }
                 CategoryFilterSection(
                     categories = categories,
