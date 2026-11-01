@@ -20,7 +20,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Nome do produto na barra superior e launcher: **Capture Flow**.
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
 - Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences.
-- Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, filtro de categorias em até duas linhas e biblioteca de cartões por categoria com rolagem vertical. O filtro oferece modal com a lista completa.
+- Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, filtro de categorias em duas linhas dentro de um único container com rolagem horizontal compartilhada e biblioteca de cartões por categoria com rolagem vertical. Todas as categorias ficam visíveis na view; o botão **Ver todas as categorias** abre também o modal com a lista completa.
 - Categorias padrão: `Ler depois`, `Verificar`, `Salvar` e `Importante`; `Todas` é somente filtro.
 - Conclusão é um estado independente da categoria (`isCompleted`). Marcar/desmarcar uma referência como concluída não altera sua categoria.
 - Não existe categoria especial `Concluído` nem filtro de categoria com esse nome. O estado concluído é acessado pelo controle de exibição e pelo filtro da view expandida.
