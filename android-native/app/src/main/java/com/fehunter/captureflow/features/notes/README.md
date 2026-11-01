@@ -10,11 +10,11 @@ Feature responsável pela linha de pensamento associada a cada referência.
 
 ## Ownership e persistência
 - Os dados continuam associados ao agregado Capture e persistidos pela feature captures no campo captures.notes já existente.
-- NotesCodec serializa a lista em formato versionado e lê notas legadas em texto simples como um único bloco, sem migration destrutiva.
+- CaptureNotesCodec serializa a lista em formato versionado e lê notas legadas em texto simples como um único bloco, sem migration destrutiva.
 - A feature não acessa Room, DAOs ou repositórios de Captures.
 - Imagens são copiadas para armazenamento privado pela fronteira Image Import usando sempre o perfil de compressão Alto.
 - O coordinator conecta a UI de Notes aos callbacks de Captures e Image Import.
 
 ## Ponto de entrada
 - presentation/components/NotesEditorDialog.kt: CRUD da linha de pensamento.
-- domain/model/NoteBlock.kt e NotesCodec.kt: modelo e serialização retrocompatível.
+- O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures, pois as anotações integram o agregado da referência.
