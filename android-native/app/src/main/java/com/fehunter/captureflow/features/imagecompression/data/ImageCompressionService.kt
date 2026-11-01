@@ -44,14 +44,16 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         }
         val destination = File(directory, "capture-${UUID.randomUUID()}.jpg")
         try {
-            oriented = applyExifOrientation(source, decoded)
-            normalized = if (oriented.config != Bitmap.Config.ARGB_8888) {
-                oriented.copy(Bitmap.Config.ARGB_8888, false)
+            val orientedBitmap = applyExifOrientation(source, decoded)
+            oriented = orientedBitmap
+            val normalizedBitmap = if (orientedBitmap.config != Bitmap.Config.ARGB_8888) {
+                orientedBitmap.copy(Bitmap.Config.ARGB_8888, false)
                     ?: throw IOException("Não foi possível preparar a imagem para compressão.")
-            } else oriented
+            } else orientedBitmap
+            normalized = normalizedBitmap
 
             FileOutputStream(destination).use { output ->
-                if (!normalized.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
+                if (!normalizedBitmap.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
                     throw IOException("O Android não conseguiu codificar a imagem em JPEG.")
                 }
                 output.flush()
