@@ -64,6 +64,7 @@ fun NotesEditorDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
     onCompressImage: (String, (String?) -> Unit) -> Unit,
+    onDeleteTemporaryImage: (String) -> Unit,
 ) {
     var notes by remember(captureTitle, initialNotes) { mutableStateOf(NotesCodec.decode(initialNotes)) }
     var editingId by remember(captureTitle, initialEditingNoteId) { mutableStateOf(initialEditingNoteId) }
@@ -74,6 +75,7 @@ fun NotesEditorDialog(
         mutableStateOf(notes.firstOrNull { it.id == initialEditingNoteId }?.imageUri)
     }
     var isCompressingImage by remember { mutableStateOf(false) }
+    var generatedImageUris by remember { mutableStateOf(emptySet<String>()) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -82,6 +84,7 @@ fun NotesEditorDialog(
             isCompressingImage = true
             onCompressImage(selected.toString()) { compressed ->
                 draftImageUri = compressed ?: draftImageUri
+                if (compressed != null) generatedImageUris = generatedImageUris + compressed
                 isCompressingImage = false
             }
         }
@@ -115,7 +118,10 @@ fun NotesEditorDialog(
     }
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            generatedImageUris.forEach(onDeleteTemporaryImage)
+            onDismiss()
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
@@ -207,9 +213,17 @@ fun NotesEditorDialog(
                 }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    TextButton(onClick = {
+                        generatedImageUris.forEach(onDeleteTemporaryImage)
+                        onDismiss()
+                    }) { Text("Cancelar") }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { onSave(NotesCodec.encode(notes).orEmpty()) }, enabled = editingId == null && !isCompressingImage) {
+                    Button(onClick = {
+                        val encoded = NotesCodec.encode(notes).orEmpty()
+                        val retainedImages = notes.mapNotNull { it.imageUri }.toSet()
+                        (generatedImageUris - retainedImages).forEach(onDeleteTemporaryImage)
+                        onSave(encoded)
+                    }, enabled = editingId == null && !isCompressingImage) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(Modifier.width(6.dp))
                         Text("Salvar linha")
