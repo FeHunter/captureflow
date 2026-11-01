@@ -3,7 +3,7 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
-import com.fehunter.captureflow.features.fullscreen.domain.YoutubeVideoIdParser
+import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
 import com.fehunter.captureflow.features.fullscreen.presentation.components.YoutubeEmbeddedPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
