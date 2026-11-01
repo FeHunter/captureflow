@@ -1,3 +1,7 @@
+## 2026-11-01 — Rolagem horizontal compartilhada no filtro de categorias
+- Todas as categorias continuam visíveis na biblioteca, organizadas em duas linhas dentro de um único container horizontalmente rolável; as linhas avançam juntas.
+- O botão **Ver todas as categorias** permanece como atalho para abrir o modal de seleção, sem recolher ou limitar as categorias exibidas na view principal.
+
 ## 2026-11-01 — Filtros de categoria e ações de fullscreen concluído
 - O filtro da biblioteca agora distribui todas as categorias em duas linhas com rolagem horizontal independente, mantendo o botão **Ver todas as categorias** e seu diálogo.
 - O fullscreen exibe o `CompletedBadge` sobre a imagem para referências concluídas.
