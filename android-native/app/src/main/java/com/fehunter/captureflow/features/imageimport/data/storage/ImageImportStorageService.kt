@@ -1,7 +1,6 @@
 package com.fehunter.captureflow.features.imageimport.data.storage
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import java.io.File
 import java.io.IOException
@@ -30,11 +29,11 @@ class ImageImportStorageService(
         profile: ImageCompressionProfile = ImageCompressionProfile.MEDIUM,
     ): Uri = Uri.parse(imageCompressor.compressToPrivateStorage(source.toString(), profile))
 
-    /** Compresses an already-decoded bitmap (for example, a cropped Notes image). */
-    fun compressBitmapToPrivateStorage(
-        bitmap: Bitmap,
+    /** Compresses encoded image bytes (for example, a lossless in-memory Notes crop). */
+    fun compressEncodedImageToPrivateStorage(
+        encodedImage: ByteArray,
         profile: ImageCompressionProfile = ImageCompressionProfile.HIGH,
-    ): Uri = Uri.parse(imageCompressor.compressBitmapToPrivateStorage(bitmap, profile))
+    ): Uri = Uri.parse(imageCompressor.compressEncodedImageToPrivateStorage(encodedImage, profile))
 
     /** Downloads a webpage preview image into app-private storage. */
     fun downloadToPrivateStorage(rawUrl: String): Uri? {
