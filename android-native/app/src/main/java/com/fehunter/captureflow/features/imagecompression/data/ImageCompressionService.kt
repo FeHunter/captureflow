@@ -81,17 +81,25 @@ class ImageCompressionService(context: Context) : ImageCompressor {
      * unexpectedly returns null.
      */
     private fun openSourceStream(source: Uri): InputStream? {
-        if (source.scheme == "file") {
+        if (source.scheme.equals("file", ignoreCase = true)) {
             val path = source.path ?: throw IOException("A URI do arquivo não contém um caminho válido.")
             val file = File(path)
-            if (!file.isFile || !file.canRead() || file.length() == 0L) {
+            if (!file.isFile || !file.canRead() || file.length() <= 0L) {
                 throw IOException("O arquivo temporário da imagem não existe ou não pode ser lido.")
             }
             return FileInputStream(file)
         }
+
         val resolver = appContext.contentResolver
-        return resolver.openInputStream(source) ?: resolver.openFileDescriptor(source, "r")
-            ?.let { descriptor -> ParcelFileDescriptor.AutoCloseInputStream(descriptor) }
+        // Some Photo Picker/document providers throw from openInputStream instead of
+        // returning null. Treat both cases as a reason to try the file descriptor.
+        val input = runCatching { resolver.openInputStream(source) }.getOrNull()
+        if (input != null) return input
+        return runCatching {
+            resolver.openFileDescriptor(source, "r")?.let { descriptor ->
+                ParcelFileDescriptor.AutoCloseInputStream(descriptor)
+            }
+        }.getOrNull()
     }
 
     private fun applyExifOrientation(source: Uri, bitmap: Bitmap): Bitmap {
