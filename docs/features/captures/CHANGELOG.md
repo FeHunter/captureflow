@@ -265,3 +265,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 - Padronizada a leitura das URIs na prévia/recorte e na compressão: arquivos `file://` são abertos diretamente e URIs de provedores tentam fallback por `ParcelFileDescriptor` mesmo quando `openInputStream` lança exceção.
 - A troca de imagem limpa a prévia anterior antes da decodificação assíncrona, evitando que um bitmap antigo permaneça disponível enquanto a nova seleção carrega.
 - A prévia mantém decodificação limitada a 2560 px, normalização ARGB_8888 e correção de orientação EXIF; o recorte PNG lossless continua sendo codificado uma única vez em JPEG no perfil Alto.
+
+
+## 2026-11-01 — Staging da imagem do Photo Picker em Notes
+- A seleção de imagem na feature Notes agora copia imediatamente os bytes da URI temporária `content://` para um arquivo temporário no cache privado antes de abrir a prévia/recorte. A decodificação usa o snapshot local, reduzindo dependência da validade da concessão temporária do Photo Picker.
+- A leitura tenta `ContentResolver.openInputStream()` e `ParcelFileDescriptor` como fallback; se ambos falharem, a mensagem preserva authority e causas técnicas em vez de mascarar tudo como imagem não suportada.
+- O snapshot temporário é removido após a decodificação; o pipeline de recorte PNG lossless e compressão JPEG Alto permanece inalterado.
