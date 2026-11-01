@@ -23,9 +23,9 @@ import kotlin.math.roundToInt
 /**
  * Single local image pipeline for provider URIs, app files and cropped bitmaps.
  *
- * URI input is decoded with bounds checking and EXIF normalization. Bitmap input is
- * treated as already oriented (Notes passes its cropped preview bitmap directly).
- * Both paths share the same dimension limit, alpha handling and JPEG encoder.
+ * URI input is decoded with bounds checking and EXIF normalization. Encoded byte input
+ * (Notes' lossless PNG crop) is decoded without a URI/provider hop. Both paths share
+ * the same dimension limit, alpha handling and JPEG encoder.
  */
 class ImageCompressionService(context: Context) : ImageCompressor {
     private val appContext = context.applicationContext
@@ -81,6 +81,9 @@ class ImageCompressionService(context: Context) : ImageCompressor {
     ): String {
         if (encodedImage.isEmpty()) {
             throw IOException("O recorte recebido está vazio.")
+        }
+        if (encodedImage.size > MAX_ENCODED_INPUT_BYTES) {
+            throw IOException("O recorte excede o limite de tamanho permitido para processamento.")
         }
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -193,7 +196,7 @@ class ImageCompressionService(context: Context) : ImageCompressor {
     }
 
     /**
-     * Shared encoder for URI-decoded images and Notes' already-cropped bitmap.
+     * Shared encoder for URI-decoded images and Notes' decoded PNG crop.
      * Transparent pixels are composited over white because JPEG has no alpha channel.
      * The caller's bitmap is never recycled or mutated.
      */
@@ -264,6 +267,7 @@ class ImageCompressionService(context: Context) : ImageCompressor {
 
     private companion object {
         const val MAX_DIMENSION = 2560
+        const val MAX_ENCODED_INPUT_BYTES = 48 * 1024 * 1024
         const val CAPTURES_DIRECTORY = "captures"
     }
 }
