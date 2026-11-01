@@ -10,6 +10,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -233,8 +234,9 @@ fun NotesEditorDialog(
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Prévia do recorte da anotação",
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp),
-                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 230.dp)
+                                .then(if (selectedRatio > 0f) Modifier.aspectRatio(selectedRatio) else Modifier),
+                            contentScale = if (selectedRatio == 0f) ContentScale.Fit else ContentScale.Crop,
                         )
                     } ?: if (cropError == null) CircularProgressIndicator() else Text(cropError!!, color = MaterialTheme.colorScheme.error)
                     Text("Formato do recorte", style = MaterialTheme.typography.labelMedium)
