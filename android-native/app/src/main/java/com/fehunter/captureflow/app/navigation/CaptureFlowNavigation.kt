@@ -143,7 +143,6 @@ fun CaptureFlowApp(
                 onCategorySortOrderChange = onCategorySortOrderChange,
                 captureSortOrder = captureSortOrder,
                 imageCompressionProfile = imageCompressionProfile,
-                onImageCompressionProfileChange = onImageCompressionProfileChange,
                 hasScreenshotAccess = hasScreenshotAccess,
                 screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                 showCompletedCaptures = showCompletedCaptures,
