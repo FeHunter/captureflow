@@ -70,6 +70,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
             }
         },
         onRelease = { webView ->
+            webView.onPause()
             webView.stopLoading()
             webView.destroy()
         },
