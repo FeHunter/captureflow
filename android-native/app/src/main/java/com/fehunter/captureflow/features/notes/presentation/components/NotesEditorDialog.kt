@@ -72,7 +72,7 @@ fun NotesEditorDialog(
     initialEditingNoteId: String? = null,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
-    onCompressImage: (String, (String?) -> Unit) -> Unit,
+    onCompressImage: (String, (String?, String?) -> Unit) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
 ) {
     val context = LocalContext.current
@@ -170,14 +170,15 @@ fun NotesEditorDialog(
             return
         }
 
-        onCompressImage(cropUri) { compressedUri ->
+        onCompressImage(cropUri) { compressedUri, compressionError ->
             cropFile.delete()
             if (compressedUri != null) {
                 draftImageUri = compressedUri
                 generatedImageUris = generatedImageUris + compressedUri
                 imageError = null
             } else {
-                imageError = "Não foi possível comprimir a imagem. Tente selecionar novamente."
+                imageError = compressionError?.let { "Falha ao comprimir: $it" }
+                    ?: "Não foi possível comprimir a imagem. Tente selecionar novamente."
             }
             cropBitmap?.recycle()
             cropBitmap = null
