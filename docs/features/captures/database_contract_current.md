@@ -38,8 +38,8 @@
 - v4 → v5: adiciona categoria às tarefas legadas.
 - v5 → v6: cria categorias padrão.
 - v6 → v7: alteração histórica que adicionou `previousCategory` e migrou referências concluídas para a categoria `Concluído`.
-- v8 → v9: restaura a categoria original dos registros que estavam em `Concluído` usando `previousCategory` (fallback `Salvar`), limpa a coluna legada e remove a categoria `Concluído` da tabela `categories`.
 - v7 → v8: adiciona `notes` às referências.
+- v8 → v9: restaura a categoria original dos registros que estavam em `Concluído` usando `previousCategory` (fallback `Salvar`), limpa a coluna legada e remove a categoria `Concluído` da tabela `categories`.
 
 Ao excluir uma referência, o ViewModel remove seus sub-itens antes de excluir a referência.
 
