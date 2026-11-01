@@ -457,7 +457,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 initialNotes = item.notes.orEmpty(),
                 initialEditingNoteId = editingNoteId,
                 onDismiss = { notesCaptureId = null; editingNoteId = null },
-                onCompressImage = { uri, callback -> imageImportViewModel.compressNoteImage(uri, callback) },
                 onDeleteTemporaryImage = imageImportViewModel::deleteTemporaryImage,
                 onSave = { notes ->
                     viewModel.updateCaptureNotes(captureId, notes)
