@@ -55,7 +55,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Anotações com imagem
 - Ao adicionar/trocar uma imagem na anotação, o usuário escolhe o recorte primeiro. O recorte intermediário é codificado como PNG lossless em memória (ByteArray) e então comprimido uma única vez em JPEG com perfil Alto para o armazenamento privado; não há arquivo ou URI intermediária.
-- Se o preparo ou a compressão falhar, o arquivo temporário é limpo e a imagem/recorte selecionado permanece disponível para nova tentativa. A anotação só persiste a URI privada após a compressão concluir com sucesso.
+- Se a codificação PNG em memória ou a compressão falhar, a imagem/recorte selecionado permanece disponível para nova tentativa. Não há arquivo intermediário para limpar. A anotação só persiste a URI privada após a compressão concluir com sucesso.
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
