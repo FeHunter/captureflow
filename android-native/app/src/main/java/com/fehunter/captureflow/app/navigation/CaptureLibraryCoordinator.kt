@@ -422,7 +422,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             viewModel.updateCaptureCategory(id, newCategory)
             selectedCapture = selectedCapture?.takeIf { it.id == id }?.copy(category = newCategory)
         },
-        onOpenNotes = { notesCaptureId = it; editingNoteId = null },
+        onOpenNotes = { notesCaptureId = it; editingNoteId = "new" },
         onEditNote = { id, noteId -> notesCaptureId = id; editingNoteId = noteId },
         onDelete = viewModel::deleteCapture,
         allSubtasks = allSubtasks,
