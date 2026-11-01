@@ -114,7 +114,6 @@ class MainActivity : ComponentActivity() {
                     onCategorySortOrderChange = settingsViewModel::setCategorySortOrder,
                     captureSortOrder = captureSortOrder,
                     imageCompressionProfile = imageCompressionProfile,
-                    onImageCompressionProfileChange = settingsViewModel::setImageCompressionProfile,
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
