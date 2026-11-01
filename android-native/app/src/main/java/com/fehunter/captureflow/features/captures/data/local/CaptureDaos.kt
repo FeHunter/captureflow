@@ -46,8 +46,8 @@ interface CaptureDao {
     @Query("SELECT * FROM captures ORDER BY createdAt DESC") fun observeAll(): Flow<List<CaptureEntity>>
     @Query("SELECT * FROM captures WHERE id = :id LIMIT 1") suspend fun findById(id: String): CaptureEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
-    @Query("UPDATE captures SET isCompleted = 1, previousCategory = CASE WHEN category != 'Concluído' THEN category ELSE previousCategory END, category = 'Concluído' WHERE id = :id") suspend fun markCompleted(id: String)
-    @Query("UPDATE captures SET isCompleted = 0, category = COALESCE(previousCategory, 'Salvar'), previousCategory = NULL WHERE id = :id") suspend fun markPending(id: String)
+    @Query("UPDATE captures SET isCompleted = 1, previousCategory = NULL WHERE id = :id") suspend fun markCompleted(id: String)
+    @Query("UPDATE captures SET isCompleted = 0, previousCategory = NULL WHERE id = :id") suspend fun markPending(id: String)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)
     @Query("UPDATE captures SET category = :newName WHERE category = :oldName") suspend fun renameCategoryReferences(oldName: String, newName: String)
     @Query("UPDATE captures SET previousCategory = :newName WHERE previousCategory = :oldName") suspend fun renamePreviousCategoryReferences(oldName: String, newName: String)

@@ -128,7 +128,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Nome visível do produto: **Capture Flow** na top bar e no launcher.
 - A experiência principal é a biblioteca de referências.
 - Tags disponíveis nos filtros e seletores: `Ler depois`, `Verificar`, `Salvar` e `Importante`. `Todas` é filtro, não valor persistido.
-- `Concluído` é uma categoria/estado especial do sistema: não pode ser atribuída manualmente a uma nova referência, renomeada ou excluída. Ao concluir, guardar a categoria anterior; ao reabrir, restaurá-la. A categoria de origem deve continuar visível nas referências concluídas.
+- A conclusão é um estado independente da categoria (`isCompleted`). Concluir/reabrir uma referência não altera sua categoria; não criar nem usar uma categoria especial `Concluído`. O Dashboard e os cartões calculam pendentes/concluídas dentro de cada categoria.
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
@@ -206,7 +206,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 
 ## 10. Testes e qualidade
 
-- Adicionar testes unitários para regras de domínio, UseCases, normalização/classificação, URL normalization, deduplicação, heurísticas de título OCR, categorias, conclusão/restauração e subtarefas.
+- Adicionar testes unitários para regras de domínio, UseCases, normalização/classificação, URL normalization, deduplicação, heurísticas de título OCR, categorias, conclusão independente da categoria, indicadores por categoria e subtarefas.
 - Testar ViewModels com estados/eventos e dependências falsas quando possível.
 - Testar mappers e repositórios; testar consultas e migrations Room.
 - Testar UI Compose para interações/estados críticos e fluxos integrados de Android.

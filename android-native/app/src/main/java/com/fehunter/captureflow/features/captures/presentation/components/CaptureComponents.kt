@@ -107,23 +107,6 @@ fun CategoryThumbnail(
             }
         }
 
-        if (capture.isCompleted && !capture.previousCategory.isNullOrBlank()) {
-            Surface(
-                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.92f),
-            ) {
-                Text(
-                    "Origem: ${capture.previousCategory}",
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.inverseOnSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-
         Box(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .background(
@@ -148,6 +131,8 @@ fun CategoryThumbnail(
 fun CategoryCard(
     title: String,
     captures: List<Capture>,
+    totalCount: Int,
+    completedCount: Int,
     ocrStates: Map<String, CaptureImageProcessingStatus>,
     onExpand: () -> Unit,
     onOpenCapture: (Capture) -> Unit,
@@ -178,7 +163,7 @@ fun CategoryCard(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    "${captures.size} itens",
+                    "${completedCount}/${totalCount} itens",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -252,23 +237,6 @@ fun CategoryCard(
                             }
                         }
 
-                        if (capture.isCompleted && !capture.previousCategory.isNullOrBlank()) {
-                            Surface(
-                                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
-                                shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.92f),
-                            ) {
-                                Text(
-                                    "Origem: ${capture.previousCategory}",
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.inverseOnSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-
                         Box(
                             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                                 .background(
@@ -309,7 +277,7 @@ fun CategoryCard(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        "Ver todas · ${captures.size}",
+                        "Ver todas · ${totalCount}",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,

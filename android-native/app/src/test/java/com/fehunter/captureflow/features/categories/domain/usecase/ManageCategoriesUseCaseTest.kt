@@ -14,10 +14,21 @@ import org.junit.Test
 
 class ManageCategoriesUseCaseTest {
     @Test
-    fun addTrimsNameAndRejectsReservedOrDuplicateNames() = runBlocking {
-        val repository = FakeCaptureRepository(
-            listOf(CaptureCategory("Ler depois", 0), CaptureCategory("Concluído", 999)),
+    fun ensuresOnlyRegularDefaultCategories() = runBlocking {
+        val repository = FakeCaptureRepository(emptyList())
+        val useCase = ManageCategoriesUseCase(repository)
+
+        useCase.ensureDefaultCategories()
+
+        assertEquals(
+            listOf("Ler depois", "Verificar", "Salvar", "Importante"),
+            repository.categories.value.map { it.name },
         )
+    }
+
+    @Test
+    fun addTrimsNameAndRejectsReservedOrDuplicateNames() = runBlocking {
+        val repository = FakeCaptureRepository(listOf(CaptureCategory("Ler depois", 0)))
         val useCase = ManageCategoriesUseCase(repository)
 
         useCase.add("  Favoritos  ")
@@ -28,7 +39,6 @@ class ManageCategoriesUseCaseTest {
         assertEquals(
             listOf(
                 CaptureCategory("Ler depois", 0),
-                CaptureCategory("Concluído", 999),
                 CaptureCategory("Favoritos", 1),
             ),
             repository.categories.value,
@@ -36,23 +46,22 @@ class ManageCategoriesUseCaseTest {
     }
 
     @Test
-    fun deleteReassignsToAnActiveFallbackAndProtectsCompletedCategory() = runBlocking {
+    fun deleteReassignsToAnotherRegularCategory() = runBlocking {
         val repository = FakeCaptureRepository(
             listOf(
                 CaptureCategory("Ler depois", 0),
                 CaptureCategory("Salvar", 1),
-                CaptureCategory("Concluído", 999),
+                CaptureCategory("Importante", 2),
             ),
         )
         val useCase = ManageCategoriesUseCase(repository)
 
         useCase.delete("Salvar")
-        useCase.delete("Concluído")
 
         assertEquals("Salvar", repository.lastDeletedCategory)
         assertEquals("Ler depois", repository.lastFallbackCategory)
         assertFalse(repository.categories.value.any { it.name == "Salvar" })
-        assertTrue(repository.categories.value.any { it.name == "Concluído" })
+        assertTrue(repository.categories.value.any { it.name == "Importante" })
     }
 
     private class FakeCaptureRepository(

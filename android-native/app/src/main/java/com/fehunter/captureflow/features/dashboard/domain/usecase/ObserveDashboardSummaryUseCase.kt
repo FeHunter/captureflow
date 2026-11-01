@@ -12,17 +12,17 @@ class ObserveDashboardSummaryUseCase(
         captureUseCases.observeCaptures(),
         captureUseCases.observeCategories(),
     ) { captures, categories ->
-        val counts = categories
-            .filterNot { it.name == "Concluído" }
-            .map { category ->
-                DashboardCategoryCount(
-                    category = category.name,
-                    count = captures.count { it.category == category.name },
-                )
-            }
-            .filter { it.count > 0 }
+        val counts = categories.map { category ->
+            val categoryCaptures = captures.filter { it.category == category.name }
+            DashboardCategoryCount(
+                category = category.name,
+                totalCount = categoryCaptures.size,
+                completedCount = categoryCaptures.count { it.isCompleted },
+            )
+        }.filter { it.totalCount > 0 }
+
         DashboardSummary(
-            completedCount = captures.count { it.category == "Concluído" },
+            completedCount = captures.count { it.isCompleted },
             categoryCounts = counts,
         )
     }

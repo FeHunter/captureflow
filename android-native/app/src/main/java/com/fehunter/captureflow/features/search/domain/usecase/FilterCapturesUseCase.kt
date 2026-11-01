@@ -10,7 +10,7 @@ class FilterCapturesUseCase {
         showCompleted: Boolean,
     ): List<Capture> = captures.filter { capture ->
         (query.isBlank() || capture.title.contains(query, true) || capture.content.contains(query, true)) &&
-            (category == "Concluído" || showCompleted || !capture.isCompleted) &&
+            (showCompleted || !capture.isCompleted) &&
             (category == "Todas" || capture.category == category)
     }
 }
