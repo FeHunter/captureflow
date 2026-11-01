@@ -29,7 +29,8 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 ## Meu progresso
 - Dashboard no topo da biblioteca com o título **Meu progresso**.
 - O destaque **Concluído** apresenta a quantidade total de referências concluídas (`isCompleted = true`), independentemente da categoria.
-- Cada categoria com referências apresenta o indicador `concluídas/total` (ex.: `1/2 itens`). Categorias vazias são omitidas.
+- Cada categoria com referências apresenta uma barra horizontal proporcional ao progresso concluído e os números de concluídas e pendentes. Categorias vazias são omitidas.
+- A lista mostra cinco categorias inicialmente. Quando há mais categorias, um botão no rodapé do container expande a lista completa; o mesmo botão permite recolher novamente.
 - Os números consideram todas as referências persistidas, sem depender da busca, do filtro atual ou da opção global de ocultar concluídos.
 - O resumo é derivado dos fluxos de Captures e categorias; Dashboard não mantém cópia persistida do estado.
 
