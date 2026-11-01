@@ -30,6 +30,8 @@
 - Dica “‹ Deslize para navegar ›” é uma sobreposição na parte inferior central; não reserva altura.
 - Swipe-left avança; swipe-right retorna dentro da mesma categoria filtrada. Não há loop nas extremidades.
 - A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada.
+- Referências concluídas exibem a categoria de origem em um selo nos thumbnails e no cabeçalho do fullscreen.
+- O botão de anotações usa ícone de balão no canto inferior esquerdo e abre um modal amplo da feature Notes; salvar persiste no Capture e cancelar descarta o rascunho.
 - Back nativo fecha primeiro o visualizador e mantém a categoria expandida; Back novamente retorna à biblioteca. Botões explícitos continuam disponíveis.
 
 ## Captura de link compartilhado
