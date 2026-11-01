@@ -80,7 +80,7 @@ class CaptureViewModel(
     }
 
     fun updateCaptureNotes(id: String, rawNotes: String) {
-        val notes = rawNotes.take(100_000).takeIf(String::isNotBlank)
+        val notes = rawNotes.takeIf(String::isNotBlank)
         viewModelScope.launch(Dispatchers.IO) {
             val previousImages = captureUseCases.findById(id)?.notes
                 ?.let(NotesCodec::decode).orEmpty().mapNotNull { it.imageUri }.toSet()
