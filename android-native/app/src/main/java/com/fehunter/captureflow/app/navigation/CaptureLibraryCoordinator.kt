@@ -269,7 +269,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
             val visibleCategories = if (category == "Todas") sortedCategoryNames else listOf(category)
             items(visibleCategories, key = { "category-$it" }) { tag ->
-                val categoryCaptures = sortCaptures(allMatchingCaptures.filter { it.category == tag })
+                // Category order controls these section containers only. Keep the
+                // preview thumbnails in the library's source order; captureSortOrder
+                // is applied inside the expanded category, not to the category preview.
+                val categoryCaptures = allMatchingCaptures.filter { it.category == tag }
                 if (categoryCaptures.isNotEmpty()) {
                     val previewCaptures = categoryCaptures.filterNot { it.isCompleted }
                     if (category != "Todas" || previewCaptures.isNotEmpty()) {
