@@ -49,9 +49,13 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A coleção é serializada em formato versionado no campo Room captures.notes já existente. Anotações antigas em texto simples são lidas como um único bloco; não há migration destrutiva. Cancelar não persiste alterações.
 
 ## Ordenação da biblioteca
-- A seção **Categorias** permite ordenar os containers por ordem padrão/manual, data (mais recentes/mais antigas) e nome (A–Z/Z–A).
+- O menu **Ordenar** contém somente opções da seção **Categorias**: ordem padrão/manual, data (mais recentes/mais antigas) e nome (A–Z/Z–A). Os filtros de ordenação de referências foram removidos da interface.
 - A ordenação por data usa a referência mais recente ou a mais antiga de cada categoria, respectivamente; categorias sem referências correspondentes ficam ao final. Empates preservam a ordem cadastrada.
-- Essa preferência altera somente a posição dos containers. A prévia de thumbnails mantém a ordem natural da biblioteca; a preferência independente de referências continua sendo aplicada na grade da categoria expandida.
+- Essa preferência altera somente a posição dos containers. A prévia de thumbnails mantém a ordem natural da biblioteca. A grade expandida usa a ordem padrão de referências mais recentes, sem filtro de ordenação configurável.
+
+## Anotações com imagem
+- Ao adicionar/trocar uma imagem na anotação, o usuário escolhe o recorte primeiro. O recorte intermediário é gravado em PNG lossless no cache e então comprimido uma única vez em JPEG com perfil Alto para o armazenamento privado.
+- Se o preparo ou a compressão falhar, o arquivo temporário é limpo e a imagem/recorte selecionado permanece disponível para nova tentativa. A anotação só persiste a URI privada após a compressão concluir com sucesso.
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
