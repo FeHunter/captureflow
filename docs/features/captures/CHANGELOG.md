@@ -259,3 +259,9 @@ Este changelog resume mudanças relevantes da feature. Para o estado atual e pen
 ## 2026-11-01 — Correções adicionais
 - Compressão: URIs `file://` de recortes temporários passam a ser abertas diretamente por `FileInputStream`, evitando depender do `ContentResolver` para arquivos locais. URIs de provedores continuam usando `ContentResolver`, com fallback para `ParcelFileDescriptor` quando o stream retorna nulo.
 - Categorias: ordenação “Mais recentes”/“Mais antigas” agrupa capturas uma única vez e compara `createdAt` (máximo/mínimo) de cada categoria, com desempate temporal determinístico.
+
+
+## 2026-11-01 — Correção adicional do fluxo de imagem em Notes
+- Padronizada a leitura das URIs na prévia/recorte e na compressão: arquivos `file://` são abertos diretamente e URIs de provedores tentam fallback por `ParcelFileDescriptor` mesmo quando `openInputStream` lança exceção.
+- A troca de imagem limpa a prévia anterior antes da decodificação assíncrona, evitando que um bitmap antigo permaneça disponível enquanto a nova seleção carrega.
+- A prévia mantém decodificação limitada a 2560 px, normalização ARGB_8888 e correção de orientação EXIF; o recorte PNG lossless continua sendo codificado uma única vez em JPEG no perfil Alto.
