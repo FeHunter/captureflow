@@ -120,3 +120,9 @@ Room permanece v8. Não há sincronização cloud e as regras local-first contin
 - A câmera CameraX aceita toque no preview para iniciar foco automático na região selecionada.
 - Após fotografar, a pessoa pode manter a imagem original ou aplicar recorte central nos formatos 1:1, 4:5 ou 16:9 antes de iniciar OCR e revisão.
 - Para links do YouTube, a extração tenta primeiro o endpoint oficial oEmbed para obter título e thumbnail; em falha, mantém o fallback HTML já existente. O fluxo de confirmação e a URL original permanecem inalterados.
+
+
+## Atualização — filtros de categoria e fullscreen concluído
+- O filtro da biblioteca apresenta todas as categorias em duas linhas roláveis horizontalmente, com rolagem independente por linha e opção **Ver todas as categorias**.
+- O fullscreen mostra `CompletedBadge` sobre a imagem quando a referência está concluída.
+- Para referências concluídas, a coluna vertical de ações apresenta somente o checkbox de reabertura; as demais ações voltam a aparecer quando a referência fica pendente. O atalho de anotações permanece separado no canto inferior esquerdo.
