@@ -114,3 +114,9 @@ A UI foi dividida entre shell de navegação e `CaptureLibraryCoordinator` no Ap
 A tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema; as subtarefas ativas são propriedade de Captures e vinculadas por `captureId`. Fullscreen não tem ViewModel independente por não possuir estado de negócio isolado.
 
 Room permanece v8. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
+
+
+## Atualização — câmera e metadados do YouTube
+- A câmera CameraX aceita toque no preview para iniciar foco automático na região selecionada.
+- Após fotografar, a pessoa pode manter a imagem original ou aplicar recorte central nos formatos 1:1, 4:5 ou 16:9 antes de iniciar OCR e revisão.
+- Para links do YouTube, a extração tenta primeiro o endpoint oficial oEmbed para obter título e thumbnail; em falha, mantém o fallback HTML já existente. O fluxo de confirmação e a URL original permanecem inalterados.
