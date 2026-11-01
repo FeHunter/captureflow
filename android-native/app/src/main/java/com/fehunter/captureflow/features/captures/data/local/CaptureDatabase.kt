@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 8, exportSchema = false)
+@Database(entities = [CaptureEntity::class, ChecklistTaskEntity::class, CaptureSubtaskEntity::class, CaptureCategoryEntity::class], version = 9, exportSchema = false)
 abstract class CaptureDatabase : RoomDatabase() {
     abstract fun categoryDao(): CaptureCategoryDao
     abstract fun captureDao(): CaptureDao
@@ -62,10 +62,20 @@ abstract class CaptureDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "UPDATE captures SET category = COALESCE(NULLIF(previousCategory, ''), 'Salvar'), previousCategory = NULL WHERE category = 'Concluído'"
+                )
+                database.execSQL("UPDATE captures SET previousCategory = NULL WHERE previousCategory IS NOT NULL")
+                database.execSQL("DELETE FROM categories WHERE name = 'Concluído'")
+            }
+        }
+
         @Volatile private var instance: CaptureDatabase? = null
         fun get(context: Context): CaptureDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(context.applicationContext, CaptureDatabase::class.java, "captureflow.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .build().also { instance = it }
         }
     }
