@@ -212,11 +212,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             items(visibleCategories, key = { "category-$it" }) { tag ->
                 val categoryCaptures = allMatchingCaptures.filter { it.category == tag }
                 if (categoryCaptures.isNotEmpty()) {
-                    val previewCaptures = if (showCompletedCaptures) {
-                        categoryCaptures
-                    } else {
-                        categoryCaptures.filterNot { it.isCompleted }
-                    }
+                    val previewCaptures = categoryCaptures.filterNot { it.isCompleted }
                     CategoryCard(
                         title = tag,
                         captures = previewCaptures,
