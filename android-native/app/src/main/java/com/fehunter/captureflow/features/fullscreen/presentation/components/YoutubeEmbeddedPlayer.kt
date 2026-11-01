@@ -1,7 +1,6 @@
 package com.fehunter.captureflow.features.fullscreen.presentation.components
 
 import android.annotation.SuppressLint
-import android.webkit.SafeBrowsingResponse
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -9,11 +8,10 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
@@ -49,7 +47,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
     """.trimIndent()
 
     AndroidView(
-        modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f),
+        modifier = modifier.fillMaxWidth().heightIn(min = 200.dp).aspectRatio(16f / 9f),
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(android.graphics.Color.BLACK)
