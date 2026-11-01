@@ -10,3 +10,8 @@ Feature responsável pela experiência ampliada de uma referência.
 O botão de anotações fica no canto inferior esquerdo e usa um ícone de balão de conversa. A edição é delegada à feature `notes`; o fullscreen não mantém estado de edição.
 
 A sub-checklist usa `CaptureSubtask` e callbacks do `CaptureViewModel`; os itens permanecem vinculados a `captureId` e são removidos em cascata ao excluir a referência.
+
+## Estado concluído no fullscreen
+- Referências concluídas exibem o componente compartilhado `CompletedBadge` sobre a imagem, no canto superior direito.
+- Quando `isCompleted` é verdadeiro, a coluna vertical de ações mostra somente o checkbox para reabrir a referência. As ações de sub-checklist, link, edição e exclusão ficam disponíveis novamente quando a referência volta ao estado pendente.
+- O botão de anotações no canto inferior esquerdo é independente da coluna vertical e mantém o comportamento atual.

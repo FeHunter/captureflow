@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.CameraControl
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
@@ -20,6 +22,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -46,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 /** CameraX viewfinder owned by Capture Flow; the photo remains temporary until review confirmation. */
 @Composable
@@ -66,6 +71,8 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
     LaunchedEffect(Unit) { if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA) }
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var cameraControl by remember { mutableStateOf<CameraControl?>(null) }
+    var capturedImageUri by remember { mutableStateOf<String?>(null) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     val previewView = remember {
         PreviewView(context).apply {
@@ -83,8 +90,9 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
                     val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
                     val capture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
                     provider.unbindAll()
-                    provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
+                    val camera = provider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
                     cameraProvider = provider
+                    cameraControl = camera.cameraControl
                     imageCapture = capture
                 }.onFailure { captureError = it.localizedMessage ?: "Não foi possível iniciar a câmera." }
             }, mainExecutor)
@@ -93,12 +101,41 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
             cameraProvider?.unbindAll()
             cameraProvider = null
             imageCapture = null
+            cameraControl = null
         }
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Black) {
+        val capturedUri = capturedImageUri
+        if (capturedUri != null) {
+            ImageCropReviewScreen(
+                imageUri = capturedUri,
+                onConfirm = { croppedUri ->
+                    Uri.parse(capturedUri).path?.let { File(it).delete() }
+                    capturedImageUri = null
+                    onImageCaptured(croppedUri)
+                },
+                onCancel = {
+                    Uri.parse(capturedUri).path?.let { File(it).delete() }
+                    capturedImageUri = null
+                    onClose()
+                },
+            )
+        } else {
         Box(Modifier.fillMaxSize()) {
-            if (hasPermission) AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+            if (hasPermission) AndroidView(
+                factory = { previewView },
+                modifier = Modifier.fillMaxSize().pointerInput(cameraControl) {
+                    detectTapGestures { position ->
+                        val control = cameraControl ?: return@detectTapGestures
+                        val point = previewView.meteringPointFactory.createPoint(position.x, position.y)
+                        val action = FocusMeteringAction.Builder(point)
+                            .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                            .build()
+                        control.startFocusAndMetering(action)
+                    }
+                },
+            )
             else Column(
                 modifier = Modifier.align(Alignment.Center).padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -124,6 +161,14 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
             captureError?.let {
                 Text(it, modifier = Modifier.align(Alignment.Center).padding(24.dp), color = androidx.compose.ui.graphics.Color.White)
             }
+            if (hasPermission && imageCapture != null) {
+                Text(
+                    "Toque na imagem para ajustar o foco",
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 118.dp),
+                    color = androidx.compose.ui.graphics.Color.White,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             IconButton(
                 onClick = {
                     val useCase = imageCapture ?: return@IconButton
@@ -135,7 +180,8 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
                     useCase.takePicture(options, mainExecutor, object : ImageCapture.OnImageSavedCallback {
                         override fun onImageSaved(result: ImageCapture.OutputFileResults) {
                             isCapturing = false
-                            onImageCaptured(Uri.fromFile(output).toString())
+                            cameraProvider?.unbindAll()
+                            capturedImageUri = Uri.fromFile(output).toString()
                         }
                         override fun onError(exception: ImageCaptureException) {
                             isCapturing = false
@@ -151,6 +197,7 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
                 if (isCapturing) CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.White)
                 else Box(Modifier.size(58.dp).background(androidx.compose.ui.graphics.Color.White, CircleShape))
             }
+        }
         }
     }
 }

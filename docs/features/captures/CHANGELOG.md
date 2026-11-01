@@ -1,3 +1,18 @@
+## 2026-11-01 — Rolagem horizontal compartilhada no filtro de categorias
+- Todas as categorias continuam visíveis na biblioteca, organizadas em duas linhas dentro de um único container horizontalmente rolável; as linhas avançam juntas.
+- O botão **Ver todas as categorias** permanece como atalho para abrir o modal de seleção, sem recolher ou limitar as categorias exibidas na view principal.
+
+## 2026-11-01 — Filtros de categoria e ações de fullscreen concluído
+- O filtro da biblioteca agora distribui todas as categorias em duas linhas com rolagem horizontal independente, mantendo o botão **Ver todas as categorias** e seu diálogo.
+- O fullscreen exibe o `CompletedBadge` sobre a imagem para referências concluídas.
+- Quando uma referência está concluída, a coluna vertical exibe somente o checkbox para reabri-la; sub-checklist, link, edição e exclusão ficam ocultos até a referência voltar ao estado pendente. O botão de anotações permanece independente no canto inferior esquerdo.
+
+## 2026-11-01 — Foco, recorte de fotos e metadados do YouTube
+- A câmera CameraX agora permite tocar no preview para ajustar o foco automático.
+- Adicionada etapa pós-captura para manter a foto original ou recortar centralmente em 1:1, 4:5 ou 16:9 antes do OCR e da revisão de título/categoria.
+- Links do YouTube passam primeiro pelo endpoint oficial oEmbed, que fornece título e thumbnail sem API key; a extração HTML genérica permanece como fallback.
+- Documentação de arquitetura e Image Import atualizada.
+
 ## 2026-11-01 — Dashboard com progresso horizontal por categoria
 - Restauradas as barras horizontais de progresso para cada categoria, proporcionais à fração de referências concluídas.
 - Exibidas as quantidades de referências concluídas e pendentes por categoria.

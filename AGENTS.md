@@ -129,8 +129,8 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - A experiência principal é a biblioteca de referências.
 - Tags disponíveis nos filtros e seletores: `Ler depois`, `Verificar`, `Salvar` e `Importante`. `Todas` é filtro, não valor persistido.
 - A conclusão é um estado independente da categoria (`isCompleted`). Concluir/reabrir uma referência não altera sua categoria; não criar nem usar uma categoria especial `Concluído`. O Dashboard e os cartões calculam pendentes/concluídas dentro de cada categoria. No Dashboard, exibir progresso horizontal concluído/total e quantidades explícitas de concluídas e pendentes; limitar a lista inicial a cinco categorias, com expansão/recolhimento no rodapé quando houver mais.
-- Na biblioteca, o filtro de categorias ocupa no máximo duas linhas (até seis opções visíveis) e oferece modal com a lista completa. Em `Todas`, renderizar um cartão de categoria somente se houver ao menos uma referência pendente; com uma categoria específica selecionada, manter o cartão mesmo sem pendentes e explicar o estado vazio da prévia.
-- Referências concluídas exibidas em thumbnails devem usar o componente reutilizável `CompletedBadge` da feature Captures. Não duplicar estilos/selo localmente em cada card.
+- Na biblioteca, o filtro de categorias exibe todas as categorias em duas linhas dentro de um único container com rolagem horizontal compartilhada (as duas linhas avançam juntas). O botão **Ver todas as categorias** permanece como atalho para o modal de seleção, sem ocultar categorias da view principal. Em `Todas`, renderizar um cartão de categoria somente se houver ao menos uma referência pendente; com uma categoria específica selecionada, manter o cartão mesmo sem pendentes e explicar o estado vazio da prévia.
+- Referências concluídas exibidas em thumbnails e no fullscreen devem usar o componente reutilizável `CompletedBadge` da feature Captures, sobreposto à imagem no fullscreen. Não duplicar estilos/selo localmente em cada card.
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
@@ -156,12 +156,14 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Um link recebido por `ACTION_SEND` deve entrar em estado pendente; não persistir em Room antes da escolha explícita de uma categoria válida entre `Ler depois`, `Verificar`, `Salvar` e `Importante`.
 - Cancelar/fechar a confirmação descarta a captura pendente e não persiste.
 - Buscar metadados HTTP(S) fora da main thread, com connect/read timeout e limite de tamanho de HTML.
-- Prioridade de título: primeiro `H1`, depois Open Graph/Twitter/document title e host como fallback.
+- Prioridade de metadados para YouTube: consultar primeiro o endpoint oficial oEmbed (`youtube.com/oembed`) para obter título e thumbnail; se falhar, manter a extração HTML genérica como fallback.
+- Para os demais sites, prioridade de título: primeiro `H1`, depois Open Graph/Twitter/document title e host como fallback.
 - Prioridade de imagem: imagem de conteúdo em `article`, depois `main`, depois metadados Open Graph/Twitter.
 - Resolver URLs relativas usando a URL final após redirects. Não executar JavaScript.
 - Se uma nova URL compartilhada substituir a pendente, ignorar respostas antigas (stale) da requisição anterior.
 - Falha de metadados/rede não descarta a URL original: permitir salvar com título fallback.
 - Baixar a imagem de capa somente após confirmação do usuário e armazenar privadamente quando possível.
+- A câmera própria deve permitir foco por toque no preview e oferecer revisão/recorte antes de encaminhar a foto ao OCR. O recorte não deve persistir a captura automaticamente; a confirmação de categoria/título continua sendo obrigatória.
 - Não fazer requisição ilimitada nem baixar HTML/imagens sem limites.
 
 ## 7. Regras de fullscreen e navegação
@@ -172,7 +174,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Imagem deve preservar `ContentScale.Fit`; a dica `‹ Deslize para navegar ›` é overlay na área da imagem e não pode reservar altura nem alterar a escala.
 - Títulos longos podem sobrepor a imagem com gradiente escuro forte (quase opaco atrás do texto, dissolvendo para transparência), sem redimensionar a área reservada ao pager.
 - O acesso às anotações fica no canto inferior esquerdo do fullscreen, com ícone de balão de conversa; abre o editor da feature `notes`, em modal amplo. A edição salva até 10.000 caracteres; cancelar não persiste.
-- A coluna de ações fullscreen permanece no canto inferior direito, conforme layout atual.
+- A coluna de ações fullscreen permanece no canto inferior direito. Para referências pendentes, manter checkbox, sub-checklist, link (quando válido), editar e excluir; para referências concluídas, exibir somente o checkbox para reabri-las. O atalho de anotações no canto inferior esquerdo permanece independente dessa coluna.
 - O modal **Editar título** no fullscreen permite editar o título e selecionar outra categoria no mesmo formulário. Persistir cada campo pela operação correspondente de Captures, sem alterar conteúdo, URL ou imagem.
 - Quando `sourceUrl` for HTTP(S) válida, o atalho para abrir o link permanece no cabeçalho e também aparece na coluna vertical de ações fullscreen.
 - Anotações pertencem à referência; limite atual de 10.000 caracteres. Texto vazio limpa a anotação; cancelar não persiste.

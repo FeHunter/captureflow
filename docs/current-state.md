@@ -20,7 +20,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Nome do produto na barra superior e launcher: **Capture Flow**.
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
 - Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences.
-- Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, filtro de categorias em até duas linhas e biblioteca de cartões por categoria com rolagem vertical. O filtro oferece modal com a lista completa.
+- Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, filtro de categorias em duas linhas dentro de um único container com rolagem horizontal compartilhada e biblioteca de cartões por categoria com rolagem vertical. Todas as categorias ficam visíveis na view; o botão **Ver todas as categorias** abre também o modal com a lista completa.
 - Categorias padrão: `Ler depois`, `Verificar`, `Salvar` e `Importante`; `Todas` é somente filtro.
 - Conclusão é um estado independente da categoria (`isCompleted`). Marcar/desmarcar uma referência como concluída não altera sua categoria.
 - Não existe categoria especial `Concluído` nem filtro de categoria com esse nome. O estado concluído é acessado pelo controle de exibição e pelo filtro da view expandida.
@@ -114,3 +114,15 @@ A UI foi dividida entre shell de navegação e `CaptureLibraryCoordinator` no Ap
 A tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema; as subtarefas ativas são propriedade de Captures e vinculadas por `captureId`. Fullscreen não tem ViewModel independente por não possuir estado de negócio isolado.
 
 Room permanece v8. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
+
+
+## Atualização — câmera e metadados do YouTube
+- A câmera CameraX aceita toque no preview para iniciar foco automático na região selecionada.
+- Após fotografar, a pessoa pode manter a imagem original ou aplicar recorte central nos formatos 1:1, 4:5 ou 16:9 antes de iniciar OCR e revisão.
+- Para links do YouTube, a extração tenta primeiro o endpoint oficial oEmbed para obter título e thumbnail; em falha, mantém o fallback HTML já existente. O fluxo de confirmação e a URL original permanecem inalterados.
+
+
+## Atualização — filtros de categoria e fullscreen concluído
+- O filtro da biblioteca apresenta todas as categorias em duas linhas roláveis horizontalmente, com rolagem independente por linha e opção **Ver todas as categorias**.
+- O fullscreen mostra `CompletedBadge` sobre a imagem quando a referência está concluída.
+- Para referências concluídas, a coluna vertical de ações apresenta somente o checkbox de reabertura; as demais ações voltam a aparecer quando a referência fica pendente. O atalho de anotações permanece separado no canto inferior esquerdo.

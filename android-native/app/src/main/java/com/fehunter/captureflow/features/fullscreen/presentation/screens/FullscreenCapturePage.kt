@@ -2,6 +2,7 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
+import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
@@ -49,6 +50,11 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
                 Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Esta referência não possui imagem.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+        if (capture.isCompleted) {
+            CompletedBadge(
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 76.dp, end = 16.dp),
+            )
         }
         // Keep the complete title readable over the image, regardless of its length.
         Box(

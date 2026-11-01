@@ -193,42 +193,54 @@ fun FullscreenCaptureDialog(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
-                                Checkbox(
-                                    checked = selected.isCompleted,
-                                    onCheckedChange = { onCompleted(selected.id, it) },
-                                    modifier = Modifier.size(48.dp),
-                                )
-                                TextButton(
-                                    onClick = { showSubtasks = true },
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                ) {
-                                    val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
-                                    Text(
-                                        "☰ ${selectedSubtasks.count { it.isCompleted }}/${selectedSubtasks.size}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        maxLines = 1,
-                                    )
-                                }
-                                sourceUrl?.let { url ->
-                                    IconButton(
-                                        onClick = { runCatching { uriHandler.openUri(url) } },
+                                if (selected.isCompleted) {
+                                    Checkbox(
+                                        checked = true,
+                                        onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
+                                    )
+                                } else {
+                                    Checkbox(
+                                        checked = false,
+                                        onCheckedChange = { onCompleted(selected.id, it) },
+                                        modifier = Modifier.size(48.dp),
+                                    )
+                                    TextButton(
+                                        onClick = { showSubtasks = true },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
                                     ) {
-                                        Icon(
-                                            Icons.Default.Link,
-                                            contentDescription = "Abrir link original",
-                                            tint = MaterialTheme.colorScheme.onSurface,
+                                        val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
+                                        Text(
+                                            "☰ ${selectedSubtasks.count { it.isCompleted }}/${selectedSubtasks.size}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
                                         )
                                     }
+                                    sourceUrl?.let { url ->
+                                        IconButton(
+                                            onClick = { runCatching { uriHandler.openUri(url) } },
+                                            modifier = Modifier.size(48.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Link,
+                                                contentDescription = "Abrir link original",
+                                                tint = MaterialTheme.colorScheme.onSurface,
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
+                                    }
+                                    IconButton(
+                                        onClick = { onDelete(selected.id); onDismiss() },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
+                                    }
                                 }
-                                IconButton(
-                                    onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
-                                    modifier = Modifier.size(48.dp),
-                                ) { Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface) }
-                                IconButton(
-                                    onClick = { onDelete(selected.id); onDismiss() },
-                                    modifier = Modifier.size(48.dp),
-                                ) { Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error) }
                             }
                         }
                     }

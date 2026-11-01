@@ -4,6 +4,7 @@ import android.net.Uri
 import android.text.Html
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.Normalizer
@@ -20,6 +21,12 @@ class LinkMetadataService {
             host == "localhost" || host.endsWith(".local") ||
             host.matches(Regex("\\d{1,3}(\\.\\d{1,3}){3}"))) {
             return@withContext null
+        }
+
+        // YouTube watch pages are dynamically rendered and may return consent or
+        // anti-automation HTML. Prefer the official oEmbed metadata endpoint.
+        if (isYoutubeHost(host)) {
+            fetchYoutubeOEmbed(rawUrl)?.let { return@withContext it }
         }
 
         val connection = runCatching { URL(rawUrl).openConnection() as? HttpURLConnection }.getOrNull()
@@ -71,6 +78,40 @@ class LinkMetadataService {
                 title = normalizeTitle(title, host),
                 description = description?.takeIf(String::isNotBlank),
                 imageUrl = imageUrl,
+            )
+        } catch (_: Exception) {
+            null
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun isYoutubeHost(host: String): Boolean =
+        host == "youtu.be" || host == "youtube.com" || host.endsWith(".youtube.com")
+
+    private fun fetchYoutubeOEmbed(rawUrl: String): PageMetadata? {
+        val endpoint = "https://www.youtube.com/oembed?url=" +
+            Uri.encode(rawUrl) + "&format=json"
+        val connection = runCatching { URL(endpoint).openConnection() as? HttpURLConnection }.getOrNull()
+            ?: return null
+        return try {
+            connection.connectTimeout = 4_000
+            connection.readTimeout = 4_000
+            connection.instanceFollowRedirects = true
+            connection.setRequestProperty("User-Agent", "CaptureFlow/0.4 (Android)")
+            connection.setRequestProperty("Accept", "application/json")
+            if (connection.responseCode !in 200..299) return null
+            val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use {
+                it.readText().take(64_000)
+            }
+            val json = JSONObject(body)
+            val title = json.optString("title").takeIf(String::isNotBlank) ?: return null
+            val thumbnail = json.optString("thumbnail_url").takeIf(String::isNotBlank)
+                ?.let { resolveHttpUrl("https://www.youtube.com", it) }
+            PageMetadata(
+                title = normalizeTitle(title, "youtube.com"),
+                description = null,
+                imageUrl = thumbnail,
             )
         } catch (_: Exception) {
             null
