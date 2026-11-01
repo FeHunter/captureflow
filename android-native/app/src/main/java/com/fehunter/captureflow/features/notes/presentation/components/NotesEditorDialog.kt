@@ -111,7 +111,7 @@ fun NotesEditorDialog(
         val sourceUri = cropSourceUri ?: return@LaunchedEffect
         // Clear the previous preview before loading another URI. Otherwise a slow
         // provider could leave the previous bitmap actionable while the new image loads.
-        cropBitmap?.takeUnless(Bitmap::isRecycled)?.recycle()
+        cropBitmap?.let { previous -> if (!previous.isRecycled) previous.recycle() }
         cropBitmap = null
         cropError = null
         imageError = null
