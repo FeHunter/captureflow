@@ -58,7 +58,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, onCaptureSortOrderChange: (String) -> Unit, imageCompressionProfile: String, onImageCompressionProfileChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, onImageCompressionProfileChange: (String) -> Unit, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val ocrStates by imageImportViewModel.ocrStates.collectAsState()
@@ -234,13 +234,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                                 DropdownMenuItem(
                                     text = { Text((if (categorySortOrder == value) "✓ " else "") + label) },
                                     onClick = { onCategorySortOrderChange(value); showSortMenu = false },
-                                )
-                            }
-                            DropdownMenuItem(text = { Text("Referências") }, onClick = {}, enabled = false)
-                            listOf("newest" to "Mais recentes", "oldest" to "Mais antigas", "title_asc" to "Título · A–Z", "title_desc" to "Título · Z–A").forEach { (value, label) ->
-                                DropdownMenuItem(
-                                    text = { Text((if (captureSortOrder == value) "✓ " else "") + label) },
-                                    onClick = { onCaptureSortOrderChange(value); showSortMenu = false },
                                 )
                             }
                         }
