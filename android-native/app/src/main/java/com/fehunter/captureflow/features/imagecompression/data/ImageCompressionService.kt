@@ -7,16 +7,18 @@ import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
+import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCompressor
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.util.UUID
 
 /** Decodes, normalizes orientation, bounds dimensions and recompresses imported images locally. */
-class ImageCompressionService(context: Context) {
+class ImageCompressionService(context: Context) : ImageCompressor {
     private val appContext = context.applicationContext
 
-    fun compressToPrivateStorage(source: Uri, profile: ImageCompressionProfile): Uri {
+    override fun compressToPrivateStorage(sourceUri: String, profile: ImageCompressionProfile): String {
+        val source = Uri.parse(sourceUri)
         val resolver = appContext.contentResolver
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -45,7 +47,7 @@ class ImageCompressionService(context: Context) {
         try {
             destination.writeBytes(output.toByteArray())
             if (destination.length() == 0L) throw IOException("A imagem comprimida ficou vazia.")
-            return Uri.fromFile(destination)
+            return Uri.fromFile(destination).toString()
         } catch (error: Exception) {
             destination.delete()
             throw error
