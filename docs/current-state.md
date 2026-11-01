@@ -1,6 +1,6 @@
 # Capture Flow — estado atual do aplicativo
 
-**Atualizado:** 2026-10-30. Este documento registra o comportamento observado no código; não é uma promessa de release.
+**Atualizado:** 2026-11-01. Este documento registra o comportamento observado no código; não é uma promessa de release.
 
 ## Produto e fonte de verdade
 Capture Flow guarda links, textos e imagens compartilhados como referências locais, organizáveis por categoria e com sub-checklists. O app ativo é Kotlin/Android/Jetpack Compose em `android-native/`; `legacy-expo/` é histórico. Banco local Room/SQLite em `captureflow.db`; sem sincronização em nuvem.
@@ -21,23 +21,22 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
 - Menu superior: mostrar/ocultar concluídas e escolher tema (seguir sistema, claro, escuro); preferência em SharedPreferences.
 - Ordem: cartão para selecionar imagem/gerenciar monitoramento, busca com botão limpar, chips horizontais e biblioteca de cartões em duas colunas com rolagem vertical.
-- Categorias atuais: `Ler depois`, `Verificar`, `Salvar`, `Importante` e a categoria fixa `Concluído`; `Todas` é somente filtro.
-- `Concluído` é criada por padrão e não pode ser renomeada, excluída ou atribuída manualmente a uma nova referência.
-- Ao concluir uma referência, ela é movida para `Concluído`; sua categoria anterior fica registrada para ser restaurada quando a conclusão for desfeita.
-- O filtro `Concluído` exibe os itens concluídos mesmo quando a opção global de ocultar concluídos está ativa. Em `Todas`, a opção global continua controlando a visibilidade.
+- Categorias padrão: `Ler depois`, `Verificar`, `Salvar` e `Importante`; `Todas` é somente filtro.
+- Conclusão é um estado independente da categoria (`isCompleted`). Marcar/desmarcar uma referência como concluída não altera sua categoria.
+- Não existe categoria especial `Concluído` nem filtro de categoria com esse nome. O estado concluído é acessado pelo controle de exibição e pelo filtro da view expandida.
 - Busca combina título/conteúdo com categoria selecionada.
 
 ## Meu progresso
 - Dashboard no topo da biblioteca com o título **Meu progresso**.
-- A categoria **Concluído** recebe destaque visual próprio: cartão com cor semântica de destaque do tema, ícone de conclusão e contador em tamanho ampliado.
-- O destaque permanece visível mesmo sem itens concluídos; nesse estado, apresenta uma mensagem de incentivo.
-- Abaixo do destaque, as demais categorias com referências são listadas com suas quantidades atuais. Categorias vazias são omitidas.
-- Os números consideram todas as referências persistidas, sem depender da busca, do filtro atual ou da opção de ocultar concluídos.
-- O contador de conquistas considera as referências cuja categoria é `Concluído`; a mudança de layout não altera as regras de persistência ou conclusão.
+- O destaque **Concluído** apresenta a quantidade total de referências concluídas (`isCompleted = true`), independentemente da categoria.
+- Cada categoria com referências apresenta o indicador `concluídas/total` (ex.: `1/2 itens`). Categorias vazias são omitidas.
+- Os números consideram todas as referências persistidas, sem depender da busca, do filtro atual ou da opção global de ocultar concluídos.
+- O resumo é derivado dos fluxos de Captures e categorias; Dashboard não mantém cópia persistida do estado.
 
 ## Grupos e thumbnails de referência
-- A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails e a ação “Ver todas”.
-- Ao expandir uma categoria, as referências aparecem em grade de três colunas. Cada thumbnail usa `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder quando não há imagem acessível.
+- A tela principal agrupa referências por categoria em cartões de largura total; cada grupo mostra até três thumbnails, o progresso `concluídas/total` (ex.: `1/2 itens`) e a ação “Ver todas · quantidade”.
+- Ao expandir uma categoria, a view apresenta filtros **Pendentes** e **Concluídas**, com contagens próprias, e mostra somente o estado selecionado em uma grade de três colunas. A view inicia em Pendentes e permite alternar sem alterar a categoria das referências.
+- Cada thumbnail usa `ContentScale.Crop`, título sobreposto em degradê escuro e placeholder quando não há imagem acessível.
 - Estado de OCR pode exibir indicador de processamento/erro.
 - O botão/gesto Back fecha a categoria expandida quando nenhum visualizador está por cima.
 
@@ -55,7 +54,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
 - `HorizontalPager`: swipe-left avança e swipe-right retorna dentro das capturas da mesma categoria filtrada, sem loop nas extremidades.
-- A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada. A dica `‹ Deslize para navegar ›` é overlay e não reserva altura.
+- A data/categoria/estado de conclusão e a imagem acompanham a página estabilizada. Concluir/reabrir mantém a categoria original. A dica `‹ Deslize para navegar ›` é overlay e não reserva altura.
 - Back nativo fecha apenas o visualizador e mantém a categoria expandida por baixo; Back novamente retorna à biblioteca.
 - Observação: existe um composable `CaptureCard` com outro layout fullscreen e edição de título no mesmo arquivo, mas ele não é referenciado pelo fluxo ativo atual. Não o tratar como funcionalidade visível até reativação explícita.
  
@@ -83,7 +82,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A notificação abre a Activity com a ação `ACTION_CREATE_TASK` e a URI da imagem; também oferece ação direta **Salvar como tarefa**.
 - A intent usa identificador de dados específico por screenshot e concessão de leitura da URI para evitar reaproveitamento incorreto do PendingIntent.
 - A Activity encaminha a URI à UI, que abre a confirmação tanto em inicialização fria quanto quando já está em execução.
-- A confirmação apresenta prévia da imagem e exige que o usuário escolha uma categoria cadastrada, exceto **Concluído**, antes de habilitar **Salvar referência**. Essa escolha explícita é requisito funcional e não deve ser substituída por uma categoria fixa.
+- A confirmação apresenta prévia da imagem e exige que o usuário escolha uma categoria cadastrada antes de habilitar **Salvar referência**.
 - Ao confirmar, a imagem é copiada para o armazenamento privado e criada na categoria escolhida; o arquivo original só é removido após cópia privada bem-sucedida.
 - Requer monitoramento ativado e permissões de imagens/notificações aplicáveis à versão Android.
 
@@ -94,10 +93,10 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - A notificação apresenta a ação como **Salvar referência**. O valor interno do Intent mantém a string histórica `CREATE_SCREENSHOT_TASK` para compatibilidade com notificações já emitidas; o código usa o nome `ACTION_IMPORT_SCREENSHOT`.
 
 ## Banco de dados
-- `captures`: id, title, content, kind, category, `sourceUrl` opcional (URL original usada pelo botão de abrir link no fullscreen), `imageUri` opcional, `notes` opcional (anotações de texto do usuário), createdAt, isCompleted e `previousCategory` opcional (categoria restaurada ao desfazer conclusão).
+- `captures`: id, title, content, kind, category, `sourceUrl` opcional, `imageUri` opcional, `notes` opcional, createdAt e `isCompleted`. A coluna legada `previousCategory` continua no schema para compatibilidade, mas é limpa e não participa mais das regras de negócio.
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
-- Versão Room no código: **8**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adiciona `previousCategory`, cria a categoria fixa `Concluído` e move referências já concluídas para ela preservando a categoria anterior; 7→8 adiciona a coluna opcional `notes` para anotações de texto por referência. A conclusão/desconclusão é persistida no DAO e a categoria anterior é restaurada ao reabrir uma referência.
+- Versão Room no código: **9**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adicionou historicamente `previousCategory` e a categoria `Concluído`; 7→8 adiciona `notes`; 8→9 restaura a categoria original dos registros que estavam em `Concluído`, limpa `previousCategory` e remove essa categoria da tabela. Concluir/desconcluir altera somente `isCompleted`.
 
 ## Privacidade e validação
 - Dados e imagens permanecem no dispositivo; sem cloud sync.
