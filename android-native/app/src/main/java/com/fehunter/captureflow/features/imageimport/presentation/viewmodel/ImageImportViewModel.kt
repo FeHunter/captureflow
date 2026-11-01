@@ -97,6 +97,10 @@ class ImageImportViewModel(
         }
     }
 
+    fun deleteTemporaryImage(uri: String) {
+        viewModelScope.launch(Dispatchers.IO) { gateway.deleteTemporaryImage(uri) }
+    }
+
     fun compressNoteImage(uri: String, onReady: (String?) -> Unit) {
         viewModelScope.launch {
             val compressed = withContext(Dispatchers.IO) {
