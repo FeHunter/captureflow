@@ -79,7 +79,7 @@ class ImageCompressionService(context: Context) {
 
     private fun calculateSampleSize(width: Int, height: Int, maxDimension: Int): Int {
         var sample = 1
-        while (width / sample > maxDimension * 2 || height / sample > maxDimension * 2) sample *= 2
+        while (width / sample > maxDimension || height / sample > maxDimension) sample *= 2
         return sample
     }
 
