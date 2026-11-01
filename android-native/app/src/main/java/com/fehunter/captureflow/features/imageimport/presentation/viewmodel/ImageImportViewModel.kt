@@ -1,5 +1,6 @@
 package com.fehunter.captureflow.features.imageimport.presentation.viewmodel
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.features.captures.domain.model.Capture
@@ -106,16 +107,18 @@ class ImageImportViewModel(
         viewModelScope.launch(Dispatchers.IO) { gateway.deleteTemporaryImage(uri) }
     }
 
-    fun compressNoteImage(uri: String, onReady: (String?, String?) -> Unit) {
+    /** Compresses the already-cropped Notes bitmap without an intermediate PNG/URI. */
+    fun compressNoteImage(bitmap: Bitmap, onReady: (String?, String?) -> Unit) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
-                    gateway.copyImageToPrivateStorage(uri, ImageCompressionProfile.HIGH)
+                    gateway.compressBitmapToPrivateStorage(bitmap, ImageCompressionProfile.HIGH)
                 }
             }
             onReady(
                 result.getOrNull(),
-                result.exceptionOrNull()?.localizedMessage?.takeIf(String::isNotBlank),
+                result.exceptionOrNull()?.localizedMessage?.takeIf(String::isNotBlank)
+                    ?: if (result.isFailure) "Não foi possível comprimir a imagem da anotação." else null,
             )
         }
     }
