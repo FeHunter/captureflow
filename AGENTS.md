@@ -139,7 +139,8 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
-- Ordenação de cartões de categoria: padrão/manual, nome A–Z ou Z–A. Ordenação das referências: mais recentes, mais antigas, título A–Z ou Z–A. Preferências locais persistidas em SharedPreferences.
+- Ordenação dos containers de categoria na biblioteca: padrão/manual, mais recentes, mais antigas, nome A–Z ou Z–A. Mais recentes prioriza a categoria cuja referência mais nova tem o maior `createdAt`; mais antigas prioriza a categoria cuja referência mais antiga tem o menor `createdAt`. Empates preservam a ordem cadastrada. A ordenação não altera a ordem dos thumbnails de preview.
+- Ordenação das referências dentro da categoria expandida: mais recentes, mais antigas, título A–Z ou Z–A. As duas preferências são independentes e persistidas localmente em SharedPreferences.
 - Perfis de compressão: Médio usa JPEG quality 70 e Alto usa JPEG quality 50; esses valores representam qualidade de codificação, não uma garantia de redução exata do tamanho em bytes.
 - Cartões compactos atualmente usam 272 dp conforme a diretriz visual registrada; não alterar dimensões sem validar o layout atual e a decisão de produto.
 
