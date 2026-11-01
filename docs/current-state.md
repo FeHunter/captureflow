@@ -43,14 +43,14 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Linha de pensamento / anotações
 - Cada referência pode ter uma lista ordenada de blocos, cada um com texto de até 10.000 caracteres e uma imagem opcional.
-- O botão de balão abre o CRUD da coleção. É possível adicionar, editar e excluir blocos; toque prolongado em um bloco na lista ou no fullscreen abre a edição desse bloco.
+- O botão de balão abre diretamente o formulário de nova anotação, sem tela intermediária de gerenciamento. Toque prolongado em um bloco existente no fullscreen abre seu formulário de edição/remoção.
 - No fullscreen, os blocos aparecem no canto inferior esquerdo em área com altura limitada e rolagem vertical; a área comporta até dois blocos visíveis simultaneamente.
-- Imagens dos blocos são copiadas para armazenamento privado com compressão Alta (JPEG quality 50). Imagens removidas da coleção são limpas do armazenamento privado.
+- Ao selecionar ou trocar uma imagem, o usuário visualiza e ajusta o recorte (Original, 1:1, 4:5 ou 16:9) antes de comprimir para armazenamento privado com perfil Alto (JPEG quality 50). A leitura suporta URIs content:// do Photo Picker e URIs file:// privadas. Imagens removidas da coleção são limpas do armazenamento privado.
 - A coleção é serializada em formato versionado no campo Room captures.notes já existente. Anotações antigas em texto simples são lidas como um único bloco; não há migration destrutiva. Cancelar não persiste alterações.
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
-- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), a área de imagem usa o player oficial IFrame em WebView com youtube-nocookie.com, sem autoplay e sem JavaScript bridge. O link original continua disponível no cabeçalho; vídeos que não permitem incorporação exigem abertura externa.
+- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), o fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles do player habilitados e sem autoplay. A capa não é carregada nem salva para novas capturas do YouTube; o link original continua disponível no cabeçalho. Vídeos que não permitem incorporação exigem abertura externa.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
