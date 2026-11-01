@@ -11,6 +11,7 @@ import com.fehunter.captureflow.features.captures.presentation.components.Catego
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
 import com.fehunter.captureflow.features.captures.presentation.model.CaptureImageProcessingStatus
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
+import com.fehunter.captureflow.features.imageimport.presentation.components.ImageCaptureScreen
 import com.fehunter.captureflow.features.search.presentation.components.CaptureSearchField
 import com.fehunter.captureflow.features.search.presentation.viewmodel.SearchViewModel
 import com.fehunter.captureflow.features.search.domain.usecase.FilterCapturesUseCase
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -70,6 +72,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val query by searchViewModel.query.collectAsState()
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showCameraCapture by remember { mutableStateOf(false) }
     var imageCategory by remember { mutableStateOf("Ler depois") }
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
@@ -86,7 +89,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     }
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> selectedImageUri = uri },
+        onResult = { uri -> uri?.let { imageImportViewModel.prepareImageReview(it.toString()) } },
     )
     LaunchedEffect(detectedScreenshotUri) {
         detectedScreenshotUri?.let { selectedImageUri = it }
@@ -135,22 +138,32 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Analisar imagem do dispositivo", style = MaterialTheme.typography.titleMedium,
+                            Text("Adicionar imagem", style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                             Text("Escolha uma foto ou captura de tela para extrair o texto no próprio aparelho.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer)
                         }
                     }
-                    Button(
-                        onClick = {
-                            imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Default.Image, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Selecionar imagem")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { showCameraCapture = true },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Fotografar")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Galeria")
+                        }
                     }
                 }
             }
@@ -299,6 +312,94 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         onDeleteSubtask = viewModel::deleteCaptureSubtask,
     )
 
+
+
+    val pendingImageReview by imageImportViewModel.pendingImageReview.collectAsState()
+    val pendingImagePreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, pendingImageReview?.imageUri,
+    ) {
+        value = pendingImageReview?.imageUri?.let { uri ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, uri) }.getOrNull()
+            }
+        }
+    }
+    pendingImageReview?.let { pending ->
+        AlertDialog(
+            onDismissRequest = imageImportViewModel::cancelPendingImageReview,
+            title = { Text("Revisar nova captura") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    pendingImagePreview?.let { preview ->
+                        Image(
+                            bitmap = preview,
+                            contentDescription = "Prévia da imagem capturada",
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+
+                    if (pendingImagePreview == null && pending.isProcessing) {
+                        Box(
+                            Modifier.fillMaxWidth().height(140.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    OutlinedTextField(
+                        value = pending.title,
+                        onValueChange = imageImportViewModel::updatePendingImageTitle,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Título da tarefa") },
+                        placeholder = { Text("Digite um título") },
+                        maxLines = 2,
+                    )
+                    CategorySelectionSection(
+                        categories = activeCategories,
+                        selectedCategory = pending.category,
+                        onCategorySelected = imageImportViewModel::updatePendingImageCategory,
+                    )
+                    if (pending.isProcessing) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Text("Analisando imagem com OCR…", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    pending.error?.let {
+                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = imageImportViewModel::confirmPendingImageReview,
+                    enabled = !pending.isProcessing && pending.title.isNotBlank() && pending.category in activeCategories,
+                ) { Text("Salvar tarefa") }
+            },
+            dismissButton = {
+                TextButton(onClick = imageImportViewModel::cancelPendingImageReview) { Text("Cancelar") }
+            },
+        )
+    }
+
+    if (showCameraCapture) {
+        Dialog(
+            onDismissRequest = { showCameraCapture = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            ImageCaptureScreen(
+                onImageCaptured = { uri ->
+                    showCameraCapture = false
+                    imageImportViewModel.prepareImageReview(uri)
+                },
+                onClose = { showCameraCapture = false },
+            )
+        }
+    }
 
     screenshotToConfirm?.let { uri ->
         AlertDialog(

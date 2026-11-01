@@ -9,6 +9,9 @@ Feature responsável pela entrada de conteúdo externo e processamento de imagen
 - `data/ocr`: análise local via ML Kit.
 - `data/android`: monitoramento e notificações de screenshots.
 - `presentation/model`: estados de importação e OCR.
-- `presentation/viewmodel`: compartilhamento, prévia de links, confirmação por categoria, cópia privada e OCR.
+- `presentation/viewmodel`: compartilhamento, prévia de links, revisão de imagens, confirmação por categoria, cópia privada e OCR.
+- `presentation/components/ImageCaptureScreen.kt`: câmera própria com CameraX; a foto permanece temporária até a confirmação.
+
+Fotos feitas pela câmera, imagens escolhidas no Photo Picker e imagens recebidas pelo Sharesheet passam por uma revisão única. O OCR sugere o título, o usuário pode editá-lo e escolher uma categoria antes de persistir. Cancelar remove somente arquivos temporários pertencentes ao app.
 
 A confirmação do link continua explícita antes de persistir. A importação manual não apaga a imagem original; limpeza de screenshot só ocorre no fluxo opt-in após cópia privada bem-sucedida.
