@@ -95,6 +95,9 @@ class CaptureViewModel(
             val capture = captureUseCases.findById(id)
             captureUseCases.delete(id)
             privateImageStorage.deletePrivateImage(capture?.imageUri)
+            capture?.notes?.let(NotesCodec::decode).orEmpty()
+                .mapNotNull { it.imageUri }
+                .forEach(privateImageStorage::deletePrivateImage)
         }
     }
 }
