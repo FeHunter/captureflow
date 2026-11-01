@@ -7,4 +7,4 @@ Feature responsável pelas preferências locais do aplicativo.
 - Persistência por SharedPreferences, encapsulada em `SettingsRepository`.
 - Presentation observa e altera o tema por `SettingsViewModel` e UseCases.
 
-As preferências permanecem locais ao dispositivo. Novas configurações devem seguir o mesmo limite Domain/Data/Presentation.
+As preferências permanecem locais ao dispositivo em SharedPreferences. As escolhas de ordenação e compressão são observadas pelo SettingsViewModel e aplicadas pela biblioteca. Novas configurações devem seguir o mesmo limite Domain/Data/Presentation.
