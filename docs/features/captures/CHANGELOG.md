@@ -1,3 +1,8 @@
+## 2026-11-01 — Ordenação temporal das seções de categorias
+- Adicionadas as opções **Mais recentes** e **Mais antigas** à ordenação dos containers de categoria na biblioteca inicial.
+- A ordenação recente usa a data da referência mais nova de cada categoria; a antiga usa a data da referência mais antiga. Empates preservam a ordem cadastrada.
+- Preferência de categoria mantém-se independente da ordenação das referências na categoria expandida; previews continuam sem reordenação.
+
 ## 2026-11-01 — Correção da renderização do player e escopo da ordenação
 - Aceleração de hardware explicitamente habilitada no nível da aplicação e da MainActivity; WebView do YouTube permanece em camada de hardware para preservar a composição dos frames de vídeo.
 - `categorySortOrder` ordena somente os containers `CategoryCard` da biblioteca inicial. Os thumbnails de preview mantêm a ordem natural da biblioteca; `captureSortOrder` continua controlando as referências dentro da categoria expandida.
