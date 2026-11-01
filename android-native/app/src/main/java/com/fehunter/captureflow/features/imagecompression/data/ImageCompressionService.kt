@@ -222,9 +222,14 @@ class ImageCompressionService(context: Context) : ImageCompressor {
                     working.height,
                     Bitmap.Config.ARGB_8888,
                 )
-                Canvas(normalized).apply {
-                    drawColor(Color.WHITE)
-                    drawBitmap(working, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
+                try {
+                    Canvas(normalized).apply {
+                        drawColor(Color.WHITE)
+                        drawBitmap(working, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
+                    }
+                } catch (error: Exception) {
+                    normalized.recycle()
+                    throw error
                 }
                 if (ownsWorking && !working.isRecycled) working.recycle()
                 working = normalized
