@@ -106,7 +106,7 @@ class ImageImportViewModel(
         viewModelScope.launch(Dispatchers.IO) { gateway.deleteTemporaryImage(uri) }
     }
 
-    /** Compresses the already-cropped Notes bitmap without an intermediate PNG/URI. */
+    /** Compresses Notes crop bytes without creating an intermediate PNG file or URI. */
     fun compressNoteImage(encodedImage: ByteArray, onReady: (String?, String?) -> Unit) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
