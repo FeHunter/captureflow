@@ -87,14 +87,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
-    val sortedCategoryNames = remember(categoryEntities, categorySortOrder) {
-        val names = categoryEntities.map { it.name }
-        when (categorySortOrder) {
-            "name_asc" -> names.sortedBy { it.lowercase() }
-            "name_desc" -> names.sortedByDescending { it.lowercase() }
-            else -> names
-        }
-    }
     fun sortCaptures(items: List<Capture>): List<Capture> = when (captureSortOrder) {
         "oldest" -> items.sortedBy { it.createdAt }
         "title_asc" -> items.sortedBy { it.title.lowercase() }
@@ -135,6 +127,22 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         category = category,
         showCompleted = true,
     )
+    val sortedCategoryNames = remember(categoryEntities, categorySortOrder, allMatchingCaptures) {
+        val names = categoryEntities.map { it.name }
+        when (categorySortOrder) {
+            "name_asc" -> names.sortedBy { it.lowercase() }
+            "name_desc" -> names.sortedByDescending { it.lowercase() }
+            "newest" -> names.sortedByDescending { name ->
+                allMatchingCaptures.filter { it.category == name }.maxOfOrNull { it.createdAt }
+                    ?: Long.MIN_VALUE
+            }
+            "oldest" -> names.sortedBy { name ->
+                allMatchingCaptures.filter { it.category == name }.minOfOrNull { it.createdAt }
+                    ?: Long.MAX_VALUE
+            }
+            else -> names
+        }
+    }
     val filtered = filterCaptures(
         captures = captures,
         query = query,
@@ -222,7 +230,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         }
                         DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                             DropdownMenuItem(text = { Text("Categorias") }, onClick = {}, enabled = false)
-                            listOf("manual" to "Ordem padrão", "name_asc" to "Nome · A–Z", "name_desc" to "Nome · Z–A").forEach { (value, label) ->
+                            listOf("manual" to "Ordem padrão", "newest" to "Mais recentes", "oldest" to "Mais antigas", "name_asc" to "Nome · A–Z", "name_desc" to "Nome · Z–A").forEach { (value, label) ->
                                 DropdownMenuItem(
                                     text = { Text((if (categorySortOrder == value) "✓ " else "") + label) },
                                     onClick = { onCategorySortOrderChange(value); showSortMenu = false },
