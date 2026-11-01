@@ -233,11 +233,11 @@ fun NotesEditorDialog(
     }
 
     Dialog(
-        onDismissRequest = { if (!isCompressingImage) closeAndDiscard() },
+        onDismissRequest = { if (!isSavingImage) closeAndDiscard() },
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
-            dismissOnBackPress = !isCompressingImage,
-            dismissOnClickOutside = !isCompressingImage,
+            dismissOnBackPress = !isSavingImage,
+            dismissOnClickOutside = !isSavingImage,
         ),
     ) {
         Surface(
@@ -306,15 +306,15 @@ fun NotesEditorDialog(
                                 cropBitmap = null
                                 cropSourceUri = null
                             },
-                            enabled = !isCompressingImage,
+                            enabled = !isSavingImage,
                             modifier = Modifier.weight(1f),
                         ) { Text("Voltar") }
                         Button(
                             onClick = ::applyCropAndSaveImage,
-                            enabled = cropBitmap != null && !isCompressingImage,
+                            enabled = cropBitmap != null && !isSavingImage,
                             modifier = Modifier.weight(1f),
                         ) {
-                            if (isCompressingImage) CircularProgressIndicator()
+                            if (isSavingImage) CircularProgressIndicator()
                             else Text("Aplicar recorte")
                         }
                     }
@@ -327,7 +327,7 @@ fun NotesEditorDialog(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                                 )
                             },
-                            enabled = !isCompressingImage,
+                            enabled = !isSavingImage,
                             modifier = Modifier.weight(1f),
                         ) {
                             Icon(Icons.Default.Image, contentDescription = null)
@@ -341,14 +341,14 @@ fun NotesEditorDialog(
                                     cropError = null
                                     cropSourceUri = draftImageUri
                                 },
-                                enabled = !isCompressingImage,
+                                enabled = !isSavingImage,
                             ) { Text("Recortar") }
                         }
                     }
                     if (draftImageUri != null) {
                         TextButton(
                             onClick = { draftImageUri = null },
-                            enabled = !isCompressingImage,
+                            enabled = !isSavingImage,
                         ) { Text("Remover imagem") }
                     }
                     imageError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -362,7 +362,7 @@ fun NotesEditorDialog(
                     if (editingNote != null && cropSourceUri == null) {
                         TextButton(
                             onClick = ::deleteNote,
-                            enabled = !isCompressingImage,
+                            enabled = !isSavingImage,
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = null)
                             Spacer(Modifier.width(4.dp))
@@ -372,12 +372,12 @@ fun NotesEditorDialog(
                     Spacer(Modifier.weight(1f))
                     TextButton(
                         onClick = ::closeAndDiscard,
-                        enabled = !isCompressingImage,
+                        enabled = !isSavingImage,
                     ) { Text("Cancelar") }
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = ::saveNote,
-                        enabled = !isCompressingImage && cropSourceUri == null &&
+                        enabled = !isSavingImage && cropSourceUri == null &&
                             (draftText.isNotBlank() || !draftImageUri.isNullOrBlank()),
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
