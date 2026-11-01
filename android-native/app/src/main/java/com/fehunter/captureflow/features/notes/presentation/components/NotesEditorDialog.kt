@@ -77,6 +77,7 @@ fun NotesEditorDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
+    onCompressImage: (Bitmap, (String?, String?) -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -186,49 +187,32 @@ fun NotesEditorDialog(
         isSavingImage = true
         imageError = null
 
-        // Diagnostic mode: save the cropped bitmap as PNG directly in app-private storage.
-        // ImageCompressionService is intentionally bypassed for this test.
+        // Apply the selected crop first, then pass that Bitmap directly to the shared
+        // compression feature. No temporary PNG/JPEG file or file:// URI is created.
         coroutineScope.launch {
-            val savedUri = runCatching { withContext(Dispatchers.IO) {
-                val directory = File(context.filesDir, "captures")
-                val destination = File(directory, "capture-note-${UUID.randomUUID()}.png")
-                try {
-                    if (!directory.exists() && !directory.mkdirs()) {
-                        throw IOException("Não foi possível preparar o armazenamento privado.")
+            val croppedResult = withContext(Dispatchers.IO) {
+                runCatching { cropCenter(source, selectedRatio) }
+            }
+            croppedResult.onSuccess { cropped ->
+                onCompressImage(cropped) { uri, error ->
+                    if (uri != null) {
+                        draftImageUri = uri
+                        generatedImageUris = generatedImageUris + uri
+                        imageError = null
+                        cropBitmap?.let { if (!it.isRecycled) it.recycle() }
+                        cropBitmap = null
+                        cropSourceUri = null
+                    } else {
+                        imageError = error ?: "Não foi possível comprimir a imagem da anotação."
                     }
-                    val cropped = cropCenter(source, selectedRatio)
-                    try {
-                        FileOutputStream(destination).use { output ->
-                            if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, output)) {
-                                throw IOException("Não foi possível gravar a imagem recortada em PNG.")
-                            }
-                            output.flush()
-                        }
-                    } finally {
-                        if (cropped !== source && !cropped.isRecycled) cropped.recycle()
-                    }
-                    if (!destination.isFile || destination.length() <= 0L) {
-                        throw IOException("A imagem salva ficou vazia.")
-                    }
-                    Uri.fromFile(destination).toString()
-                } catch (error: Exception) {
-                    destination.delete()
-                    throw error
+                    if (cropped !== source && !cropped.isRecycled) cropped.recycle()
+                    isSavingImage = false
                 }
-            } }
-
-            savedUri.onSuccess { uri ->
-                draftImageUri = uri
-                generatedImageUris = generatedImageUris + uri
-                imageError = null
-                cropBitmap?.let { if (!it.isRecycled) it.recycle() }
-                cropBitmap = null
-                cropSourceUri = null
             }.onFailure { error ->
                 imageError = error.localizedMessage?.takeIf(String::isNotBlank)
-                    ?: "Não foi possível salvar a imagem sem compressão."
+                    ?: "Não foi possível aplicar o recorte da imagem."
+                isSavingImage = false
             }
-            isSavingImage = false
         }
     }
 
