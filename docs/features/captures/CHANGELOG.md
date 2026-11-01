@@ -1,3 +1,7 @@
+## 2026-11-01 — Correção da renderização do player e escopo da ordenação
+- Aceleração de hardware explicitamente habilitada no nível da aplicação e da MainActivity; WebView do YouTube permanece em camada de hardware para preservar a composição dos frames de vídeo.
+- `categorySortOrder` ordena somente os containers `CategoryCard` da biblioteca inicial. Os thumbnails de preview mantêm a ordem natural da biblioteca; `captureSortOrder` continua controlando as referências dentro da categoria expandida.
+
 ## 2026-11-01 — Ajustes de reprodução e anotações após validação manual
 - O WebView do player YouTube envia um cabeçalho Referer ao carregar ou trocar o vídeo, atendendo à identificação de origem exigida pelo player em cenários que retornam erro 153.
 - O painel de anotações no fullscreen agora usa altura natural do texto e da imagem, limitado a 248 dp; somente quando ultrapassa esse limite o conteúdo rola. O texto não é truncado em duas linhas.
