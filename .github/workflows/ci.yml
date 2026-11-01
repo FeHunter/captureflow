@@ -22,3 +22,6 @@ jobs:
       - name: Assemble debug APK
         working-directory: android-native
         run: ./gradlew assembleDebug
+      - name: Compile instrumentation tests
+        working-directory: android-native
+        run: ./gradlew assembleDebugAndroidTest
