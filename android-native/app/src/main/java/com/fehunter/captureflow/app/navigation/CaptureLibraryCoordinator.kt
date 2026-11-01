@@ -340,8 +340,13 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
                             contentScale = ContentScale.Fit,
                         )
-                    } ?: if (pending.isProcessing) {
-                        Box(Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
+                    }
+
+                    if (pendingImagePreview == null && pending.isProcessing) {
+                        Box(
+                            Modifier.fillMaxWidth().height(140.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             CircularProgressIndicator()
                         }
                     }
