@@ -111,6 +111,16 @@ fun DashboardSummaryCard(summary: DashboardSummary) {
                 )
                 visibleCategories.forEach { item ->
                     val pendingCount = (item.totalCount - item.completedCount).coerceAtLeast(0)
+                    val completedLabel = if (item.completedCount == 1) {
+                        "1 concluída"
+                    } else {
+                        "${item.completedCount} concluídas"
+                    }
+                    val pendingLabel = if (pendingCount == 1) {
+                        "1 pendente"
+                    } else {
+                        "$pendingCount pendentes"
+                    }
                     val progress = if (item.totalCount > 0) {
                         (item.completedCount.toFloat() / item.totalCount).coerceIn(0f, 1f)
                     } else {
@@ -129,7 +139,7 @@ fun DashboardSummaryCard(summary: DashboardSummary) {
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                "${item.completedCount} concluídas · $pendingCount pendentes",
+                                "$completedLabel · $pendingLabel",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
