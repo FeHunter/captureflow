@@ -1,11 +1,11 @@
 package com.fehunter.captureflow.features.fullscreen.presentation.components
 
 import android.annotation.SuppressLint
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -15,39 +15,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
- * Official YouTube iframe player hosted in the OS WebView.
- * JavaScript is enabled only for the trusted YouTube embed document; no JS bridge is exposed.
+ * Loads YouTube's official privacy-enhanced embed endpoint directly in WebView.
+ * No JavaScript bridge is exposed to the page.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
-    val html = """
-        <!doctype html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-          <style>
-            html, body { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; }
-            #player { position:absolute; inset:0; width:100%; height:100%; }
-            iframe { width:100%; height:100%; border:0; }
-          </style>
-        </head>
-        <body>
-          <div id="player">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/$videoId?playsinline=1&rel=0&autoplay=0"
-              title="YouTube video player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerpolicy="strict-origin-when-cross-origin"
-              allowfullscreen>
-            </iframe>
-          </div>
-        </body>
-        </html>
-    """.trimIndent()
+    val embedUrl = "https://www.youtube-nocookie.com/embed/$videoId" +
+        "?controls=1&playsinline=1&rel=0&autoplay=0&fs=1"
 
     AndroidView(
-        modifier = modifier.fillMaxWidth().heightIn(min = 200.dp).aspectRatio(16f / 9f),
+        modifier = modifier.fillMaxWidth().aspectRatio(16f / 9f).heightIn(min = 200.dp),
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(android.graphics.Color.BLACK)
@@ -59,27 +37,25 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                 settings.javaScriptCanOpenWindowsAutomatically = false
                 settings.setSupportMultipleWindows(false)
                 settings.safeBrowsingEnabled = true
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                 webChromeClient = WebChromeClient()
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                        val host = request.url.host?.lowercase().orEmpty()
+                        // Allow iframe/player subresources. Restrict only top-level navigation.
+                        if (!request.isForMainFrame) return false
+                        val host = request.url.host?.lowercase().orEmpty().removePrefix("www.")
                         return request.url.scheme != "https" ||
-                            !(host == "youtube.com" || host.endsWith(".youtube.com") ||
-                              host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com") ||
-                              host == "googlevideo.com" || host.endsWith(".googlevideo.com") ||
-                              host == "ytimg.com" || host.endsWith(".ytimg.com"))
+                            host !in setOf("youtube.com", "youtube-nocookie.com")
                     }
                 }
-                loadDataWithBaseURL(
-                    "https://www.youtube-nocookie.com/",
-                    html,
-                    "text/html",
-                    "UTF-8",
-                    null,
-                )
+                loadUrl(embedUrl)
             }
         },
-        update = { },
+        update = { webView ->
+            if (webView.url != embedUrl) webView.loadUrl(embedUrl)
+        },
         onRelease = { webView ->
             webView.stopLoading()
             webView.loadUrl("about:blank")
