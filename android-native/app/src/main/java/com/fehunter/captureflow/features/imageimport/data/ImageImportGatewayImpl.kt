@@ -33,6 +33,9 @@ class ImageImportGatewayImpl(
     override fun downloadPreviewToPrivateStorage(url: String): String? =
         storageService.downloadToPrivateStorage(url)?.toString()
 
+    override fun deleteTemporaryImage(uri: String): Boolean =
+        storageService.deleteTemporaryImage(Uri.parse(uri))
+
     override fun deleteSourceScreenshot(uri: String): Boolean =
         storageService.deleteSourceScreenshot(Uri.parse(uri))
 }

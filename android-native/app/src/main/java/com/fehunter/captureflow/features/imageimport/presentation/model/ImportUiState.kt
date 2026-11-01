@@ -17,3 +17,14 @@ data class OcrUiState(
     val message: String? = null,
     val isError: Boolean = false,
 )
+
+
+/** Temporary image draft. It is not persisted until the user confirms the review. */
+data class PendingImageReview(
+    val id: String,
+    val imageUri: String,
+    val title: String,
+    val category: String = "Salvar",
+    val isProcessing: Boolean = true,
+    val error: String? = null,
+)

@@ -18,5 +18,6 @@ interface ImageImportGateway {
     suspend fun analyzeImage(uri: String): ImportedImageAnalysis
     fun copyImageToPrivateStorage(uri: String): String
     fun downloadPreviewToPrivateStorage(url: String): String?
+    fun deleteTemporaryImage(uri: String): Boolean
     fun deleteSourceScreenshot(uri: String): Boolean
 }

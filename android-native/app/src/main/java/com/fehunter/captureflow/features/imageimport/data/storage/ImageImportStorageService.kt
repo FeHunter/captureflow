@@ -103,6 +103,20 @@ class ImageImportStorageService(context: Context) {
         }
     }
 
+    /** Deletes only app-owned temporary images; never deletes gallery/content URIs. */
+    fun deleteTemporaryImage(source: Uri): Boolean {
+        if (source.scheme != "file") return false
+        return runCatching {
+            val file = File(source.path ?: return false).canonicalFile
+            val privateRoots = listOf(
+                applicationContext.cacheDir.canonicalFile.path + File.separator,
+                File(applicationContext.filesDir, "captures").canonicalFile.path + File.separator,
+            )
+            if (privateRoots.none(file.path::startsWith)) return false
+            file.delete()
+        }.getOrDefault(false)
+    }
+
     /**
      * Best-effort removal of an imported screenshot from shared MediaStore storage.
      * Android may require explicit user consent to delete media owned by another app;
