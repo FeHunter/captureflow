@@ -284,14 +284,28 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         FilterChip(
+                            modifier = Modifier.weight(1f),
                             selected = !showCompletedInExpandedCategory,
                             onClick = { showCompletedInExpandedCategory = false },
-                            label = { Text("Pendentes · ${expandedCategoryCaptures.count { !it.isCompleted }}") },
+                            label = {
+                                Text(
+                                    "Pendentes · ${expandedCategoryCaptures.count { !it.isCompleted }}",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                         )
                         FilterChip(
+                            modifier = Modifier.weight(1f),
                             selected = showCompletedInExpandedCategory,
                             onClick = { showCompletedInExpandedCategory = true },
-                            label = { Text("Concluídas · ${expandedCategoryCaptures.count { it.isCompleted }}") },
+                            label = {
+                                Text(
+                                    "Concluídas · ${expandedCategoryCaptures.count { it.isCompleted }}",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
                         )
                     }
                     if (expandedCategoryVisibleCaptures.isEmpty()) {
