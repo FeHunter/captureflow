@@ -143,21 +143,45 @@ fun FullscreenCaptureDialog(
                                 )
                             }
                         }
-                        Surface(
-                            modifier = Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 20.dp),
-                            shape = MaterialTheme.shapes.extraLarge,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                            shadowElevation = 8.dp,
+                        Column(
+                            modifier = Modifier.align(Alignment.BottomStart)
+                                .padding(start = 16.dp, bottom = 20.dp)
+                                .fillMaxWidth(0.78f),
+                            horizontalAlignment = Alignment.Start,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            IconButton(
-                                onClick = { onOpenNotes(selected.id) },
-                                modifier = Modifier.size(48.dp),
+                            selected.notes?.trim()?.takeIf(String::isNotEmpty)?.let { note ->
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = Color.Black.copy(alpha = 0.72f),
+                                    shadowElevation = 4.dp,
+                                ) {
+                                    Text(
+                                        text = note,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White,
+                                        maxLines = 5,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                shadowElevation = 8.dp,
                             ) {
-                                Icon(
-                                    Icons.Default.ChatBubbleOutline,
-                                    contentDescription = if (selected.notes.isNullOrBlank()) "Adicionar anotações" else "Editar anotações",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                )
+                                IconButton(
+                                    onClick = { onOpenNotes(selected.id) },
+                                    modifier = Modifier.size(48.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Default.ChatBubbleOutline,
+                                        contentDescription = if (selected.notes.isNullOrBlank()) "Adicionar anotações" else "Editar anotações",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
                             }
                         }
                         Surface(
