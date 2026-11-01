@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,7 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
- * Displays every category across two independently scrollable horizontal rows.
+ * Displays every category in two rows inside one horizontally scrollable container.
  * The dialog remains available as an alternative for selecting from the full list.
  */
 @Composable
@@ -33,21 +32,15 @@ fun CategoryFilterSection(
     onCategorySelected: (String) -> Unit,
 ) {
     var showAllCategories by remember { mutableStateOf(false) }
-    val firstRowCategories = remember(categories) {
-        categories.filterIndexed { index, _ -> index % 2 == 0 }
-    }
-    val secondRowCategories = remember(categories) {
-        categories.filterIndexed { index, _ -> index % 2 != 0 }
-    }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf(firstRowCategories, secondRowCategories).forEach { rowCategories ->
-            if (rowCategories.isNotEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    rowCategories.forEach { item ->
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            categories.chunked(2).forEach { categoryPair ->
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    categoryPair.forEach { item ->
                         FilterChip(
                             selected = selectedCategory == item,
                             onClick = { onCategorySelected(item) },
@@ -63,6 +56,7 @@ fun CategoryFilterSection(
                 }
             }
         }
+
         TextButton(
             onClick = { showAllCategories = true },
             modifier = Modifier.fillMaxWidth(),
