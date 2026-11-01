@@ -22,7 +22,6 @@ class ImageCompressionService(context: Context) : ImageCompressor {
 
     override fun compressToPrivateStorage(sourceUri: String, profile: ImageCompressionProfile): String {
         val source = Uri.parse(sourceUri)
-        val resolver = appContext.contentResolver
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         openSourceStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) }
             ?: throw IOException("Não foi possível abrir a imagem selecionada.")
