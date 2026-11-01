@@ -1,3 +1,8 @@
+## 2026-11-01 — Menu de ordenação e pipeline de imagem das anotações
+- O menu **Ordenar** da biblioteca agora apresenta exclusivamente os filtros de **Categorias**; removidas as opções de ordenação de **Referências** da interface.
+- O processamento de imagem das anotações mantém recorte antes da compressão, grava o recorte intermediário em PNG lossless no cache e executa uma única codificação JPEG no perfil Alto para o armazenamento privado.
+- Adicionadas validações do arquivo temporário, limpeza em falhas e preservação da seleção/prévia para permitir nova tentativa sem reabrir a galeria.
+
 ## 2026-11-01 — Ordenação temporal das seções de categorias
 - Adicionadas as opções **Mais recentes** e **Mais antigas** à ordenação dos containers de categoria na biblioteca inicial.
 - A ordenação recente usa a data da referência mais nova de cada categoria; a antiga usa a data da referência mais antiga. Empates preservam a ordem cadastrada.
