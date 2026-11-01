@@ -3,7 +3,7 @@
 Feature responsável pelo ciclo de vida das referências salvas.
 
 ## Estrutura
-- `domain/model`: `Capture`, `CaptureCategory`, `CaptureSubtask`.
+- `domain/model`: `Capture`, `CaptureCategory`, `CaptureSubtask` e `CaptureNote`.
 - `domain/repository`: contrato `CaptureRepository`.
 - `domain/usecase`: operações de aplicação e regras de criação.
 - `data/local`: entidades, DAOs e Room.
