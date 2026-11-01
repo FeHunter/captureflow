@@ -10,5 +10,5 @@ A exclusão reatribui referências e registros legados dentro de uma transação
 
 
 ## Filtro de categorias da biblioteca
-- Todas as categorias são exibidas em duas linhas com rolagem horizontal independente; a distribuição alterna os itens entre a primeira e a segunda linha.
-- O botão **Ver todas as categorias** permanece disponível e abre o diálogo com a lista completa.
+- Todas as categorias permanecem visíveis na view principal, distribuídas em duas linhas dentro de um único container com rolagem horizontal compartilhada; as duas linhas avançam juntas.
+- O botão **Ver todas as categorias** permanece como atalho de UX e abre o diálogo com a lista completa, sem controlar a expansão/recolhimento da view principal.
