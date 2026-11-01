@@ -42,7 +42,6 @@ fun CaptureFlowApp(
     onCategorySortOrderChange: (String) -> Unit,
     captureSortOrder: String,
     imageCompressionProfile: String,
-    onImageCompressionProfileChange: (String) -> Unit,
     hasScreenshotAccess: Boolean,
     screenshotMonitoringEnabled: Boolean,
     detectedScreenshotUri: Uri?,
