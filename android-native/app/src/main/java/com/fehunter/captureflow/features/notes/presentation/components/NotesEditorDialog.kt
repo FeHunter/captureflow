@@ -151,41 +151,58 @@ fun NotesEditorDialog(
         if (isCompressingImage) return
         isCompressingImage = true
         imageError = null
-        val cropFile = File(context.cacheDir, "captureflow-note-crop-${UUID.randomUUID()}.jpg")
+        // Crop first so discarded pixels are never sent through compression. Use a
+        // lossless PNG cache intermediate; the private-storage compressor performs the
+        // only lossy JPEG encoding with the HIGH profile.
+        val cropFile = File(context.cacheDir, "captureflow-note-crop-${UUID.randomUUID()}.png")
         val cropUri = runCatching {
             val cropped = cropCenter(source, selectedRatio)
-            FileOutputStream(cropFile).use { output ->
-                if (!cropped.compress(Bitmap.CompressFormat.JPEG, 94, output)) {
-                    throw IllegalStateException("Não foi possível preparar o recorte.")
+            try {
+                FileOutputStream(cropFile).use { output ->
+                    if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                        throw IllegalStateException("Não foi possível preparar o recorte.")
+                    }
+                    output.flush()
                 }
+            } finally {
+                if (cropped !== source && !cropped.isRecycled) cropped.recycle()
             }
-            if (cropped !== source) cropped.recycle()
+            if (!cropFile.exists() || cropFile.length() == 0L) {
+                throw IllegalStateException("O arquivo temporário do recorte ficou vazio.")
+            }
             Uri.fromFile(cropFile).toString()
         }.getOrNull()
 
         if (cropUri == null) {
             cropFile.delete()
             isCompressingImage = false
-            imageError = "Não foi possível preparar o recorte."
+            imageError = "Não foi possível preparar o recorte. Tente novamente."
             return
         }
 
-        onCompressImage(cropUri) { compressedUri, compressionError ->
-            cropFile.delete()
-            if (compressedUri != null) {
-                draftImageUri = compressedUri
-                generatedImageUris = generatedImageUris + compressedUri
-                imageError = null
-                cropBitmap?.recycle()
-                cropBitmap = null
-                cropSourceUri = null
-            } else {
-                // Keep the selected image and crop preview so the user can retry without
-                // reopening the Photo Picker or losing the original selection.
-                imageError = compressionError?.let { "Falha ao comprimir: $it" }
-                    ?: "Não foi possível comprimir a imagem. Tente novamente."
+        runCatching {
+            onCompressImage(cropUri) { compressedUri, compressionError ->
+                cropFile.delete()
+                if (compressedUri != null) {
+                    draftImageUri = compressedUri
+                    generatedImageUris = generatedImageUris + compressedUri
+                    imageError = null
+                    cropBitmap?.recycle()
+                    cropBitmap = null
+                    cropSourceUri = null
+                } else {
+                    // Keep the selected image and crop preview so the user can retry without
+                    // reopening the Photo Picker or losing the original selection.
+                    imageError = compressionError?.let { "Falha ao comprimir: $it" }
+                        ?: "Não foi possível comprimir a imagem. Tente novamente."
+                }
+                isCompressingImage = false
             }
+        }.onFailure { error ->
+            cropFile.delete()
             isCompressingImage = false
+            imageError = error.localizedMessage?.takeIf(String::isNotBlank)
+                ?: "Não foi possível iniciar a compressão da imagem."
         }
     }
 
