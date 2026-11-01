@@ -77,7 +77,7 @@ fun NotesEditorDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
-    onCompressImage: (Bitmap, (String?, String?) -> Unit) -> Unit,
+    onCompressImage: (ByteArray, (String?, String?) -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -187,14 +187,25 @@ fun NotesEditorDialog(
         isSavingImage = true
         imageError = null
 
-        // Apply the selected crop first, then pass that Bitmap directly to the shared
-        // compression feature. No temporary PNG/JPEG file or file:// URI is created.
+        // Crop first and encode that crop as lossless PNG bytes in memory. The shared
+        // compressor receives bytes directly: no intermediate file, URI or provider lookup.
         coroutineScope.launch {
-            val croppedResult = withContext(Dispatchers.IO) {
-                runCatching { cropCenter(source, selectedRatio) }
+            val encodedResult = withContext(Dispatchers.IO) {
+                runCatching {
+                    val cropped = cropCenter(source, selectedRatio)
+                    try {
+                        val output = java.io.ByteArrayOutputStream()
+                        if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                            throw IOException("Não foi possível codificar o recorte em PNG.")
+                        }
+                        output.toByteArray()
+                    } finally {
+                        if (cropped !== source && !cropped.isRecycled) cropped.recycle()
+                    }
+                }
             }
-            croppedResult.onSuccess { cropped ->
-                onCompressImage(cropped) { uri, error ->
+            encodedResult.onSuccess { encodedImage ->
+                onCompressImage(encodedImage) { uri, error ->
                     if (uri != null) {
                         draftImageUri = uri
                         generatedImageUris = generatedImageUris + uri
@@ -205,12 +216,11 @@ fun NotesEditorDialog(
                     } else {
                         imageError = error ?: "Não foi possível comprimir a imagem da anotação."
                     }
-                    if (cropped !== source && !cropped.isRecycled) cropped.recycle()
                     isSavingImage = false
                 }
             }.onFailure { error ->
                 imageError = error.localizedMessage?.takeIf(String::isNotBlank)
-                    ?: "Não foi possível aplicar o recorte da imagem."
+                    ?: "Não foi possível preparar o recorte da imagem."
                 isSavingImage = false
             }
         }
