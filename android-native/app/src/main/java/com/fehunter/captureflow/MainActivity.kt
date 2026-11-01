@@ -63,6 +63,9 @@ class MainActivity : ComponentActivity() {
         handleScreenshotAction(intent)
         setContent {
             val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle()
+            val categorySortOrder by settingsViewModel.categorySortOrder.collectAsStateWithLifecycle()
+            val captureSortOrder by settingsViewModel.captureSortOrder.collectAsStateWithLifecycle()
+            val imageCompressionProfile by settingsViewModel.imageCompressionProfile.collectAsStateWithLifecycle()
             val isDark = when (themeMode) {
                 "dark" -> true
                 "light" -> false
@@ -106,6 +109,12 @@ class MainActivity : ComponentActivity() {
                     dashboardViewModel = dashboardViewModel,
                     themeMode = themeMode,
                     onThemeModeChange = settingsViewModel::setThemeMode,
+                    categorySortOrder = categorySortOrder,
+                    onCategorySortOrderChange = settingsViewModel::setCategorySortOrder,
+                    captureSortOrder = captureSortOrder,
+                    onCaptureSortOrderChange = settingsViewModel::setCaptureSortOrder,
+                    imageCompressionProfile = imageCompressionProfile,
+                    onImageCompressionProfileChange = settingsViewModel::setImageCompressionProfile,
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
