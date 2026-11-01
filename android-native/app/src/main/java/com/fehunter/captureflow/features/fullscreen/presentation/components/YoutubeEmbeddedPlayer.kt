@@ -50,7 +50,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                             !(host == "youtube.com" || host.endsWith(".youtube.com") || host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com"))
                     }
                 }
-                loadUrl(embedUrl)
+                loadUrl(embedUrl, mapOf("Referer" to "https://www.youtube.com/"))
             }
         },
         update = { webView ->
