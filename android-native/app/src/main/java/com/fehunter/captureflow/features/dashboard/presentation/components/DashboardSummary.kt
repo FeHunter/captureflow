@@ -57,7 +57,7 @@ fun DashboardSummaryCard(summary: DashboardSummary) {
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Text(
-                            "Concluído",
+                            "Concluídas",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
