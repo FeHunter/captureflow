@@ -20,7 +20,9 @@ class ManageCategoriesUseCase(
 
     suspend fun add(rawName: String) {
         val name = rawName.trim().take(MAX_CATEGORY_NAME_LENGTH)
-        if (name.isBlank() || name.equals(ALL_CATEGORY, ignoreCase = true)) return
+        if (name.isBlank() || name.equals(ALL_CATEGORY, ignoreCase = true) ||
+            name.equals(LEGACY_COMPLETED_CATEGORY, ignoreCase = true)
+        ) return
 
         val current = repository.observeCategories().first()
         if (current.any { it.name.equals(name, ignoreCase = true) }) return
@@ -30,7 +32,9 @@ class ManageCategoriesUseCase(
 
     suspend fun rename(oldName: String, rawName: String) {
         val newName = rawName.trim().take(MAX_CATEGORY_NAME_LENGTH)
-        if (newName.isBlank() || newName.equals(ALL_CATEGORY, ignoreCase = true)) return
+        if (newName.isBlank() || newName.equals(ALL_CATEGORY, ignoreCase = true) ||
+            newName.equals(LEGACY_COMPLETED_CATEGORY, ignoreCase = true)
+        ) return
 
         val current = repository.observeCategories().first()
         if (current.none { it.name == oldName } ||
@@ -50,6 +54,7 @@ class ManageCategoriesUseCase(
     private companion object {
         const val MAX_CATEGORY_NAME_LENGTH = 32
         const val ALL_CATEGORY = "Todas"
+        const val LEGACY_COMPLETED_CATEGORY = "Concluído"
         val DEFAULT_CATEGORIES = listOf(
             "Ler depois",
             "Verificar",
