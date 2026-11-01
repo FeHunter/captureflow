@@ -54,7 +54,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
             }
         },
         update = { webView ->
-            if (webView.url != embedUrl) webView.loadUrl(embedUrl)
+            if (webView.url != embedUrl) webView.loadUrl(embedUrl, mapOf("Referer" to "https://www.youtube.com/"))
         },
         onRelease = { webView ->
             webView.stopLoading()
