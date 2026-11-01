@@ -166,10 +166,60 @@ fun FullscreenCaptureDialog(
                         // view to compose correctly.
                         if (pagerState.currentPage == pagerState.settledPage) {
                             activeYoutubeVideoId?.let { videoId ->
-                                YoutubeEmbeddedPlayer(
-                                    videoId = videoId,
-                                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 12.dp),
-                                )
+                                Column(
+                                    modifier = Modifier.align(Alignment.Center).fillMaxWidth()
+                                        .padding(horizontal = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    YoutubeEmbeddedPlayer(
+                                        videoId = videoId,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        IconButton(onClick = { onOpenNotes(selected.id) }) {
+                                            Icon(
+                                                Icons.Default.ChatBubbleOutline,
+                                                contentDescription = "Adicionar ou editar anotações",
+                                                tint = Color.White,
+                                            )
+                                        }
+                                        Checkbox(
+                                            checked = selected.isCompleted,
+                                            onCheckedChange = { onCompleted(selected.id, it) },
+                                        )
+                                        if (!selected.isCompleted) {
+                                            val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
+                                            TextButton(onClick = { showSubtasks = true }) {
+                                                Text(
+                                                    "☰ ${selectedSubtasks.count { it.isCompleted }}/${selectedSubtasks.size}",
+                                                    color = Color.White,
+                                                    maxLines = 1,
+                                                )
+                                            }
+                                            if (sourceUrl != null) {
+                                                IconButton(onClick = { runCatching { uriHandler.openUri(sourceUrl) } }) {
+                                                    Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = Color.White)
+                                                }
+                                            }
+                                            IconButton(
+                                                onClick = {
+                                                    editedTitle = selected.title
+                                                    editedCategory = selected.category
+                                                    showEditTitle = true
+                                                },
+                                            ) {
+                                                Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = Color.White)
+                                            }
+                                            IconButton(onClick = { onDelete(selected.id); onDismiss() }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = Color.White)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         if (activeYoutubeVideoId == null) {
