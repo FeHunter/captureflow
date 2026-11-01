@@ -7,6 +7,6 @@ enum class ImageCompressionProfile(val quality: Int, val label: String) {
 
     companion object {
         fun fromPreference(value: String?): ImageCompressionProfile =
-            entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: MEDIUM
+            values().firstOrNull { it.name.equals(value, ignoreCase = true) } ?: MEDIUM
     }
 }
