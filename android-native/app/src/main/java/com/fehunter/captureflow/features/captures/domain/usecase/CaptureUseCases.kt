@@ -22,6 +22,7 @@ class CaptureUseCases(private val repository: CaptureRepository) {
     suspend fun updateExtractedContent(id: String, content: String, title: String) =
         repository.updateExtractedContent(id, content, title)
     suspend fun updateTitle(id: String, title: String) = repository.updateTitle(id, title)
+    suspend fun updateCategory(id: String, category: String) = repository.updateCategory(id, category)
     suspend fun updateNotes(id: String, notes: String?) = repository.updateNotes(id, notes)
     suspend fun setCompleted(id: String, completed: Boolean) = repository.setCompleted(id, completed)
     suspend fun delete(id: String) = repository.delete(id)
