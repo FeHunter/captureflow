@@ -2,7 +2,6 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
@@ -192,6 +192,7 @@ fun FullscreenCaptureDialog(
                                                     FullscreenNoteImage(
                                                         rawUri = rawUri,
                                                         onExpand = { image -> expandedNoteImage = image },
+                                                        onLongPress = { onEditNote(selected.id, note.id) },
                                                     )
                                                 }
                                             }
@@ -426,31 +427,41 @@ fun FullscreenCaptureDialog(
 
 
 @Composable
-private fun FullscreenNoteImage(rawUri: String, onExpand: (ImageBitmap) -> Unit) {
+private fun FullscreenNoteImage(
+    rawUri: String,
+    onExpand: (ImageBitmap) -> Unit,
+    onLongPress: () -> Unit,
+) {
     val context = LocalContext.current
     val image by produceState<ImageBitmap?>(null, rawUri) {
         value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri) }.getOrNull() }
     }
     image?.let { bitmap ->
         Box(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 52.dp)
+                .combinedClickable(
+                    onClick = { onExpand(bitmap) },
+                    onLongClick = onLongPress,
+                ),
         ) {
             Image(
                 bitmap = bitmap,
-                contentDescription = "Ampliar imagem da anotação",
-                modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp)
-                    .clickable { onExpand(bitmap) },
+                contentDescription = "Abrir imagem da anotação",
+                modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp),
                 contentScale = ContentScale.Fit,
             )
-            TextButton(
-                onClick = { onExpand(bitmap) },
-                modifier = Modifier.align(Alignment.BottomEnd)
-                    .padding(4.dp)
-                    .background(Color.Black.copy(alpha = 0.72f), MaterialTheme.shapes.small),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-            ) {
-                Text("Ampliar", color = Color.White, style = MaterialTheme.typography.labelSmall)
-            }
+            Icon(
+                imageVector = Icons.Default.OpenInFull,
+                contentDescription = "Expandir imagem",
+                tint = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(6.dp)
+                    .background(Color.Black.copy(alpha = 0.72f), MaterialTheme.shapes.small)
+                    .padding(5.dp),
+            )
         }
     }
 }
