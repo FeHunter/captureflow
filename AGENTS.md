@@ -61,6 +61,7 @@ android-native/app/src/main/java/com/fehunter/captureflow/
     ├── categories/                   # ViewModel e componentes de categorias
     ├── search/                       # filtro, estado e campo de pesquisa
     ├── fullscreen/                   # diálogo e página fullscreen
+    ├── youtubeplayer/                 # player incorporado YouTube e integração WebView
     ├── dashboard/                    # resumo, UseCase e ViewModel
     ├── imagecompression/             # perfis e processamento local de imagens
     ├── notes/                         # blocos de pensamento com texto/imagem
@@ -73,11 +74,12 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 - **imageimport:** entrada de links/textos/imagens quando aplicável ao fluxo de importação, Photo Picker, compartilhamento, screenshots, OCR e estado de processamento. Links do YouTube e dos demais sites persistem a thumbnail como capa quando o metadado e o download estão disponíveis; o player incorporado continua sendo responsabilidade do Fullscreen. Entrega dados validados/enriquecidos para persistência por Captures; não duplica a lógica de persistência de referências.
 - **search:** consulta, busca textual, combinação de filtros e apresentação dos resultados. Consome contratos de consulta de Captures; não acessa seu DAO ou banco diretamente.
 - **categories:** regras e operações de categorias, incluindo validações, ordenação e reatribuição segura de referências quando uma categoria é removida.
-- **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações, player YouTube incorporado e ações disponíveis no detalhe. Usa casos de uso/contratos de domínio, nunca DAO diretamente.
+- **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações e ações disponíveis no detalhe. Identifica o vídeo da referência ativa e hospeda o player fornecido pela feature youtubeplayer; não implementa nem configura WebView.
 - **captures:** é proprietária das referências e das subtarefas persistidas em `capture_subtasks`, vinculadas por `captureId` e apresentadas no fullscreen. A entidade/DAO histórica `checklist_tasks` permanece apenas para compatibilidade do schema Room, sem feature ou tela ativa.
 - **dashboard:** indicadores e estatísticas de referências/categorias. Somente consulta; não modifica Captures diretamente.
 - **imagecompression:** compressão local de imagens antes do armazenamento privado; oferece perfis Médio (JPEG quality 70) e Alto (JPEG quality 50), preservando orientação EXIF para URIs e limitando dimensões. O contrato aceita URI (`file://`/`content://`) ou bytes raster codificados, sem depender de Android no Domain.
 - **notes:** edição da linha de pensamento em blocos ordenados de texto e imagem. O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures; o campo captures.notes armazena a coleção em formato versionado e mantém leitura retrocompatível de anotações antigas.
+- **youtubeplayer:** reprodução incorporada de vídeos do YouTube via IFrame Player API em Android WebView. É proprietária do HTML de embed, identidade HTTP Referer, configuração WebView, ciclo de vida, callbacks de estado/erro e limpeza da instância. Não persiste estado de negócio nem depende de Captures/Fullscreen.
 - **settings:** tema, ordenação da biblioteca e perfil padrão de compressão, persistidos localmente em SharedPreferences.
 
 A divisão final de um serviço entre features/core deve seguir sua responsabilidade real. Ex.: OCR, download de capas, cópia de imagens compartilhadas e exclusão best-effort de screenshots pertencem a Image Import; Core mantém apenas o contrato mínimo de armazenamento privado usado por Captures. Não mover serviços indiscriminadamente para Core.

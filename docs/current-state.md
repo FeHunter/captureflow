@@ -59,7 +59,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
-- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), o fullscreen carrega diretamente o endpoint oficial youtube-nocookie.com/embed/{id} no WebView, com controles do player habilitados e sem autoplay. A renderização de vídeo mantém aceleração de hardware explicitamente habilitada no app, Activity e WebView. O cabeçalho HTTP `Referer` identifica o app com `https://{applicationId}/`, conforme a orientação de identidade de cliente do YouTube para WebViews Android. Quando o oEmbed fornece uma thumbnail e o download é bem-sucedido, a imagem é salva como capa privada da captura; o fullscreen continua exibindo o player de vídeo, enquanto cards e outros componentes podem usar essa capa. O link original continua disponível no cabeçalho. Vídeos que não permitem incorporação exigem abertura externa.
+- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), o fullscreen monta a feature independente youtubeplayer fora da árvore do HorizontalPager, centralizada e em proporção 16:9. A feature usa a YouTube IFrame Player API dentro de WebView acelerada por hardware, sem autoplay e com controles habilitados. O HTML é carregado com loadDataWithBaseURL para fornecer a identidade do app no HTTP Referer, aplica strict-origin-when-cross-origin e configura origin para o mesmo host base. O player reporta estado pronto e códigos de erro; vídeos não incorporáveis ou indisponíveis precisam ser abertos pelo link original no cabeçalho. A thumbnail persistida pelo Image Import continua disponível para cards e outras superfícies.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.
@@ -68,6 +68,13 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - Back nativo fecha apenas o visualizador e mantém a categoria expandida por baixo; Back novamente retorna à biblioteca.
 - O modal **Editar título** permite alterar o título e, logo abaixo, selecionar a categoria da referência. A alteração de categoria é persistida pelo ViewModel de Captures e atualiza o detalhe ativo.
  
+## Player YouTube (feature independente)
+- O player é implementado em features/youtubeplayer, separado da feature Fullscreen. A UI do fullscreen apenas extrai o ID da URL ativa e hospeda o componente.
+- O WebView fica fora da árvore do HorizontalPager para evitar que transformações/recortes das páginas afetem a superfície de vídeo do Chromium.
+- A página HTML usa YouTube IFrame Player API, loadDataWithBaseURL com base URL https://{applicationId}/, meta referrer strict-origin-when-cross-origin, origin correspondente ao base URL, playsinline=1, controles e autoplay desabilitado.
+- A feature não falsifica User-Agent, não expõe permissões nativas ao conteúdo e não persiste dados. O JavaScript bridge é limitado a callbacks de prontidão/erro/estado; a instância WebView é pausada/retomada com o lifecycle e destruída ao sair da composição.
+- O YouTube documenta erro 153 como ausência de HTTP Referer ou identificação equivalente. Erros de incorporação (ex.: 101/150 e códigos equivalentes) são restrições do vídeo e não podem ser corrigidos pelo app. Em falha, o link original permanece disponível no cabeçalho.
+
 ## Compartilhamento de link
 1. Android envia `ACTION_SEND` com `text/plain`; `CaptureClassifier` identifica URL HTTP(S).
 2. ViewModel expõe uma captura pendente e consulta o HTML em coroutine; nenhuma referência de link é persistida ainda.
@@ -149,7 +156,7 @@ Room permanece v8. Não há sincronização cloud e as regras local-first contin
 
 ## Visualizador fullscreen ativo
 - É aberto ao tocar em um thumbnail dentro de uma categoria expandida.
-- Quando a URL original é um link YouTube válido (watch, youtu.be, shorts, live ou embed), a área de imagem usa o player oficial IFrame em WebView com youtube-nocookie.com, sem autoplay e sem JavaScript bridge. O link original continua disponível no cabeçalho; vídeos que não permitem incorporação exigem abertura externa.
+- Quando a URL original é um link YouTube válido, a feature youtubeplayer hospeda o player IFrame em WebView separado do HorizontalPager. O HTML local fornece HTTP Referer por loadDataWithBaseURL e acompanha os eventos de prontidão/erro por uma bridge restrita a callbacks; autoplay permanece desabilitado. O link original continua disponível no cabeçalho; vídeos que não permitem incorporação exigem abertura externa.
 - A barra superior mostra data/hora local, categoria, botão para abrir a URL original (somente quando `sourceUrl` contém HTTP(S) válido) e fechar. O mesmo atalho de link também aparece na coluna vertical de ações.
 - A imagem ocupa a área restante em fundo preto com `ContentScale.Fit`; não recortar nem esticar.
 - O título fica sobre a região superior da imagem com gradiente preto forte que esmaece até transparente.

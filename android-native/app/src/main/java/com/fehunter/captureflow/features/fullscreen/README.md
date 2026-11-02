@@ -3,7 +3,8 @@
 Feature responsável pela experiência ampliada de uma referência.
 
 - `FullscreenCaptureDialog`: navegação paginada entre referências da categoria, link original no cabeçalho e na coluna de ações, conclusão, edição de título e categoria no mesmo modal, abertura do editor de anotações, sub-checklist por referência e exclusão.
-- `FullscreenCapturePage`: apresentação da imagem em tela cheia, título e dica de navegação.
+- `FullscreenCapturePage`: apresentação da capa/imagem em tela cheia, título e dica de navegação.
+- A reprodução incorporada do YouTube pertence à feature independente youtubeplayer; o fullscreen apenas identifica o vídeo ativo e hospeda o componente fora do HorizontalPager.
 - O estado persistente continua vindo do fluxo de Captures por callbacks; a feature não mantém uma segunda fonte de verdade.
 - O carregamento da imagem usa `core/ui/ImageBitmapLoader`.
 
