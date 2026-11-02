@@ -1,4 +1,4 @@
-package com.fehunter.captureflow.features.youtubeplayer.data
+package com.fehunter.captureflow.features.youtubeplayer.presentation
 
 /** Builds the local document that hosts YouTube's official IFrame Player API. */
 internal object YoutubePlayerHtml {

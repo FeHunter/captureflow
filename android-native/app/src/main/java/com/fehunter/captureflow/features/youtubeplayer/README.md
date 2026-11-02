@@ -11,7 +11,7 @@ Feature responsável exclusivamente pela reprodução incorporada de vídeos do 
 - Restringir navegação principal a hosts HTTPS do YouTube; sub-recursos e iframe continuam permitidos.
 
 ## Organização
-- data/YoutubePlayerHtml.kt: documento HTML e configuração IFrame.
+- presentation/YoutubePlayerHtml.kt: documento HTML e configuração IFrame.
 - presentation/YoutubeEmbeddedPlayer.kt: componente Compose, WebView, estado de apresentação e lifecycle.
 - Não há Domain ou ViewModel porque a feature não possui regras de negócio nem estado persistente. O estado de carregamento/erro pertence à apresentação.
 
