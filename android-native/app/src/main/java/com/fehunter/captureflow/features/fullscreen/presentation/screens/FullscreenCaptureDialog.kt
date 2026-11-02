@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.features.captures.domain.model.Capture
+import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
+import com.fehunter.captureflow.features.youtubeplayer.presentation.YoutubeEmbeddedPlayer
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
@@ -144,6 +146,10 @@ fun FullscreenCaptureDialog(
                         }
                     }
                     Box(Modifier.weight(1f).fillMaxWidth()) {
+                        val activeCapture = viewerCaptures.getOrNull(pagerState.settledPage)
+                        val activeYoutubeVideoId = remember(activeCapture?.sourceUrl) {
+                            YoutubeVideoIdParser.extractVideoId(activeCapture?.sourceUrl)
+                        }
                         HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.fillMaxSize(),
@@ -154,6 +160,16 @@ fun FullscreenCaptureDialog(
                                 FullscreenCapturePage(
                                     capture = pageCapture,
                                     showNavigationHint = page == pagerState.currentPage,
+                                )
+                            }
+                        }
+                        // Keep Chromium's video surface outside the transformed pager page.
+                        if (pagerState.currentPage == pagerState.settledPage) {
+                            activeYoutubeVideoId?.let { videoId ->
+                                YoutubeEmbeddedPlayer(
+                                    videoId = videoId,
+                                    modifier = Modifier.align(Alignment.Center)
+                                        .fillMaxWidth().padding(horizontal = 8.dp),
                                 )
                             }
                         }

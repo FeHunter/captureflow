@@ -9,7 +9,8 @@ Features ativas/estruturadas:
 - `search`: consulta e filtragem da biblioteca.
 - `dashboard`: resumo reativo do progresso.
 - `settings`: preferências locais do aplicativo.
-- `fullscreen`: visualização ampliada de referências.
+- `fullscreen`: visualização ampliada de referências e composição do detalhe.
+- `youtubeplayer`: player incorporado do YouTube em WebView, com identidade de cliente, ciclo de vida e diagnóstico de erros isolados.
 - `notes`: edição de anotações associadas a uma referência, com persistência delegada a Captures.
 
 A tabela histórica `checklist_tasks` permanece no schema Room como compatibilidade de dados; não há feature/tela independente de Checklists. As subtarefas ativas pertencem a `captures` e usam `capture_subtasks`.
