@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.delay
 
 private const val TAG = "YoutubePlayer"
 private const val BRIDGE_NAME = "CaptureFlowYoutube"
@@ -56,9 +58,17 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var status by remember(videoId) { mutableStateOf<PlayerStatus>(PlayerStatus.Loading) }
     val setCurrentStatus by rememberUpdatedState<(PlayerStatus) -> Unit>({ status = it })
+    val latestStatus by rememberUpdatedState(status)
     val origin = remember(context.packageName) { "https://" + context.packageName.lowercase() }
     val html = remember(videoId, origin) { YoutubePlayerHtml.create(videoId, origin) }
     var webView by remember(videoId) { mutableStateOf<WebView?>(null) }
+
+    LaunchedEffect(videoId) {
+        delay(20_000)
+        if (latestStatus == PlayerStatus.Loading) {
+            setCurrentStatus(PlayerStatus.Failed(null, "O player não respondeu. Verifique a conexão ou abra o link original no YouTube."))
+        }
+    }
 
     DisposableEffect(lifecycleOwner, webView) {
         val currentWebView = webView
