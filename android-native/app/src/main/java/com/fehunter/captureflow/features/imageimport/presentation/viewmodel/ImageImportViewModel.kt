@@ -7,7 +7,6 @@ import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.imageimport.domain.gateway.ImageImportGateway
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
-import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
 import com.fehunter.captureflow.features.imageimport.presentation.model.OcrUiState
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingSharedLink
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingImageReview
@@ -237,12 +236,12 @@ class ImageImportViewModel(
                 sourceUrl = pending.url,
             )
             captureUseCases.save(capture)
-            // YouTube captures render the video player in fullscreen instead of storing its thumbnail as a cover.
-            if (YoutubeVideoIdParser.extractVideoId(pending.url) == null) {
-                pending.imageUrl?.let { imageUrl ->
-                    gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
-                        captureUseCases.updateImage(capture.id, localImage)
-                    }
+            // Keep the preview image for every shared URL, including YouTube.
+            // Fullscreen may render the embedded player, while cards and other surfaces
+            // still use the persisted thumbnail as the capture cover.
+            pending.imageUrl?.let { imageUrl ->
+                gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
+                    captureUseCases.updateImage(capture.id, localImage)
                 }
             }
         }

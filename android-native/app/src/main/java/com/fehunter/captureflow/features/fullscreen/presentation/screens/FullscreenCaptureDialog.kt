@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
@@ -72,6 +73,7 @@ fun FullscreenCaptureDialog(
     var showCategoryMenu by remember(capture?.id) { mutableStateOf(false) }
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
+    var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
 
     capture?.let { selected ->
         val viewerCaptures = captures.filter { it.category == selected.category }
@@ -85,7 +87,7 @@ fun FullscreenCaptureDialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
-            BackHandler { onDismiss() }
+            BackHandler(enabled = expandedNoteImage == null) { onDismiss() }
             val pagerState = rememberPagerState(
                 initialPage = initialPage,
                 pageCount = { viewerCaptures.size },
@@ -186,7 +188,13 @@ fun FullscreenCaptureDialog(
                                                         color = Color.White,
                                                     )
                                                 }
-                                                note.imageUri?.let { rawUri -> FullscreenNoteImage(rawUri) }
+                                                note.imageUri?.let { rawUri ->
+                                                    FullscreenNoteImage(
+                                                        rawUri = rawUri,
+                                                        onExpand = { image -> expandedNoteImage = image },
+                                                        onLongPress = { onEditNote(selected.id, note.id) },
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -408,21 +416,83 @@ fun FullscreenCaptureDialog(
             dismissButton = { TextButton(onClick = { showEditTitle = false }) { Text("Cancelar") } },
         )
     }
+
+    expandedNoteImage?.let { image ->
+        FullscreenNoteImageDialog(
+            image = image,
+            onDismiss = { expandedNoteImage = null },
+        )
+    }
 }
 
 
 @Composable
-private fun FullscreenNoteImage(rawUri: String) {
+private fun FullscreenNoteImage(
+    rawUri: String,
+    onExpand: (ImageBitmap) -> Unit,
+    onLongPress: () -> Unit,
+) {
     val context = LocalContext.current
     val image by produceState<ImageBitmap?>(null, rawUri) {
         value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri) }.getOrNull() }
     }
-    image?.let {
-        Image(
-            bitmap = it,
-            contentDescription = "Imagem da anotação",
-            modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp),
-            contentScale = ContentScale.Fit,
-        )
+    image?.let { bitmap ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 52.dp)
+                .combinedClickable(
+                    onClick = { onExpand(bitmap) },
+                    onLongClick = onLongPress,
+                ),
+        ) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Abrir imagem da anotação",
+                modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp),
+                contentScale = ContentScale.Fit,
+            )
+            Icon(
+                imageVector = Icons.Default.OpenInFull,
+                contentDescription = "Expandir imagem",
+                tint = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(6.dp)
+                    .background(Color.Black.copy(alpha = 0.72f), MaterialTheme.shapes.small)
+                    .padding(5.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun FullscreenNoteImageDialog(image: ImageBitmap, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+        ),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                    bitmap = image,
+                    contentDescription = "Imagem da anotação em tela cheia",
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
+                    contentScale = ContentScale.Fit,
+                )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
+                    .background(Color.Black.copy(alpha = 0.65f), MaterialTheme.shapes.extraLarge),
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Fechar imagem", tint = Color.White)
+            }
+        }
     }
 }

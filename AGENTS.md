@@ -70,7 +70,7 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 ### 2.3 Responsabilidade de cada feature
 
 - **captures:** ciclo de vida das referências: criar, observar, consultar por identificador, editar, concluir/restaurar e excluir. É a proprietária do modelo e das regras de referência.
-- **imageimport:** entrada de links/textos/imagens quando aplicável ao fluxo de importação, Photo Picker, compartilhamento, screenshots, OCR e estado de processamento. Links do YouTube não persistem thumbnail como capa; o player é responsabilidade do Fullscreen. Entrega dados validados/enriquecidos para persistência por Captures; não duplica a lógica de persistência de referências.
+- **imageimport:** entrada de links/textos/imagens quando aplicável ao fluxo de importação, Photo Picker, compartilhamento, screenshots, OCR e estado de processamento. Links do YouTube e dos demais sites persistem a thumbnail como capa quando o metadado e o download estão disponíveis; o player incorporado continua sendo responsabilidade do Fullscreen. Entrega dados validados/enriquecidos para persistência por Captures; não duplica a lógica de persistência de referências.
 - **search:** consulta, busca textual, combinação de filtros e apresentação dos resultados. Consome contratos de consulta de Captures; não acessa seu DAO ou banco diretamente.
 - **categories:** regras e operações de categorias, incluindo validações, ordenação e reatribuição segura de referências quando uma categoria é removida.
 - **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações, player YouTube incorporado e ações disponíveis no detalhe. Usa casos de uso/contratos de domínio, nunca DAO diretamente.
