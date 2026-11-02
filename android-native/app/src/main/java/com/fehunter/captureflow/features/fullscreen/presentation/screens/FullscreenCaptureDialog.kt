@@ -433,12 +433,12 @@ private fun FullscreenNoteImage(rawUri: String, onExpand: (ImageBitmap) -> Unit)
     }
     image?.let { bitmap ->
         Box(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 76.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp),
         ) {
             Image(
                 bitmap = bitmap,
                 contentDescription = "Ampliar imagem da anotação",
-                modifier = Modifier.fillMaxWidth().heightIn(max = 76.dp)
+                modifier = Modifier.fillMaxWidth().heightIn(max = 52.dp)
                     .clickable { onExpand(bitmap) },
                 contentScale = ContentScale.Fit,
             )
