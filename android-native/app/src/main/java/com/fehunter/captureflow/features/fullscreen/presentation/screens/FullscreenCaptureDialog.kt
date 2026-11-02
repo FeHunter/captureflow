@@ -2,6 +2,7 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -438,7 +439,7 @@ private fun FullscreenNoteImage(rawUri: String, onExpand: () -> Unit) {
                 bitmap = bitmap,
                 contentDescription = "Ampliar imagem da anotação",
                 modifier = Modifier.fillMaxWidth().heightIn(max = 76.dp)
-                    .combinedClickable(onClick = onExpand, onLongClick = {}),
+                    .clickable(onClick = onExpand),
                 contentScale = ContentScale.Fit,
             )
             TextButton(
