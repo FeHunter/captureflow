@@ -7,7 +7,6 @@ import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.imageimport.domain.gateway.ImageImportGateway
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
-import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
 import com.fehunter.captureflow.features.imageimport.presentation.model.OcrUiState
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingSharedLink
 import com.fehunter.captureflow.features.imageimport.presentation.model.PendingImageReview
