@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -71,7 +72,6 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            currentWebView?.onPause()
         }
     }
 
@@ -80,6 +80,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
             .heightIn(min = 200.dp).background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
+        key(videoId) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { viewContext ->
@@ -157,6 +158,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                 if (webView === released) webView = null
             },
         )
+        }
 
         when (val current = status) {
             PlayerStatus.Loading -> CircularProgressIndicator(color = Color.White)
