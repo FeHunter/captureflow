@@ -73,7 +73,7 @@ fun FullscreenCaptureDialog(
     var showCategoryMenu by remember(capture?.id) { mutableStateOf(false) }
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
-    var expandedNoteImageUri by remember(capture?.id) { mutableStateOf<String?>(null) }
+    var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
 
     capture?.let { selected ->
         val viewerCaptures = captures.filter { it.category == selected.category }
@@ -87,7 +87,7 @@ fun FullscreenCaptureDialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
-            BackHandler { onDismiss() }
+            BackHandler(enabled = expandedNoteImage == null) { onDismiss() }
             val pagerState = rememberPagerState(
                 initialPage = initialPage,
                 pageCount = { viewerCaptures.size },
@@ -191,7 +191,7 @@ fun FullscreenCaptureDialog(
                                                 note.imageUri?.let { rawUri ->
                                                     FullscreenNoteImage(
                                                         rawUri = rawUri,
-                                                        onExpand = { expandedNoteImageUri = rawUri },
+                                                        onExpand = { image -> expandedNoteImage = image },
                                                     )
                                                 }
                                             }
@@ -416,17 +416,17 @@ fun FullscreenCaptureDialog(
         )
     }
 
-    expandedNoteImageUri?.let { rawUri ->
+    expandedNoteImage?.let { image ->
         FullscreenNoteImageDialog(
-            rawUri = rawUri,
-            onDismiss = { expandedNoteImageUri = null },
+            image = image,
+            onDismiss = { expandedNoteImage = null },
         )
     }
 }
 
 
 @Composable
-private fun FullscreenNoteImage(rawUri: String, onExpand: () -> Unit) {
+private fun FullscreenNoteImage(rawUri: String, onExpand: (ImageBitmap) -> Unit) {
     val context = LocalContext.current
     val image by produceState<ImageBitmap?>(null, rawUri) {
         value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri) }.getOrNull() }
@@ -439,11 +439,11 @@ private fun FullscreenNoteImage(rawUri: String, onExpand: () -> Unit) {
                 bitmap = bitmap,
                 contentDescription = "Ampliar imagem da anotação",
                 modifier = Modifier.fillMaxWidth().heightIn(max = 76.dp)
-                    .clickable(onClick = onExpand),
+                    .clickable { onExpand(bitmap) },
                 contentScale = ContentScale.Fit,
             )
             TextButton(
-                onClick = onExpand,
+                onClick = { onExpand(bitmap) },
                 modifier = Modifier.align(Alignment.BottomEnd)
                     .padding(4.dp)
                     .background(Color.Black.copy(alpha = 0.72f), MaterialTheme.shapes.small),
@@ -456,11 +456,7 @@ private fun FullscreenNoteImage(rawUri: String, onExpand: () -> Unit) {
 }
 
 @Composable
-private fun FullscreenNoteImageDialog(rawUri: String, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val image by produceState<ImageBitmap?>(null, rawUri) {
-        value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri) }.getOrNull() }
-    }
+private fun FullscreenNoteImageDialog(image: ImageBitmap, onDismiss: () -> Unit) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -473,14 +469,12 @@ private fun FullscreenNoteImageDialog(rawUri: String, onDismiss: () -> Unit) {
             modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f)),
             contentAlignment = Alignment.Center,
         ) {
-            image?.let {
-                Image(
-                    bitmap = it,
+            Image(
+                    bitmap = image,
                     contentDescription = "Imagem da anotação em tela cheia",
                     modifier = Modifier.fillMaxSize().padding(20.dp),
                     contentScale = ContentScale.Fit,
                 )
-            }
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
