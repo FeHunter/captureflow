@@ -237,12 +237,12 @@ class ImageImportViewModel(
                 sourceUrl = pending.url,
             )
             captureUseCases.save(capture)
-            // YouTube captures render the video player in fullscreen instead of storing its thumbnail as a cover.
-            if (YoutubeVideoIdParser.extractVideoId(pending.url) == null) {
-                pending.imageUrl?.let { imageUrl ->
-                    gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
-                        captureUseCases.updateImage(capture.id, localImage)
-                    }
+            // Keep the preview image for every shared URL, including YouTube.
+            // Fullscreen may render the embedded player, while cards and other surfaces
+            // still use the persisted thumbnail as the capture cover.
+            pending.imageUrl?.let { imageUrl ->
+                gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
+                    captureUseCases.updateImage(capture.id, localImage)
                 }
             }
         }
