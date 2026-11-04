@@ -194,7 +194,8 @@ class NewslettersViewModel(
 
     private fun fetchInitialFeed(inputUrl: String): Pair<NewsletterFetchResult.Success, com.fehunter.captureflow.features.newsletters.domain.model.ParsedNewsletterFeed> {
         var lastError: Exception? = null
-        val candidates = (listOf(inputUrl) + discovery.discoverFeedUrls(inputUrl)).distinct().take(MAX_DISCOVERED_FEEDS)
+        val discoveredFeeds = runCatching { discovery.discoverFeedUrls(inputUrl) }.getOrDefault(emptyList())
+        val candidates = (listOf(inputUrl) + discoveredFeeds).distinct().take(MAX_DISCOVERED_FEEDS)
         for (candidate in candidates) {
             try {
                 val result = fetcher.fetch(candidate)
