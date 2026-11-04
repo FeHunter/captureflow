@@ -251,7 +251,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 }
             }
         }
-        item(key = "search") { CaptureSearchField(query = query, onQueryChange = searchViewModel::updateQuery) }
         item(key = "dashboard") { DashboardSummaryCard(dashboardSummary) }
         item(key = "categories") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -287,6 +286,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 )
             }
         }
+        item(key = "search") { CaptureSearchField(query = query, onQueryChange = searchViewModel::updateQuery) }
         if (allMatchingCaptures.isEmpty()) {
             item(key = "empty-state") {
                 Text(

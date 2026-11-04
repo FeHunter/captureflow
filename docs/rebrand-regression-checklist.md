@@ -154,3 +154,17 @@ Este inventário é o contrato de regressão para o rebrand **Hybrid Personal No
 - [ ] Entrada/saída de cards, status e progresso animam suavemente sem atrasar a ação.
 - [ ] Imagens entram com fade-in sem decodificação na main thread.
 - [ ] Animações não bloqueiam navegação, Back, clique ou acessibilidade quando a escala do sistema está reduzida.
+
+
+## 12. Leitor web interno e ordem da pesquisa
+
+- [ ] A pesquisa aparece imediatamente abaixo dos filtros de categorias.
+- [ ] A pesquisa continua filtrando resultados e categorias sem perder o texto ao expandir/recolher cards.
+- [ ] Fullscreen mantém a ação Abrir link no navegador externo.
+- [ ] URLs HTTP/HTTPS válidas também exibem Visualizar conteúdo no CaptureFlow.
+- [ ] Links de YouTube mantêm o player dedicado e não exibem a ação genérica de WebView.
+- [ ] WebView bloqueia JavaScript, DOM Storage, acesso a arquivos/conteúdo e conteúdo misto; Safe Browsing fica ativo.
+- [ ] Navegação interna HTTP/HTTPS funciona; schemes não web são bloqueados.
+- [ ] Back navega pelo histórico da WebView antes de retornar ao Fullscreen.
+- [ ] Fechar o leitor encerra a WebView e libera seus recursos.
+- [ ] Testar páginas simples, páginas com conteúdo dependente de JavaScript, redirecionamentos e erros de rede; navegador externo permanece acessível.
