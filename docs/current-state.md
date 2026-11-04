@@ -1,21 +1,24 @@
 # Capture Flow — estado atual do aplicativo
 
-**Atualizado:** 2026-11-01. Este documento registra o comportamento observado no código; não é uma promessa de release.
+**Atualizado:** 2026-11-04. Este documento registra o comportamento observado no código; não é uma promessa de release.
 
 ## Produto e fonte de verdade
 Capture Flow guarda links, textos e imagens compartilhados como referências locais, organizáveis por categoria e com sub-checklists. O app ativo é Kotlin/Android/Jetpack Compose em `android-native/`; `legacy-expo/` é histórico. Banco local Room/SQLite em `captureflow.db`; sem sincronização em nuvem.
 
 ## Arquitetura
-- `MainActivity.kt`: intents do launcher, Android Sharesheet e notificação.
-- `ui/CaptureFlowApp.kt`: tela única, cartões, busca, filtros, diálogos, visualizadores fullscreen e sub-checklist.
-- `ui/CaptureViewModel.kt`: StateFlow, operações assíncronas, captura pendente de link, persistência, OCR e subtarefas.
-- `data/CaptureDatabase.kt`: entidades, DAOs, classificação e migrações Room.
-- `services/LinkMetadataService.kt`: requisição HTTP(S) e parsing best-effort de HTML.
-- `services/OcrService.kt`: ML Kit Text Recognition no dispositivo e heurísticas de título.
-- `services/SharedImageStorageService.kt`: cópia/download de imagem para diretório privado e remoção segura de arquivos próprios.
-- `ScreenshotMonitor.kt` e `ScreenshotNotificationService.kt`: detecção opcional de screenshots pelo MediaStore.
-- Direção de dependências: UI → ViewModel → serviços/DAOs. Composables não devem acessar DAOs diretamente.
-
+- Plataforma ativa: Android nativo, Kotlin, Jetpack Compose e Material 3 em `android-native/`; `legacy-expo/` é histórico.
+- Organização Feature-first + MVVM, ainda em um único módulo Gradle.
+- `MainActivity.kt`: entrada Android, permissões e encaminhamento de intents/Sharesheet.
+- `app/navigation/`: shell Compose e composição da biblioteca; `CaptureLibraryCoordinator` coordena features, sem concentrar regras de negócio.
+- `app/di/`: composição de dependências.
+- `core/`: utilitários compartilhados e UI infrastructure, sem dependência de features.
+- `features/captures/`: domínio, contratos, casos de uso, persistência Room e estado das referências/subtarefas.
+- `features/imageimport/`: adaptação de Sharesheet/Photo Picker/câmera, metadados, armazenamento privado e OCR.
+- `features/categories/`, `search/`, `dashboard/` e `settings/`: estado e apresentação separados por feature.
+- `features/fullscreen/`: visualizador e ações por callbacks; não possui ViewModel próprio enquanto não houver estado de negócio independente.
+- `features/youtubeplayer/`: player IFrame em WebView, isolado da feature Fullscreen.
+- Direção de dependências: Presentation → Domain/UseCases/contratos; Data implementa repositórios e acessa Room. Domain não importa Android, Compose, Room ou Data. Features não importam implementações internas umas das outras.
+- Composables não acessam DAOs, Room ou rede diretamente. A persistência local Room/SQLite é a fonte canônica; não há sincronização em nuvem.
 ## Tela principal
 - Nome do produto na barra superior e launcher: **Capture Flow**.
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
@@ -135,7 +138,7 @@ A UI foi dividida entre shell de navegação e `CaptureLibraryCoordinator` no Ap
 
 A tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema; as subtarefas ativas são propriedade de Captures e vinculadas por `captureId`. Fullscreen não tem ViewModel independente por não possuir estado de negócio isolado.
 
-Room permanece v8. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
+Room permanece v9. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
 
 
 ## Atualização — câmera e metadados do YouTube
