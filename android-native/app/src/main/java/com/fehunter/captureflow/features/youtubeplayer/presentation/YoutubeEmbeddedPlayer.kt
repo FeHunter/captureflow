@@ -85,7 +85,6 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                     WebView(viewContext).apply {
                         webView = this
                         setBackgroundColor(AndroidColor.BLACK)
-                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
                         isVerticalScrollBarEnabled = false
                         isHorizontalScrollBarEnabled = false
                         overScrollMode = View.OVER_SCROLL_NEVER
