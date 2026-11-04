@@ -47,6 +47,7 @@ APK debug esperado: `android-native/app/build/outputs/apk/debug/app-debug.apk`.
 
 - [Visão geral do projeto, arquitetura, UI e fluxos](docs/project-overview.md)
 - [Diretrizes de engenharia](AGENTS.md)
+- [Design System — Personal Notebook](docs/design-system.md)
 - [Arquitetura](docs/architecture.md)
 - [Plano de migração](docs/migration-plan.md)
 - [Roadmap](docs/roadmap.md)
