@@ -247,7 +247,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                                 Text("Nova tarefa", style = MaterialTheme.typography.labelSmall, maxLines = 1)
                             }
                         }
-                    }                }
+                    }
+                }
             }
         }
         item(key = "search") { CaptureSearchField(query = query, onQueryChange = searchViewModel::updateQuery) }
@@ -353,6 +354,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
 
     LaunchedEffect(expandedCategory) {
         showCompletedInExpandedCategory = false
+    }
+    LaunchedEffect(deletingCaptureIds, captures) {
+        val removedIds = deletingCaptureIds.filter { id -> captures.none { it.id == id } }.toSet()
+        if (removedIds.isNotEmpty()) deletingCaptureIds = deletingCaptureIds - removedIds
     }
     val expandedCategoryCaptures = remember(allMatchingCaptures, expandedCategory, captureSortOrder) {
         expandedCategory?.let { tag -> sortCaptures(allMatchingCaptures.filter { it.category == tag }) }.orEmpty()
@@ -475,7 +480,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         AlertDialog(
             onDismissRequest = { pendingDeleteCapture = null },
             title = { Text("Excluir tarefa?") },
-            text = { Text("“\${captureToDelete.title}” será removida permanentemente do caderno.") },
+            text = { Text("“${captureToDelete.title}” será removida permanentemente do caderno.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -485,7 +490,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         uiScope.launch {
                             delay(190)
                             viewModel.deleteCapture(id)
-                            deletingCaptureIds = deletingCaptureIds - id
                         }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
