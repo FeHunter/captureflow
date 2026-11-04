@@ -67,7 +67,7 @@ fun CaptureFlowApp(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.82f),
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
                     actionIconContentColor = MaterialTheme.colorScheme.onBackground,
                 ),
