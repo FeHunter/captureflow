@@ -39,10 +39,10 @@ class AppContainer(application: Application) {
     private val captureRepository = RoomCaptureRepository(database)
     private val newsletterRepository = RoomNewsletterRepository(database.newsletterDao())
     val newsletterUseCases = NewsletterUseCases(newsletterRepository)
+    val captureUseCases = CaptureUseCases(captureRepository)
     val backupViewModelFactory = BackupViewModelFactory(
         BackupUseCases(BackupArchiveRepository(BackupArchiveManager(application, captureUseCases))),
     )
-    val captureUseCases = CaptureUseCases(captureRepository)
     private val privateImageStorage = LocalPrivateImageStorage(application)
     private val imageCompressor = ImageCompressionService(application)
     private val imageImportStorage = ImageImportStorageService(application, imageCompressor)
