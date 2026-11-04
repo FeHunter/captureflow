@@ -4,8 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -408,6 +406,28 @@ fun FullscreenCaptureDialog(
                         Icon(Icons.Default.Close, contentDescription = "Fechar sub-checklist")
                     }
                 }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = newSubtask,
+                        onValueChange = { newSubtask = it.take(160) },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Adicionar uma subtarefa") },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.large,
+                    )
+                    FilledIconButton(
+                        onClick = {
+                            onAddSubtask(capture.id, newSubtask)
+                            newSubtask = ""
+                        },
+                        enabled = newSubtask.isNotBlank(),
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Adicionar subtarefa")
+                    }
+                }
                 val completedSubtasks = selectedSubtasks.count { it.isCompleted }
                 val progress = if (selectedSubtasks.isNotEmpty()) completedSubtasks.toFloat() / selectedSubtasks.size else 0f
                 LinearProgressIndicator(
@@ -416,12 +436,12 @@ fun FullscreenCaptureDialog(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentPadding = PaddingValues(vertical = 2.dp),
+                Column(
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(selectedSubtasks, key = { it.id }) { subtask ->
+                    selectedSubtasks.forEach { subtask ->
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.large,
@@ -444,27 +464,6 @@ fun FullscreenCaptureDialog(
                                 }
                             }
                         }
-                    }
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = newSubtask,
-                        onValueChange = { newSubtask = it.take(160) },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Adicionar uma subtarefa") },
-                        singleLine = true,
-                    )
-                    IconButton(
-                        onClick = {
-                            onAddSubtask(capture.id, newSubtask)
-                            newSubtask = ""
-                        },
-                        enabled = newSubtask.isNotBlank(),
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Adicionar subtarefa")
                     }
                 }
             }
