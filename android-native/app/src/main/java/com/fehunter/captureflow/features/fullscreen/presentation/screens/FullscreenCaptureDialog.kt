@@ -27,7 +27,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,7 +73,6 @@ fun FullscreenCaptureDialog(
     onSubtaskCompleted: (String, Boolean) -> Unit,
     onDeleteSubtask: (String) -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
     var showEditTitle by remember(capture?.id) { mutableStateOf(false) }
     var editedTitle by remember(capture?.id) { mutableStateOf(capture?.title.orEmpty()) }
     var editedCategory by remember(capture?.id) { mutableStateOf(capture?.category.orEmpty()) }

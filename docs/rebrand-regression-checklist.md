@@ -168,3 +168,12 @@ Este inventário é o contrato de regressão para o rebrand **Hybrid Personal No
 - [ ] Back navega pelo histórico da WebView antes de retornar ao Fullscreen.
 - [ ] Fechar o leitor encerra a WebView e libera seus recursos.
 - [ ] Testar páginas simples, páginas com conteúdo dependente de JavaScript, redirecionamentos e erros de rede; navegador externo permanece acessível.
+
+
+## Menu, privacidade e tutoriais
+
+- [ ] Menu do cabeçalho não apresenta mais a opção Ocultar concluídos.
+- [ ] Menu do cabeçalho abre Privacidade e Tutoriais; ambas as telas fecham pelo botão e pelo Back do Android.
+- [ ] Política descreve armazenamento local, ausência de conta/sincronização própria, acessos externos à internet e backup ainda futuro.
+- [ ] Tutoriais cobrem criação, categorias, busca, conclusão, notas, navegação web, Newsletters e monitoramento de screenshots.
+- [ ] No Fullscreen, o ícone de globo fica na barra vertical para abrir o leitor interno; o cabeçalho mantém o link externo e o dock não duplica essa ação.
