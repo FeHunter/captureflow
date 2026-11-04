@@ -3,6 +3,7 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +25,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -159,14 +162,36 @@ fun FullscreenCaptureDialog(
                             key = { page -> viewerCaptures[page].id },
                         ) { page ->
                             val pageCapture = viewerCaptures[page]
-                            Box(Modifier.fillMaxSize()) {
-                                val pageMedia = mediaByCapture[pageCapture.id].orEmpty()
-                                var mediaIndex by remember(pageCapture.id) {
-                                    mutableIntStateOf(pageMedia.indexOfFirst { it.isCover }.coerceAtLeast(0))
+                            val pageMedia = mediaByCapture[pageCapture.id].orEmpty()
+                            var mediaIndex by remember(pageCapture.id) {
+                                mutableIntStateOf(pageMedia.indexOfFirst { it.isCover }.coerceAtLeast(0))
+                            }
+                            LaunchedEffect(pageCapture.id, pageMedia) {
+                                mediaIndex = pageMedia.indexOfFirst { it.isCover }.coerceAtLeast(0)
+                            }
+                            val imageSwipeModifier = if (pageMedia.size > 1) {
+                                Modifier.pointerInput(pageCapture.id, pageMedia.size) {
+                                    var verticalDistance = 0f
+                                    val swipeThreshold = 48.dp.toPx()
+                                    detectVerticalDragGestures(
+                                        onVerticalDrag = { change, dragAmount ->
+                                            verticalDistance += dragAmount
+                                            change.consume()
+                                        },
+                                        onDragEnd = {
+                                            when {
+                                                verticalDistance <= -swipeThreshold ->
+                                                    mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex)
+                                                verticalDistance >= swipeThreshold ->
+                                                    mediaIndex = (mediaIndex - 1).coerceAtLeast(0)
+                                            }
+                                            verticalDistance = 0f
+                                        },
+                                        onDragCancel = { verticalDistance = 0f },
+                                    )
                                 }
-                                LaunchedEffect(pageCapture.id, pageMedia) {
-                                    mediaIndex = pageMedia.indexOfFirst { it.isCover }.coerceAtLeast(0)
-                                }
+                            } else Modifier
+                            Box(Modifier.fillMaxSize().then(imageSwipeModifier)) {
                                 val activeMedia = pageMedia.getOrNull(mediaIndex)
                                 FullscreenCapturePage(
                                     capture = pageCapture.copy(imageUri = activeMedia?.uri ?: pageCapture.imageUri),

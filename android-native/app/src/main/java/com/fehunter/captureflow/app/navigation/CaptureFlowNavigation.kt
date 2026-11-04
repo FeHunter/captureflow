@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,6 +65,15 @@ fun CaptureFlowApp(
             TopAppBar(
                 title = { Text("Capture Flow", fontWeight = FontWeight.Bold) },
                 actions = {
+                    if (!showNewsletters) {
+                        IconButton(onClick = { showNewsletters = true }) {
+                            Icon(
+                                Icons.Default.RssFeed,
+                                contentDescription = "Abrir Newsletters",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = {
                             if (screenshotMonitoringEnabled) onStopScreenshotMonitoring()
@@ -104,13 +114,6 @@ fun CaptureFlowApp(
                             onClick = {
                                 showCompletedCaptures = !showCompletedCaptures
                                 showOptionsMenu = false
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Newsletters") },
-                            onClick = {
-                                showOptionsMenu = false
-                                showNewsletters = true
                             },
                         )
                         DropdownMenuItem(
