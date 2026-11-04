@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.drawLine
 import androidx.compose.ui.unit.dp
 
 /** Lightweight, theme-aware ruled-paper cover for references created without an image. */

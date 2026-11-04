@@ -75,18 +75,20 @@ fun CategoryThumbnail(capture: Capture, ocrState: CaptureImageProcessingStatus, 
                     } else TaskPaperCover(modifier = Modifier.fillMaxSize())
                 }
                 CaptureStatusBadge(isCompleted = capture.isCompleted, modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
-                AnimatedVisibility(
-                    visible = ocrState.isProcessing || ocrState.isError,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
-                    enter = fadeIn(tween(140)),
-                    exit = fadeOut(tween(140)),
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(7.dp),
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    ) {
-                        Text(if (ocrState.isError) "⚠" else "◌", modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = if (ocrState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                Crossfade(
+                    targetState = ocrState.isProcessing || ocrState.isError,
+                    animationSpec = tween(140),
+                    label = "ocr-status",
+                ) { showStatus ->
+                    if (showStatus) {
+                        Surface(
+                            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                            shape = RoundedCornerShape(7.dp),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        ) {
+                            Text(if (ocrState.isError) "⚠" else "◌", modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = if (ocrState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
                 if (capture.isCompleted && onDelete != null) {
