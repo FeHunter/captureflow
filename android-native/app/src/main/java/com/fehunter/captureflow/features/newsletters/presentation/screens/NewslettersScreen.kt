@@ -2,6 +2,7 @@ package com.fehunter.captureflow.features.newsletters.presentation.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,7 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,8 +79,11 @@ fun NewslettersScreen(
     val message by viewModel.message.collectAsState()
     var feedUrl by remember { mutableStateOf("") }
     var showDeleteSourceConfirmation by remember { mutableStateOf(false) }
+    var openedArticle by remember { mutableStateOf<NewsletterArticle?>(null) }
 
-    Box(Modifier.fillMaxSize()) {
+    if (openedArticle != null) {
+        NewsletterArticleReader(article = openedArticle!!, onBack = { openedArticle = null })
+    } else Box(Modifier.fillMaxSize()) {
         CaptureFlowBackdrop(Modifier.fillMaxSize())
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -244,18 +247,59 @@ fun NewslettersScreen(
                         }
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(sources, key = { it.id }) { source ->
-                                FilterChip(
-                                    selected = selectedSourceId == source.id,
+                                val selected = selectedSourceId == source.id
+                                Surface(
                                     onClick = { viewModel.selectSource(source.id) },
-                                    label = {
+                                    modifier = Modifier.widthIn(min = 172.dp, max = 230.dp),
+                                    shape = RoundedCornerShape(18.dp),
+                                    color = if (selected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                                        else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
+                                    ),
+                                    tonalElevation = if (selected) 2.dp else 0.dp,
+                                ) {
+                                    Column(
+                                        Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                Icons.Default.RssFeed,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(17.dp),
+                                                tint = if (selected) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            Spacer(Modifier.size(7.dp))
+                                            Text(
+                                                source.title,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                                                else MaterialTheme.colorScheme.onSurface,
+                                            )
+                                        }
                                         Text(
-                                            source.title,
+                                            source.siteUrl?.let { runCatching { java.net.URI(it).host }.getOrNull() }
+                                                ?: "Feed RSS / Atom",
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
-                                    },
-                                    shape = RoundedCornerShape(14.dp),
-                                )
+                                        if (source.lastError != null) {
+                                            Text("Falha na atualização", style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.error)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -382,6 +426,7 @@ fun NewslettersScreen(
                 items(articles, key = { it.id }) { article ->
                     NewsletterArticleCard(
                         article = article,
+                        onOpen = { openedArticle = article; viewModel.markRead(article.id, true) },
                         onReadChange = { viewModel.markRead(article.id, it) },
                         onSave = { viewModel.saveArticleToLibrary(article) },
                     )
@@ -455,10 +500,10 @@ private fun EmptyNewslettersState(
 @Composable
 private fun NewsletterArticleCard(
     article: NewsletterArticle,
+    onOpen: () -> Unit,
     onReadChange: (Boolean) -> Unit,
     onSave: () -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
     val publishedAt = article.publishedAt?.let {
         SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it))
     }
@@ -525,12 +570,12 @@ private fun NewsletterArticleCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 TextButton(
-                    onClick = { runCatching { uriHandler.openUri(article.canonicalUrl) } },
+                    onClick = onOpen,
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(17.dp))
                     Spacer(Modifier.size(5.dp))
-                    Text("Abrir artigo", maxLines = 1)
+                    Text("Ler no app", maxLines = 1)
                 }
                 TextButton(
                     onClick = { onReadChange(!article.isRead) },
