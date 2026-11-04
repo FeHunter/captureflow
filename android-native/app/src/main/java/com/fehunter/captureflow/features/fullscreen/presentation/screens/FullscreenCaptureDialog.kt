@@ -108,7 +108,7 @@ fun FullscreenCaptureDialog(
             Surface(Modifier.fillMaxSize(), color = Color.Black) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
+                        modifier = Modifier.fillMaxWidth().background(Color.Transparent)
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -117,17 +117,17 @@ fun FullscreenCaptureDialog(
                                 SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault())
                                     .format(Date(selected.createdAt)),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = Color.White.copy(alpha = 0.76f),
                             )
                             Surface(
                                 shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                color = Color.White.copy(alpha = 0.14f),
                             ) {
                                 Text(
                                     selected.category,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    color = Color.White,
                                 )
                             }
                         }
@@ -138,7 +138,7 @@ fun FullscreenCaptureDialog(
                                 },
                                 modifier = Modifier.size(44.dp),
                             ) {
-                                Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = Color.White)
                             }
                         }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
@@ -218,7 +218,7 @@ fun FullscreenCaptureDialog(
                             }
                             Surface(
                                 shape = MaterialTheme.shapes.extraLarge,
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                color = Color(0x990A1B33),
                                 shadowElevation = 8.dp,
                             ) {
                                 IconButton(
@@ -228,7 +228,7 @@ fun FullscreenCaptureDialog(
                                     Icon(
                                         Icons.Default.ChatBubbleOutline,
                                         contentDescription = if (thoughtNotes.isEmpty()) "Adicionar anotações" else "Editar anotações",
-                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        tint = Color.White,
                                     )
                                 }
                             }
@@ -236,7 +236,7 @@ fun FullscreenCaptureDialog(
                         Surface(
                             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
                             shape = MaterialTheme.shapes.extraLarge,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                            color = Color(0x990A1B33),
                             shadowElevation = 8.dp,
                         ) {
                             Column(
@@ -302,7 +302,12 @@ fun FullscreenCaptureDialog(
 
     if (showSubtasks && capture != null) {
         val selectedSubtasks = allSubtasks.filter { it.captureId == capture.id }
-        ModalBottomSheet(onDismissRequest = { showSubtasks = false }) {
+        ModalBottomSheet(
+            onDismissRequest = { showSubtasks = false },
+            containerColor = Color(0xFF0C2B46),
+            contentColor = Color(0xFFF3F7FB),
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFA9C0D2)) },
+        ) {
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .padding(horizontal = 16.dp)
@@ -320,25 +325,36 @@ fun FullscreenCaptureDialog(
                         Icon(Icons.Default.Close, contentDescription = "Fechar sub-checklist")
                     }
                 }
+                val completedSubtasks = selectedSubtasks.count { it.isCompleted }
+                val progress = if (selectedSubtasks.isNotEmpty()) completedSubtasks.toFloat() / selectedSubtasks.size else 0f
+                Text("$completedSubtasks de ${selectedSubtasks.size} concluídas", style = MaterialTheme.typography.bodySmall, color = Color(0xFFA9C0D2))
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    color = Color(0xFF63C4F0),
+                    trackColor = Color(0xFF164B62),
+                )
                 selectedSubtasks.forEach { subtask ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        color = Color(0xFF164B62),
                     ) {
-                        Checkbox(
-                            checked = subtask.isCompleted,
-                            onCheckedChange = { onSubtaskCompleted(subtask.id, it) },
-                        )
-                        Text(
-                            subtask.title,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            color = if (subtask.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
-                            else MaterialTheme.colorScheme.onSurface,
-                        )
-                        IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Excluir subtarefa")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            Checkbox(checked = subtask.isCompleted, onCheckedChange = { onSubtaskCompleted(subtask.id, it) })
+                            Text(
+                                subtask.title,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                color = if (subtask.isCompleted) Color(0xFFA9C0D2) else Color.White,
+                            )
+                            IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
+                                Icon(Icons.Default.Close, contentDescription = "Excluir item", tint = Color(0xFFA9C0D2))
+                            }
                         }
                     }
                 }

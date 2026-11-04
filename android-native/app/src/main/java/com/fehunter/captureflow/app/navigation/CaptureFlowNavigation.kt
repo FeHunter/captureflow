@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
 import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
 import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
@@ -56,9 +58,15 @@ fun CaptureFlowApp(
     var showCompletedCaptures by remember { mutableStateOf(true) }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Capture Flow", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.82f),
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                ),
+                title = { Text("Capture Flow", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge) },
                 actions = {
                     IconButton(
                         onClick = {
@@ -132,7 +140,7 @@ fun CaptureFlowApp(
             )
         },
     ) { padding ->
-        Surface(Modifier.fillMaxSize().padding(padding)) {
+        Surface(Modifier.fillMaxSize().padding(padding), color = Color.Transparent) {
             CaptureLibrary(
                 viewModel = viewModel,
                 imageImportViewModel = imageImportViewModel,
