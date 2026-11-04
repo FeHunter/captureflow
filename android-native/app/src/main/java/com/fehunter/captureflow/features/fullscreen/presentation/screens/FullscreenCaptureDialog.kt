@@ -151,16 +151,6 @@ fun FullscreenCaptureDialog(
                                 Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
-                        sourceUrl?.let { url ->
-                            if (YoutubeVideoIdParser.extractVideoId(url) == null) {
-                                IconButton(
-                                    onClick = { showWebReader = true },
-                                    modifier = Modifier.size(44.dp),
-                                ) {
-                                    Icon(Icons.Default.Language, contentDescription = "Visualizar conteúdo no CaptureFlow", tint = MaterialTheme.colorScheme.primary)
-                                }
-                            }
-                        }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
                             Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
                         }
@@ -390,15 +380,17 @@ fun FullscreenCaptureDialog(
                                         )
                                     }
                                     sourceUrl?.let { url ->
-                                        IconButton(
-                                            onClick = { runCatching { uriHandler.openUri(url) } },
-                                            modifier = Modifier.size(48.dp),
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Link,
-                                                contentDescription = "Abrir link original",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                            )
+                                        if (YoutubeVideoIdParser.extractVideoId(url) == null) {
+                                            IconButton(
+                                                onClick = { showWebReader = true },
+                                                modifier = Modifier.size(48.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Language,
+                                                    contentDescription = "Visualizar conteúdo no CaptureFlow",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
                                         }
                                     }
                                     IconButton(
