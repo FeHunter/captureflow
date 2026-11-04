@@ -181,7 +181,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             )) {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.linearGradient(listOf(Color(0xFF1F6F83), Color(0xFF12335A), Color.Black.copy(alpha = 0.56f))))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -190,21 +190,24 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             Icons.Default.Image,
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Adicionar imagem", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold, color = Color.White)
+                                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                             Text("O texto é extraído localmente, no seu dispositivo.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.82f))
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { showCameraCapture = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29B3C7), contentColor = Color.Black.copy(alpha = 0.56f)),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
                             modifier = Modifier.weight(1f),
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = null)
@@ -212,7 +215,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             Text("Fotografar")
                         }
                         OutlinedButton(
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                             onClick = {
                                 imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                             },
