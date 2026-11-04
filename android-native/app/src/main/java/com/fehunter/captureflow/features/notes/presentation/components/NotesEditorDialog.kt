@@ -52,12 +52,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.exifinterface.media.ExifInterface
@@ -243,20 +246,31 @@ fun NotesEditorDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(0.94f).heightIn(max = 700.dp),
-            shape = MaterialTheme.shapes.extraLarge,
+            shape = RoundedCornerShape(22.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 12.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            tonalElevation = 3.dp,
+            shadowElevation = 8.dp,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    if (editingNote == null) "Nova anotação" else "Editar anotação",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Column(Modifier.padding(horizontal = 14.dp, vertical = 11.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("CADERNO DE ANOTAÇÕES", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f), fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text(
+                            if (editingNote == null) "Nova anotação" else "Editar anotação",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
                 Text(
                     captureTitle,
                     style = MaterialTheme.typography.bodyMedium,
@@ -264,10 +278,29 @@ fun NotesEditorDialog(
                     maxLines = 2,
                 )
 
+                val notebookRuleColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
                 OutlinedTextField(
                     value = draftText,
                     onValueChange = { draftText = it.take(MAX_NOTE_LENGTH) },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 130.dp, max = 240.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 130.dp, max = 240.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f), RoundedCornerShape(14.dp))
+                        .drawBehind {
+                            val lineGap = 28.dp.toPx()
+                            var y = lineGap
+                            while (y < size.height) {
+                                drawLine(notebookRuleColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                                y += lineGap
+                            }
+                            val marginX = 18.dp.toPx()
+                            drawLine(notebookRuleColor.copy(alpha = 0.7f), Offset(marginX, 0f), Offset(marginX, size.height), strokeWidth = 1.dp.toPx())
+                        },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    ),
                     placeholder = { Text("Registre uma ideia, contexto ou próximo passo…") },
                     minLines = 4,
                     maxLines = 9,

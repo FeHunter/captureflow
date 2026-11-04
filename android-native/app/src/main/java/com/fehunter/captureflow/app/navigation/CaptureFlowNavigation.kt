@@ -33,6 +33,8 @@ import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.Dashbo
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
 import com.fehunter.captureflow.features.newsletters.presentation.screens.NewslettersScreen
 import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
+import com.fehunter.captureflow.features.settings.presentation.screens.PrivacyPolicyScreen
+import com.fehunter.captureflow.features.settings.presentation.screens.TutorialsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +61,8 @@ fun CaptureFlowApp(
 ) {
     var showThemeMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
-    var showCompletedCaptures by remember { mutableStateOf(true) }
+    var showPrivacyPolicy by remember { mutableStateOf(false) }
+    var showTutorials by remember { mutableStateOf(false) }
     var showNewsletters by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -67,9 +70,9 @@ fun CaptureFlowApp(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.82f),
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 title = {
                     Text(
@@ -117,12 +120,17 @@ fun CaptureFlowApp(
                             onDismissRequest = { showOptionsMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = {
-                                    Text(if (showCompletedCaptures) "Ocultar concluídos" else "Mostrar concluídos")
-                                },
+                                text = { Text("Privacidade") },
                                 onClick = {
-                                    showCompletedCaptures = !showCompletedCaptures
                                     showOptionsMenu = false
+                                    showPrivacyPolicy = true
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Tutoriais") },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    showTutorials = true
                                 },
                             )
                             DropdownMenuItem(
@@ -174,7 +182,6 @@ fun CaptureFlowApp(
                     imageCompressionProfile = imageCompressionProfile,
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
-                    showCompletedCaptures = showCompletedCaptures,
                     detectedScreenshotUri = detectedScreenshotUri,
                     pendingScreenshotImportUri = pendingScreenshotImportUri,
                     onRequestScreenshotAccess = onRequestScreenshotAccess,
@@ -184,5 +191,12 @@ fun CaptureFlowApp(
                 )
             }
         }
+    }
+
+    if (showPrivacyPolicy) {
+        PrivacyPolicyScreen(onBack = { showPrivacyPolicy = false })
+    }
+    if (showTutorials) {
+        TutorialsScreen(onBack = { showTutorials = false })
     }
 }

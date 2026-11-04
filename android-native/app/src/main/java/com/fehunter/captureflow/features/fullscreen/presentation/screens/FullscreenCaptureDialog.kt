@@ -2,6 +2,7 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.rememberScrollState
@@ -16,15 +17,16 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.OpenInFull
+import com.fehunter.captureflow.features.fullscreen.presentation.components.CaptureWebReader
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +44,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.Add
@@ -79,20 +82,22 @@ fun FullscreenCaptureDialog(
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
     var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
+    var showWebReader by remember(capture?.id) { mutableStateOf(false) }
 
     capture?.let { selected ->
         val viewerCaptures = captures.filter { it.category == selected.category && it.isCompleted == selected.isCompleted }
         val initialPage = viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
         val sourceUrl = selected.sourceUrl?.takeIf { url ->
             runCatching {
-                java.net.URI(url).scheme?.lowercase() in setOf("http", "https")
+                val uri = java.net.URI(url)
+                uri.scheme?.lowercase() in setOf("http", "https") && !uri.host.isNullOrBlank() && uri.userInfo == null
             }.getOrDefault(false)
         }
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
-            BackHandler(enabled = expandedNoteImage == null) { onDismiss() }
+            BackHandler(enabled = expandedNoteImage == null && !showWebReader) { onDismiss() }
             val pagerState = rememberPagerState(
                 initialPage = initialPage,
                 pageCount = { viewerCaptures.size },
@@ -108,11 +113,13 @@ fun FullscreenCaptureDialog(
                     viewerCaptures.getOrNull(page)?.let(onCaptureSelected)
                 }
             }
-            Surface(Modifier.fillMaxSize(), color = Color.Black) {
+            if (showWebReader && sourceUrl != null) {
+                CaptureWebReader(url = sourceUrl, title = selected.title, onClose = { showWebReader = false })
+            } else Surface(Modifier.fillMaxSize(), color = Color.Black) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(Color.Transparent)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 8.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f).padding(start = 8.dp)) {
@@ -120,17 +127,17 @@ fun FullscreenCaptureDialog(
                                 SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault())
                                     .format(Date(selected.createdAt)),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White.copy(alpha = 0.76f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Surface(
                                 shape = MaterialTheme.shapes.small,
-                                color = Color.White.copy(alpha = 0.14f),
+                                color = MaterialTheme.colorScheme.primaryContainer,
                             ) {
                                 Text(
                                     selected.category,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
                         }
@@ -141,19 +148,19 @@ fun FullscreenCaptureDialog(
                                 },
                                 modifier = Modifier.size(44.dp),
                             ) {
-                                Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = Color.White)
+                                Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = Color.White)
+                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Text(
                         text = viewerCaptures.getOrNull(pagerState.settledPage)?.title ?: selected.title,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 20.dp, vertical = 12.dp),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -209,16 +216,36 @@ fun FullscreenCaptureDialog(
                                             .padding(horizontal = 8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                     ) {
-                                        TextButton(
-                                            onClick = { mediaIndex = (mediaIndex - 1).coerceAtLeast(0) },
-                                            enabled = mediaIndex > 0,
-                                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-                                        ) { Text("‹", style = MaterialTheme.typography.headlineLarge) }
-                                        TextButton(
-                                            onClick = { mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex) },
-                                            enabled = mediaIndex < pageMedia.lastIndex,
-                                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-                                        ) { Text("›", style = MaterialTheme.typography.headlineLarge) }
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                            shadowElevation = 3.dp,
+                                        ) {
+                                            TextButton(
+                                                onClick = { mediaIndex = (mediaIndex - 1).coerceAtLeast(0) },
+                                                enabled = mediaIndex > 0,
+                                                colors = ButtonDefaults.textButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.primary,
+                                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                                ),
+                                            ) { Text("‹", style = MaterialTheme.typography.headlineLarge) }
+                                        }
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                            shadowElevation = 3.dp,
+                                        ) {
+                                            TextButton(
+                                                onClick = { mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex) },
+                                                enabled = mediaIndex < pageMedia.lastIndex,
+                                                colors = ButtonDefaults.textButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.primary,
+                                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                                ),
+                                            ) { Text("›", style = MaterialTheme.typography.headlineLarge) }
+                                        }
                                     }
                                     Surface(
                                         modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
@@ -275,7 +302,7 @@ fun FullscreenCaptureDialog(
                                                 onLongClick = { onEditNote(selected.id, note.id) },
                                             ),
                                             shape = MaterialTheme.shapes.medium,
-                                            color = Color.Black.copy(alpha = 0.76f),
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                                             shadowElevation = 4.dp,
                                         ) {
                                             Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -283,7 +310,7 @@ fun FullscreenCaptureDialog(
                                                     Text(
                                                         text = note.text,
                                                         style = MaterialTheme.typography.bodyMedium,
-                                                        color = Color.White,
+                                                        color = MaterialTheme.colorScheme.onSurface,
                                                     )
                                                 }
                                                 note.imageUri?.let { rawUri ->
@@ -300,7 +327,7 @@ fun FullscreenCaptureDialog(
                             }
                             Surface(
                                 shape = MaterialTheme.shapes.extraLarge,
-                                color = Color(0x990A1B33),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                                 shadowElevation = 8.dp,
                             ) {
                                 IconButton(
@@ -310,7 +337,7 @@ fun FullscreenCaptureDialog(
                                     Icon(
                                         Icons.Default.ChatBubbleOutline,
                                         contentDescription = if (thoughtNotes.isEmpty()) "Adicionar anotações" else "Editar anotações",
-                                        tint = Color.White,
+                                        tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
@@ -318,7 +345,7 @@ fun FullscreenCaptureDialog(
                         Surface(
                             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
                             shape = MaterialTheme.shapes.extraLarge,
-                            color = Color(0x990A1B33),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                             shadowElevation = 8.dp,
                         ) {
                             Column(
@@ -331,19 +358,19 @@ fun FullscreenCaptureDialog(
                                         checked = true,
                                         onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
-                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF63C4F0), checkmarkColor = Color(0xFF07182B), uncheckedColor = Color.White),
+                                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, checkmarkColor = MaterialTheme.colorScheme.onPrimary, uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant),
                                     )
                                 } else {
                                     Checkbox(
                                         checked = false,
                                         onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
-                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF63C4F0), checkmarkColor = Color(0xFF07182B), uncheckedColor = Color.White),
+                                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, checkmarkColor = MaterialTheme.colorScheme.onPrimary, uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant),
                                     )
                                     TextButton(
                                         onClick = { showSubtasks = true },
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                                     ) {
                                         val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
                                         Text(
@@ -353,28 +380,30 @@ fun FullscreenCaptureDialog(
                                         )
                                     }
                                     sourceUrl?.let { url ->
-                                        IconButton(
-                                            onClick = { runCatching { uriHandler.openUri(url) } },
-                                            modifier = Modifier.size(48.dp),
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Link,
-                                                contentDescription = "Abrir link original",
-                                                tint = Color.White,
-                                            )
+                                        if (YoutubeVideoIdParser.extractVideoId(url) == null) {
+                                            IconButton(
+                                                onClick = { showWebReader = true },
+                                                modifier = Modifier.size(48.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Language,
+                                                    contentDescription = "Visualizar conteúdo no CaptureFlow",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
                                         }
                                     }
                                     IconButton(
                                         onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
                                         modifier = Modifier.size(48.dp),
                                     ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = Color.White)
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.primary)
                                     }
                                     IconButton(
                                         onClick = { onDelete(selected.id); onDismiss() },
                                         modifier = Modifier.size(48.dp),
                                     ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = Color(0xFFFF8A80))
+                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
                                     }
                                 }
                             }

@@ -22,6 +22,23 @@ class CaptureFactoryTest {
     }
 
     @Test
+    fun createsManualTaskWithoutImageOrSourceUrl() {
+        val task = CaptureFactory.createTask("  Planejar a semana  ", "Verificar")
+        assertEquals("Planejar a semana", task.title)
+        assertEquals("Planejar a semana", task.content)
+        assertEquals("text", task.kind)
+        assertEquals("Verificar", task.category)
+        assertEquals(null, task.imageUri)
+        assertEquals(null, task.sourceUrl)
+        assertEquals(false, task.isCompleted)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun manualTaskRejectsBlankTitle() {
+        CaptureFactory.createTask("   ", "Salvar")
+    }
+
+    @Test
     fun normalizesWhitespaceAndClassifiesPriorityText() {
         assertEquals("Importante", CaptureFactory.create("  prazo urgente  ").category)
         assertEquals("prazo urgente", CaptureFactory.normalize("  prazo urgente  "))

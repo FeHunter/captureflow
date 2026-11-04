@@ -22,3 +22,21 @@ O ViewModel consome `CaptureUseCases`; não deve importar entidades, DAOs ou imp
 - A migration Room 9→10 cria `capture_media` e importa `captures.imageUri` existente como a primeira capa, sem remover a coluna legada.
 - O limite é de 10 mídias por referência. O import de metadados de links coleta até 10 imagens, limita cada download a 10 MB e valida MIME/decodificação antes de gravar.
 - O fullscreen oferece navegação por controles explícitos e permite definir a capa; a capa também atualiza `captures.imageUri` para compatibilidade.
+
+
+## Tarefas manuais e ações de concluídas
+
+- A criação manual é apresentada na Biblioteca junto de Fotografar e Galeria. Exige título (máximo 160 caracteres) e categoria existente.
+- `CaptureFactory.createTask` cria uma referência `kind=text`, com `imageUri=null` e `sourceUrl=null`; não dispara OCR, compressão ou acesso à mídia.
+- A exclusão de referência concluída na grade usa confirmação e o mesmo callback de exclusão do Fullscreen.
+- Referências sem imagem exibem a capa de papel pautado de `core/ui/components/TaskPaperCover.kt`; é um desenho Compose, sem arquivo de imagem persistido.
+- O ViewModel valida a categoria com a fonte de dados atual antes de persistir a tarefa.
+
+
+## Leitura interna de páginas web
+
+- O Fullscreen mantém a ação **Abrir link** para o navegador externo e oferece **Visualizar conteúdo** para páginas HTTP/HTTPS com host válido.
+- A leitura interna usa uma WebView dedicada à feature Fullscreen, sem compartilhar estado de navegação com Newsletters.
+- Configuração alinhada ao leitor de Newsletters: JavaScript e DOM Storage desativados; acesso a arquivos/conteúdo e conteúdo misto bloqueados; somente navegação HTTP/HTTPS com host válido é permitida dentro da WebView.
+- O Back do Android navega pelo histórico da WebView antes de retornar ao Fullscreen; o botão de voltar fecha o leitor interno.
+- URLs de vídeo do YouTube continuam usando o player dedicado e não recebem a ação genérica de WebView.

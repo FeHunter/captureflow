@@ -11,6 +11,7 @@ import com.fehunter.captureflow.features.fullscreen.presentation.screens.Fullscr
 import com.fehunter.captureflow.features.notes.presentation.components.NotesEditorDialog
 import com.fehunter.captureflow.features.captures.presentation.components.CategoryCard
 import com.fehunter.captureflow.features.captures.presentation.components.CategoryThumbnail
+import com.fehunter.captureflow.features.captures.presentation.components.CreateTaskDialog
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
 import com.fehunter.captureflow.features.captures.presentation.model.CaptureImageProcessingStatus
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
@@ -28,6 +29,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.graphics.Brush
@@ -52,6 +59,8 @@ import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +72,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, showCompletedCaptures: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val ocrStates by imageImportViewModel.ocrStates.collectAsState()
@@ -82,6 +91,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showCameraCapture by remember { mutableStateOf(false) }
+    var showCreateTaskDialog by remember { mutableStateOf(false) }
+    var pendingDeleteCapture by remember { mutableStateOf<Capture?>(null) }
+    var deletingCaptureIds by remember { mutableStateOf(emptySet<String>()) }
+    val uiScope = rememberCoroutineScope()
     var imageCategory by remember { mutableStateOf("Ler depois") }
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
@@ -165,7 +178,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         captures = captures,
         query = query,
         category = category,
-        showCompleted = showCompletedCaptures,
+        showCompleted = true,
     )
 
     Box(Modifier.fillMaxSize()) {
@@ -181,7 +194,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             )) {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.linearGradient(listOf(Color(0xFF1F6F83), Color(0xFF12335A), Color(0xFF0A1B33))))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -190,43 +203,54 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             Icons.Default.Image,
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Adicionar imagem", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("O texto é extraído localmente, no seu dispositivo.",
+                            Text("Adicionar ao caderno", style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Guarde uma imagem ou registre uma tarefa em texto.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.82f))
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { showCameraCapture = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29B3C7), contentColor = Color(0xFF0A1B33)),
                             modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 9.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         ) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Fotografar")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(19.dp))
+                                Text("Fotografar", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                            }
                         }
                         OutlinedButton(
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                            onClick = {
-                                imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                            onClick = { imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                             modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 9.dp),
                         ) {
-                            Icon(Icons.Default.Image, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Galeria")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(19.dp))
+                                Text("Galeria", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                            }
+                        }
+                        FilledTonalButton(
+                            onClick = { showCreateTaskDialog = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 3.dp, vertical = 9.dp),
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(19.dp))
+                                Text("Nova tarefa", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                            }
                         }
                     }
                 }
             }
         }
-        item(key = "search") { CaptureSearchField(query = query, onQueryChange = searchViewModel::updateQuery) }
         item(key = "dashboard") { DashboardSummaryCard(dashboardSummary) }
         item(key = "categories") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -262,6 +286,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 )
             }
         }
+        item(key = "search") { CaptureSearchField(query = query, onQueryChange = searchViewModel::updateQuery) }
         if (allMatchingCaptures.isEmpty()) {
             item(key = "empty-state") {
                 Text(
@@ -316,8 +341,23 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         )
     }
 
+    if (showCreateTaskDialog) {
+        CreateTaskDialog(
+            categories = activeCategories,
+            onDismiss = { showCreateTaskDialog = false },
+            onCreate = { title, selectedCategory ->
+                viewModel.createTask(title, selectedCategory)
+                showCreateTaskDialog = false
+            },
+        )
+    }
+
     LaunchedEffect(expandedCategory) {
         showCompletedInExpandedCategory = false
+    }
+    LaunchedEffect(deletingCaptureIds, captures) {
+        val removedIds = deletingCaptureIds.filter { id -> captures.none { it.id == id } }.toSet()
+        if (removedIds.isNotEmpty()) deletingCaptureIds = deletingCaptureIds - removedIds
     }
     val expandedCategoryCaptures = remember(allMatchingCaptures, expandedCategory, captureSortOrder) {
         expandedCategory?.let { tag -> sortCaptures(allMatchingCaptures.filter { it.category == tag }) }.orEmpty()
@@ -340,7 +380,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
-                            .background(Brush.linearGradient(listOf(Color(0xFF29B3C7).copy(alpha = 0.34f), Color(0xFF2E6BB0).copy(alpha = 0.22f), Color.Transparent)))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f), RoundedCornerShape(16.dp))
                             .padding(horizontal = 8.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -367,6 +407,12 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             modifier = Modifier.weight(1f),
                             selected = !showCompletedInExpandedCategory,
                             onClick = { showCompletedInExpandedCategory = false },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                             label = {
                                 Text(
                                     "Pendentes · ${expandedCategoryCaptures.count { !it.isCompleted }}",
@@ -379,6 +425,12 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             modifier = Modifier.weight(1f),
                             selected = showCompletedInExpandedCategory,
                             onClick = { showCompletedInExpandedCategory = true },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                             label = {
                                 Text(
                                     "Concluídas · ${expandedCategoryCaptures.count { it.isCompleted }}",
@@ -404,11 +456,18 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(expandedCategoryVisibleCaptures, key = { it.id }) { capture ->
-                                CategoryThumbnail(
-                                    capture = capture,
-                                    ocrState = captureImageProcessingStates[capture.id] ?: CaptureImageProcessingStatus(),
-                                    onClick = { selectedCapture = capture },
-                                )
+                                AnimatedVisibility(
+                                    visible = capture.id !in deletingCaptureIds,
+                                    enter = fadeIn(tween(150)) + scaleIn(initialScale = 0.97f, animationSpec = tween(150)),
+                                    exit = fadeOut(tween(180)) + shrinkVertically(animationSpec = tween(180)),
+                                ) {
+                                    CategoryThumbnail(
+                                        capture = capture,
+                                        ocrState = captureImageProcessingStates[capture.id] ?: CaptureImageProcessingStatus(),
+                                        onClick = { selectedCapture = capture },
+                                        onDelete = { if (capture.isCompleted) pendingDeleteCapture = capture },
+                                    )
+                                }
                             }
                         }
                     }
@@ -417,6 +476,32 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         }
     }
+    pendingDeleteCapture?.let { captureToDelete ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteCapture = null },
+            title = { Text("Excluir tarefa?") },
+            text = { Text("“${captureToDelete.title}” será removida permanentemente do caderno.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = captureToDelete.id
+                        pendingDeleteCapture = null
+                        deletingCaptureIds = deletingCaptureIds + id
+                        uiScope.launch {
+                            delay(190)
+                            viewModel.deleteCapture(id)
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("Excluir") }
+            },
+            dismissButton = { TextButton(onClick = { pendingDeleteCapture = null }) { Text("Cancelar") } },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
     val viewerCandidates = if (expandedCategory != null) expandedCategoryVisibleCaptures else sortCaptures(filtered)
     val fullscreenCaptures = remember(viewerCandidates, selectedCapture) {
         val activeCapture = selectedCapture
@@ -594,7 +679,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     shape = RoundedCornerShape(28.dp),
@@ -663,7 +748,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             onDismissRequest = { imageImportViewModel.cancelPendingSharedLink(); sharedLinkCategory = null },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     shape = RoundedCornerShape(28.dp),
@@ -740,7 +825,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     shape = RoundedCornerShape(28.dp),

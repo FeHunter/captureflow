@@ -315,3 +315,42 @@ Antes de declarar a migração validada, exigir CI verde para o HEAD atual (`tes
 - O dado continua pertencendo ao agregado `Capture` e é persistido pela feature `captures`; Notes não acessa Room nem mantém uma cópia da fonte de verdade.
 - `app/navigation` integra o callback do fullscreen com o editor Notes. Features não importam implementações internas de outras features.
 - O editor deve oferecer área de texto ampla, contador de até 10.000 caracteres e ações explícitas de salvar/cancelar.
+
+
+## 10. Rebrand — Personal Notebook (aprovado em 2026-11-04)
+
+A especificação visual canônica é [docs/design-system.md](docs/design-system.md). Ela define a direção Hybrid Personal Notebook, temas claro/escuro, tokens, tipografia, componentes, diretrizes por tela e contrato de não regressão.
+
+**Regra obrigatória: o rebrand é presentation-only.** Não remover, adicionar ou alterar funcionalidades, ações, estados de negócio, navegação, gestos, callbacks, contratos, UseCases, ViewModels, schema Room, migrations, preferências persistidas, formatos serializados, intents, permissões, OCR, compressão, storage, player YouTube, Newsletters ou fluxos de captura.
+
+Antes de alterar uma feature, inventariar os seus estados, ações, entradas/saídas, navegação, gestos, integrações e persistência; comparar com a documentação e o código atual. Se houver divergência documental, investigar e registrar antes de decidir. Preservar o comportamento observado no código e contratos funcionais mais recentes; nunca tratar wireframe ou plano visual como autorização para mudar comportamento.
+
+A ordem de execução é: baseline e inventário; tokens/temas; componentes; Biblioteca; Fullscreen/Notes; Categorias/Dashboard/Newsletters/Settings; fluxos de captura; regressão visual e funcional. Executar testes relevantes, `testDebugUnitTest` e `assembleDebug` antes de concluir. Não combinar redesign com refatoração arquitetural ou mudança de produto.
+
+
+## Melhorias funcionais aprovadas — tarefas manuais, capas e movimento (2026-11-04)
+
+Estas melhorias são uma exceção explicitamente aprovada ao escopo presentation-only do rebrand:
+- A Biblioteca oferece três entradas: Fotografar, Galeria e Nova tarefa. A tarefa manual exige título e categoria válida, é criada sem imagem, sem URL de origem e sem OCR. A criação pertence a Captures; a UI encaminha o evento pelo CaptureViewModel.
+- Referências sem imagem usam `core/ui/components/TaskPaperCover.kt` como capa visual. A capa é desenhada em Compose e não gera arquivo, URI ou dado persistido.
+- Na grade Concluídas, cada card expõe exclusão com confirmação. A ação reutiliza `CaptureViewModel.deleteCapture`, incluindo limpeza de subtarefas, mídias e imagens privadas.
+- Animações são curtas e orientadas a feedback: fade/scale de cards, crossfade de capas, transição de estado e progresso. Evitar animações infinitas, loops, bitmaps decorativos e trabalho na main thread. Testar com escala de animação do sistema reduzida/desativada.
+- Não adicionar dependências, permissões, migrations ou mudanças no schema Room para estas melhorias.
+
+
+## Regras de navegação web interna (04/11/2026)
+
+- Toda WebView nova deve manter o padrão seguro usado por Newsletters e Fullscreen: JavaScript e DOM Storage desativados por padrão, acesso a arquivos/conteúdo bloqueado, mixed content bloqueado e Safe Browsing habilitado.
+- Validar URL antes de carregar: aceitar somente HTTP/HTTPS, exigir host e rejeitar user-info/credenciais. Redirecionamentos/navegações devem continuar limitados a HTTP/HTTPS; nunca permitir schemes como file, content ou javascript.
+- Preferir Custom Tabs/navegador externo para fluxos que exijam JavaScript, login, downloads ou APIs nativas. Não habilitar JavaScript globalmente para fazer sites funcionarem.
+- A WebView deve respeitar o histórico do botão Back e liberar recursos com `stopLoading()` e `destroy()` ao sair da tela.
+- Manter a ação de navegador externo disponível como fallback. Não interceptar URLs de plataformas que já possuam fluxo dedicado (ex.: player YouTube).
+
+
+## Conteúdo de privacidade e ajuda (2026-11-04)
+
+- As telas Privacidade e Tutoriais são conteúdo informativo da feature Settings, acessadas pelo menu do cabeçalho.
+- A política deve refletir o comportamento implementado: dados de referências, notas, categorias, subtarefas, preferências e imagens são locais; não há conta nem sincronização própria em nuvem.
+- Não afirmar que o app é totalmente offline: importação de links, feeds RSS/Atom, leitor web e navegador externo podem acessar serviços de terceiros. Explicar esse compartilhamento técnico e não prometer controle sobre políticas de terceiros.
+- Backup JSON + arquivos de imagem é roadmap, não funcionalidade disponível. Deixar explícito que o usuário será responsável por escolher o destino e guardar a cópia quando a exportação existir.
+- Revisar a tela de privacidade sempre que forem adicionados analytics, telemetria, contas, sincronização, anúncios, pagamentos ou novos serviços externos.

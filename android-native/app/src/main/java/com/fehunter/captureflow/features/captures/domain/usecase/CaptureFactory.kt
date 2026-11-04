@@ -41,6 +41,18 @@ object CaptureFactory {
         )
     }
 
+    fun createTask(title: String, category: String): Capture {
+        val normalizedTitle = normalize(title).take(160)
+        require(normalizedTitle.isNotBlank()) { "Task title must not be blank" }
+        val normalizedCategory = normalize(category)
+        require(normalizedCategory.isNotBlank()) { "Task category must not be blank" }
+        return Capture(
+            id = UUID.randomUUID().toString(), title = normalizedTitle, content = normalizedTitle,
+            kind = "text", category = normalizedCategory, sourceUrl = null, imageUri = null,
+            createdAt = System.currentTimeMillis(),
+        )
+    }
+
     private fun androidHost(url: String): String =
         runCatching { java.net.URI(url).host?.removePrefix("www.") }.getOrNull() ?: "Link salvo"
 }
