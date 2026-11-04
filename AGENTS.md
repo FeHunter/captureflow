@@ -336,3 +336,12 @@ Estas melhorias são uma exceção explicitamente aprovada ao escopo presentatio
 - Na grade Concluídas, cada card expõe exclusão com confirmação. A ação reutiliza `CaptureViewModel.deleteCapture`, incluindo limpeza de subtarefas, mídias e imagens privadas.
 - Animações são curtas e orientadas a feedback: fade/scale de cards, crossfade de capas, transição de estado e progresso. Evitar animações infinitas, loops, bitmaps decorativos e trabalho na main thread. Testar com escala de animação do sistema reduzida/desativada.
 - Não adicionar dependências, permissões, migrations ou mudanças no schema Room para estas melhorias.
+
+
+## Regras de navegação web interna (04/11/2026)
+
+- Toda WebView nova deve manter o padrão seguro usado por Newsletters e Fullscreen: JavaScript e DOM Storage desativados por padrão, acesso a arquivos/conteúdo bloqueado, mixed content bloqueado e Safe Browsing habilitado.
+- Validar URL antes de carregar: aceitar somente HTTP/HTTPS, exigir host e rejeitar user-info/credenciais. Redirecionamentos/navegações devem continuar limitados a HTTP/HTTPS; nunca permitir schemes como file, content ou javascript.
+- Preferir Custom Tabs/navegador externo para fluxos que exijam JavaScript, login, downloads ou APIs nativas. Não habilitar JavaScript globalmente para fazer sites funcionarem.
+- A WebView deve respeitar o histórico do botão Back e liberar recursos com `stopLoading()` e `destroy()` ao sair da tela.
+- Manter a ação de navegador externo disponível como fallback. Não interceptar URLs de plataformas que já possuam fluxo dedicado (ex.: player YouTube).
