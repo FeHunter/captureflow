@@ -1,6 +1,9 @@
 package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
+import com.fehunter.captureflow.core.ui.components.TaskPaperCover
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
 import androidx.compose.foundation.background
@@ -35,19 +38,11 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
         ),
         contentAlignment = Alignment.Center,
     ) {
-        if (image != null) {
-            Image(
-                bitmap = image!!,
-                contentDescription = "Imagem completa da referência",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-            )
-        } else {
-            Box(
-                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.size(44.dp))
+        Crossfade(targetState = image, animationSpec = tween(200), label = "fullscreen-cover") { loadedImage ->
+            if (loadedImage != null) {
+                Image(bitmap = loadedImage, contentDescription = "Imagem completa da referência", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            } else {
+                TaskPaperCover(modifier = Modifier.fillMaxSize(), prominent = true)
             }
         }
 
