@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.fehunter.captureflow.features.captures.domain.model.Capture
+import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.core.util.YoutubeVideoIdParser
 import com.fehunter.captureflow.features.youtubeplayer.presentation.YoutubeEmbeddedPlayer
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
@@ -54,6 +55,8 @@ import kotlinx.coroutines.flow.collect
 fun FullscreenCaptureDialog(
     capture: Capture?,
     captures: List<Capture>,
+    mediaByCapture: Map<String, List<CaptureMedia>>,
+    onSetCover: (String, String) -> Unit,
     onDismiss: () -> Unit,
     onCaptureSelected: (Capture) -> Unit,
     onCompleted: (String, Boolean) -> Unit,
@@ -157,10 +160,58 @@ fun FullscreenCaptureDialog(
                         ) { page ->
                             val pageCapture = viewerCaptures[page]
                             Box(Modifier.fillMaxSize()) {
+                                val pageMedia = mediaByCapture[pageCapture.id].orEmpty()
+                                var mediaIndex by remember(pageCapture.id) {
+                                    mutableIntStateOf(pageMedia.indexOfFirst { it.isCover }.coerceAtLeast(0))
+                                }
+                                LaunchedEffect(pageCapture.id, pageMedia) {
+                                    mediaIndex = pageMedia.indexOfFirst { it.isCover }.coerceAtLeast(0)
+                                }
+                                val activeMedia = pageMedia.getOrNull(mediaIndex)
                                 FullscreenCapturePage(
-                                    capture = pageCapture,
+                                    capture = pageCapture.copy(imageUri = activeMedia?.uri ?: pageCapture.imageUri),
                                     showNavigationHint = page == pagerState.currentPage,
                                 )
+                                if (pageMedia.size > 1) {
+                                    Row(
+                                        modifier = Modifier.align(Alignment.Center).fillMaxWidth()
+                                            .padding(horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        TextButton(
+                                            onClick = { mediaIndex = (mediaIndex - 1).coerceAtLeast(0) },
+                                            enabled = mediaIndex > 0,
+                                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                        ) { Text("‹", style = MaterialTheme.typography.headlineLarge) }
+                                        TextButton(
+                                            onClick = { mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex) },
+                                            enabled = mediaIndex < pageMedia.lastIndex,
+                                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                        ) { Text("›", style = MaterialTheme.typography.headlineLarge) }
+                                    }
+                                    Surface(
+                                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
+                                        color = Color.Black.copy(alpha = 0.72f),
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        ) {
+                                            Text(
+                                                "${mediaIndex + 1} / ${pageMedia.size}",
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.labelMedium,
+                                            )
+                                            if (activeMedia != null && !activeMedia.isCover) {
+                                                TextButton(onClick = { onSetCover(pageCapture.id, activeMedia.id) }) {
+                                                    Text("Definir capa", color = Color.White)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         // Keep Chromium's video surface outside the transformed pager page.

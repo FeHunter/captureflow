@@ -3,6 +3,7 @@ package com.fehunter.captureflow.features.imageimport.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.features.captures.domain.model.Capture
+import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.imageimport.domain.gateway.ImageImportGateway
@@ -194,6 +195,7 @@ class ImageImportViewModel(
                     else metadata?.title?.takeIf(String::isNotBlank) ?: fallbackTitle,
                 description = metadata?.description,
                 imageUrl = metadata?.imageUrl,
+                imageUrls = metadata?.imageUrls.orEmpty().ifEmpty { listOfNotNull(metadata?.imageUrl) }.distinct().take(10),
                 isLoading = false,
                 metadataFound = metadata != null,
             )
@@ -239,10 +241,24 @@ class ImageImportViewModel(
             // Keep the preview image for every shared URL, including YouTube.
             // Fullscreen may render the embedded player, while cards and other surfaces
             // still use the persisted thumbnail as the capture cover.
-            pending.imageUrl?.let { imageUrl ->
-                gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localImage ->
-                    captureUseCases.updateImage(capture.id, localImage)
-                }
+            val imageUrls = pending.imageUrls.ifEmpty { listOfNotNull(pending.imageUrl) }.distinct().take(10)
+            val storedMedia = imageUrls.mapNotNull { imageUrl ->
+                gateway.downloadPreviewToPrivateStorage(imageUrl)?.let { localUri -> imageUrl to localUri }
+            }.mapIndexed { index, (sourceUrl, localUri) ->
+                CaptureMedia(
+                    id = UUID.randomUUID().toString(),
+                    captureId = capture.id,
+                    uri = localUri,
+                    mediaType = "image/*",
+                    position = index,
+                    isCover = index == 0,
+                    sourceUrl = sourceUrl,
+                    createdAt = System.currentTimeMillis(),
+                )
+            }
+            if (storedMedia.isNotEmpty()) {
+                captureUseCases.addMedia(storedMedia)
+                captureUseCases.updateImage(capture.id, storedMedia.first().uri)
             }
         }
     }

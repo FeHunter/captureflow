@@ -1,6 +1,7 @@
 package com.fehunter.captureflow.features.imageimport.data.storage
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import java.io.File
 import java.io.IOException
@@ -68,12 +69,14 @@ class ImageImportStorageService(
                         val count = input.read(buffer)
                         if (count < 0) break
                         total += count
-                        if (total > 8L * 1024 * 1024) throw IOException("A imagem de prévia excede o limite permitido.")
+                        if (total > 10L * 1024 * 1024) throw IOException("A imagem de prévia excede o limite permitido.")
                         output.write(buffer, 0, count)
                     }
                 }
             }
-            if (destination.length() == 0L) {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(destination.absolutePath, bounds)
+            if (destination.length() == 0L || bounds.outWidth <= 0 || bounds.outHeight <= 0) {
                 destination.delete()
                 partialFile = null
                 null

@@ -13,7 +13,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,11 +23,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -57,13 +61,14 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var status by remember(videoId) { mutableStateOf<PlayerStatus>(PlayerStatus.Loading) }
+    var reloadAttempt by remember(videoId) { mutableIntStateOf(0) }
     val setCurrentStatus by rememberUpdatedState<(PlayerStatus) -> Unit>({ status = it })
     val latestStatus by rememberUpdatedState(status)
     val origin = remember(context.packageName) { "https://" + context.packageName.lowercase() }
     val html = remember(videoId, origin) { YoutubePlayerHtml.create(videoId, origin) }
     var webView by remember(videoId) { mutableStateOf<WebView?>(null) }
 
-    LaunchedEffect(videoId) {
+    LaunchedEffect(videoId, reloadAttempt) {
         delay(20_000)
         if (latestStatus == PlayerStatus.Loading) {
             setCurrentStatus(PlayerStatus.Failed(null, "O player não respondeu. Verifique a conexão ou abra o link original no YouTube."))
@@ -90,7 +95,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
             .heightIn(min = 200.dp).background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        key(videoId) {
+        key(videoId, reloadAttempt) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { viewContext ->
@@ -173,13 +178,24 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
         when (val current = status) {
             PlayerStatus.Loading -> CircularProgressIndicator(color = Color.White)
             PlayerStatus.Ready -> Unit
-            is PlayerStatus.Failed -> Text(
-                text = current.message + (current.code?.let { "\nCódigo do YouTube: " + it } ?: ""),
+            is PlayerStatus.Failed -> Column(
                 modifier = Modifier.fillMaxWidth(0.88f),
-                color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = current.message + (current.code?.let { "\nCódigo do YouTube: " + it } ?: ""),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                TextButton(onClick = {
+                    status = PlayerStatus.Loading
+                    reloadAttempt += 1
+                }) {
+                    Text("Tentar novamente", color = Color.White)
+                }
+            }
         }
     }
 }

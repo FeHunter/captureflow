@@ -20,6 +20,9 @@ import com.fehunter.captureflow.features.settings.presentation.viewmodel.Setting
 import com.fehunter.captureflow.features.imageimport.data.storage.ImageImportStorageService
 import com.fehunter.captureflow.core.storage.LocalPrivateImageStorage
 import com.fehunter.captureflow.features.imagecompression.data.ImageCompressionService
+import com.fehunter.captureflow.features.newsletters.data.repository.RoomNewsletterRepository
+import com.fehunter.captureflow.features.newsletters.domain.usecase.NewsletterUseCases
+import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModelFactory
 
 /**
  * Manual composition root for the current single-module Android application.
@@ -30,6 +33,8 @@ class AppContainer(application: Application) {
 
     /** Feature-owned data boundary for domain use cases and ViewModels. */
     private val captureRepository = RoomCaptureRepository(database)
+    private val newsletterRepository = RoomNewsletterRepository(database.newsletterDao())
+    val newsletterUseCases = NewsletterUseCases(newsletterRepository)
     val captureUseCases = CaptureUseCases(captureRepository)
     private val privateImageStorage = LocalPrivateImageStorage(application)
     private val imageCompressor = ImageCompressionService(application)
@@ -55,6 +60,8 @@ class AppContainer(application: Application) {
         captureUseCases = captureUseCases,
         gateway = imageImportGateway,
     )
+
+    val newslettersViewModelFactory = NewslettersViewModelFactory(newsletterUseCases, captureUseCases)
 
     val captureViewModelFactory = CaptureViewModelFactory(
         captureUseCases = captureUseCases,

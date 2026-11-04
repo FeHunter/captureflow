@@ -20,7 +20,7 @@ class ImageImportGatewayImpl(
 
     override suspend fun fetchLinkMetadata(url: String): ImportedLinkMetadata? =
         metadataService.fetch(url)?.let {
-            ImportedLinkMetadata(it.title, it.description, it.imageUrl)
+            ImportedLinkMetadata(it.title, it.description, it.imageUrl, it.imageUrls)
         }
 
     override suspend fun analyzeImage(uri: String): ImportedImageAnalysis {

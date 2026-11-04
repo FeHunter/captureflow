@@ -28,6 +28,8 @@ import com.fehunter.captureflow.features.captures.presentation.viewmodel.Capture
 import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
 import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
+import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
+import com.fehunter.captureflow.features.newsletters.presentation.screens.NewslettersScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +38,7 @@ fun CaptureFlowApp(
     imageImportViewModel: ImageImportViewModel,
     categoriesViewModel: CategoriesViewModel,
     dashboardViewModel: DashboardViewModel,
+    newslettersViewModel: NewslettersViewModel,
     themeMode: String,
     onThemeModeChange: (String) -> Unit,
     categorySortOrder: String,
@@ -54,6 +57,7 @@ fun CaptureFlowApp(
     var showThemeMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
     var showCompletedCaptures by remember { mutableStateOf(true) }
+    var showNewsletters by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -103,6 +107,13 @@ fun CaptureFlowApp(
                             },
                         )
                         DropdownMenuItem(
+                            text = { Text("Newsletters") },
+                            onClick = {
+                                showOptionsMenu = false
+                                showNewsletters = true
+                            },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Alterar tema") },
                             onClick = {
                                 showOptionsMenu = false
@@ -133,25 +144,32 @@ fun CaptureFlowApp(
         },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding)) {
-            CaptureLibrary(
-                viewModel = viewModel,
-                imageImportViewModel = imageImportViewModel,
-                categoriesViewModel = categoriesViewModel,
-                dashboardViewModel = dashboardViewModel,
-                categorySortOrder = categorySortOrder,
-                onCategorySortOrderChange = onCategorySortOrderChange,
-                captureSortOrder = captureSortOrder,
-                imageCompressionProfile = imageCompressionProfile,
-                hasScreenshotAccess = hasScreenshotAccess,
-                screenshotMonitoringEnabled = screenshotMonitoringEnabled,
-                showCompletedCaptures = showCompletedCaptures,
-                detectedScreenshotUri = detectedScreenshotUri,
-                pendingScreenshotImportUri = pendingScreenshotImportUri,
-                onRequestScreenshotAccess = onRequestScreenshotAccess,
-                onStopScreenshotMonitoring = onStopScreenshotMonitoring,
-                onScreenshotHandled = onScreenshotHandled,
-                onScreenshotImportHandled = onScreenshotImportHandled,
-            )
+            if (showNewsletters) {
+                NewslettersScreen(
+                    viewModel = newslettersViewModel,
+                    onBack = { showNewsletters = false },
+                )
+            } else {
+                CaptureLibrary(
+                    viewModel = viewModel,
+                    imageImportViewModel = imageImportViewModel,
+                    categoriesViewModel = categoriesViewModel,
+                    dashboardViewModel = dashboardViewModel,
+                    categorySortOrder = categorySortOrder,
+                    onCategorySortOrderChange = onCategorySortOrderChange,
+                    captureSortOrder = captureSortOrder,
+                    imageCompressionProfile = imageCompressionProfile,
+                    hasScreenshotAccess = hasScreenshotAccess,
+                    screenshotMonitoringEnabled = screenshotMonitoringEnabled,
+                    showCompletedCaptures = showCompletedCaptures,
+                    detectedScreenshotUri = detectedScreenshotUri,
+                    pendingScreenshotImportUri = pendingScreenshotImportUri,
+                    onRequestScreenshotAccess = onRequestScreenshotAccess,
+                    onStopScreenshotMonitoring = onStopScreenshotMonitoring,
+                    onScreenshotHandled = onScreenshotHandled,
+                    onScreenshotImportHandled = onScreenshotImportHandled,
+                )
+            }
         }
     }
 }

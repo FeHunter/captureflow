@@ -3,6 +3,7 @@ package com.fehunter.captureflow.features.categories.domain.usecase
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,6 +76,9 @@ class ManageCategoriesUseCaseTest {
         override suspend fun findById(id: String): Capture? = null
         override fun observeCategories(): Flow<List<CaptureCategory>> = categories
         override fun observeSubtasks(): Flow<List<CaptureSubtask>> = MutableStateFlow(emptyList())
+        override fun observeMedia(): Flow<List<CaptureMedia>> = MutableStateFlow(emptyList())
+        override suspend fun addMedia(items: List<CaptureMedia>) = Unit
+        override suspend fun setCover(captureId: String, mediaId: String) = Unit
         override suspend fun save(capture: Capture) = Unit
         override suspend fun findByContent(content: String) = false
         override suspend fun findBySourceUrl(url: String) = false

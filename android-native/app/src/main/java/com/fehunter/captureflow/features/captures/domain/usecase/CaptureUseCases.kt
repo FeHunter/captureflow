@@ -3,18 +3,18 @@ package com.fehunter.captureflow.features.captures.domain.usecase
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Feature application facade: keeps ViewModels independent from persistence contracts
- * while exposing cohesive Captures operations.
- */
 class CaptureUseCases(private val repository: CaptureRepository) {
     fun observeCaptures(): Flow<List<Capture>> = repository.observeCaptures()
     suspend fun findById(id: String): Capture? = repository.findById(id)
     fun observeCategories(): Flow<List<CaptureCategory>> = repository.observeCategories()
     fun observeSubtasks(): Flow<List<CaptureSubtask>> = repository.observeSubtasks()
+    fun observeMedia(): Flow<List<CaptureMedia>> = repository.observeMedia()
+    suspend fun addMedia(items: List<CaptureMedia>) = repository.addMedia(items)
+    suspend fun setCover(captureId: String, mediaId: String) = repository.setCover(captureId, mediaId)
     suspend fun save(capture: Capture) = repository.save(capture)
     suspend fun findByContent(content: String) = repository.findByContent(content)
     suspend fun findBySourceUrl(url: String) = repository.findBySourceUrl(url)
@@ -27,7 +27,6 @@ class CaptureUseCases(private val repository: CaptureRepository) {
     suspend fun setCompleted(id: String, completed: Boolean) = repository.setCompleted(id, completed)
     suspend fun delete(id: String) = repository.delete(id)
     suspend fun addSubtask(item: CaptureSubtask) = repository.addSubtask(item)
-    suspend fun setSubtaskCompleted(id: String, completed: Boolean) =
-        repository.setSubtaskCompleted(id, completed)
+    suspend fun setSubtaskCompleted(id: String, completed: Boolean) = repository.setSubtaskCompleted(id, completed)
     suspend fun deleteSubtask(id: String) = repository.deleteSubtask(id)
 }
