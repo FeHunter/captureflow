@@ -382,45 +382,50 @@ fun FullscreenCaptureDialog(
         val selectedSubtasks = allSubtasks.filter { it.captureId == capture.id }
         ModalBottomSheet(
             onDismissRequest = { showSubtasks = false },
-            containerColor = Color(0xFF0C2B46),
-            contentColor = Color(0xFFF3F7FB),
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFA9C0D2)) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.onSurfaceVariant) },
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth()
+                    .fillMaxHeight(0.88f)
+                    .imePadding()
+                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                    .padding(bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Sub-checklist · ${selectedSubtasks.count { it.isCompleted }}/${selectedSubtasks.size} concluídas",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Sub-checklist", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "${selectedSubtasks.count { it.isCompleted }} de ${selectedSubtasks.size} concluídas",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     IconButton(onClick = { showSubtasks = false }) {
                         Icon(Icons.Default.Close, contentDescription = "Fechar sub-checklist")
                     }
                 }
                 val completedSubtasks = selectedSubtasks.count { it.isCompleted }
                 val progress = if (selectedSubtasks.isNotEmpty()) completedSubtasks.toFloat() / selectedSubtasks.size else 0f
-                Text("$completedSubtasks de ${selectedSubtasks.size} concluídas", style = MaterialTheme.typography.bodySmall, color = Color(0xFFA9C0D2))
                 LinearProgressIndicator(
                     progress = progress,
                     modifier = Modifier.fillMaxWidth().height(6.dp),
-                    color = Color(0xFF63C4F0),
-                    trackColor = Color(0xFF164B62),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentPadding = PaddingValues(vertical = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(selectedSubtasks, key = { it.id }) { subtask ->
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium,
-                            color = Color(0xFF164B62),
+                            shape = MaterialTheme.shapes.large,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -432,10 +437,10 @@ fun FullscreenCaptureDialog(
                                     modifier = Modifier.weight(1f),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
-                                    color = if (subtask.isCompleted) Color(0xFFA9C0D2) else Color.White,
+                                    color = if (subtask.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                                 )
                                 IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Excluir item", tint = Color(0xFFA9C0D2))
+                                    Icon(Icons.Default.Close, contentDescription = "Excluir item", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -449,7 +454,7 @@ fun FullscreenCaptureDialog(
                         value = newSubtask,
                         onValueChange = { newSubtask = it.take(160) },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Nova subtarefa") },
+                        placeholder = { Text("Adicionar uma subtarefa") },
                         singleLine = true,
                     )
                     IconButton(
