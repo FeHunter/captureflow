@@ -146,6 +146,8 @@ Antes de editar uma tela:
 
 Se documentação histórica divergir do código atual, não escolher silenciosamente uma versão: investigar o código e contratos mais recentes, registrar a divergência e preservar o comportamento atualmente implementado.
 
+O checklist detalhado por fluxo está em [docs/rebrand-regression-checklist.md](rebrand-regression-checklist.md) e deve ser executado como parte da revisão de regressão. A documentação de estado atual continua sendo referência complementar, sempre confrontada com o código.
+
 ## 8. Sequência de implementação
 
 1. Inventário de funcionalidades e baseline de testes/build.
