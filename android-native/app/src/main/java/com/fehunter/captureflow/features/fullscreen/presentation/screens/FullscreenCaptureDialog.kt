@@ -17,8 +17,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.OpenInFull
+import com.fehunter.captureflow.features.fullscreen.presentation.components.CaptureWebReader
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
@@ -80,20 +82,22 @@ fun FullscreenCaptureDialog(
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
     var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
+    var showWebReader by remember(capture?.id) { mutableStateOf(false) }
 
     capture?.let { selected ->
         val viewerCaptures = captures.filter { it.category == selected.category && it.isCompleted == selected.isCompleted }
         val initialPage = viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
         val sourceUrl = selected.sourceUrl?.takeIf { url ->
             runCatching {
-                java.net.URI(url).scheme?.lowercase() in setOf("http", "https")
+                val uri = java.net.URI(url)
+                uri.scheme?.lowercase() in setOf("http", "https") && !uri.host.isNullOrBlank() && uri.userInfo == null
             }.getOrDefault(false)
         }
         Dialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = false),
         ) {
-            BackHandler(enabled = expandedNoteImage == null) { onDismiss() }
+            BackHandler(enabled = expandedNoteImage == null && !showWebReader) { onDismiss() }
             val pagerState = rememberPagerState(
                 initialPage = initialPage,
                 pageCount = { viewerCaptures.size },
@@ -109,7 +113,9 @@ fun FullscreenCaptureDialog(
                     viewerCaptures.getOrNull(page)?.let(onCaptureSelected)
                 }
             }
-            Surface(Modifier.fillMaxSize(), color = Color.Black) {
+            if (showWebReader && sourceUrl != null) {
+                CaptureWebReader(url = sourceUrl, title = selected.title, onClose = { showWebReader = false })
+            } else Surface(Modifier.fillMaxSize(), color = Color.Black) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
@@ -143,6 +149,16 @@ fun FullscreenCaptureDialog(
                                 modifier = Modifier.size(44.dp),
                             ) {
                                 Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        sourceUrl?.let { url ->
+                            if (YoutubeVideoIdParser.extractVideoId(url) == null) {
+                                IconButton(
+                                    onClick = { showWebReader = true },
+                                    modifier = Modifier.size(44.dp),
+                                ) {
+                                    Icon(Icons.Default.Language, contentDescription = "Visualizar conteúdo no CaptureFlow", tint = MaterialTheme.colorScheme.primary)
+                                }
                             }
                         }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
