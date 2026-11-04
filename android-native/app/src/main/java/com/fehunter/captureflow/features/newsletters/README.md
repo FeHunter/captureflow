@@ -14,11 +14,12 @@ Feature para cadastrar e acompanhar publicações por feeds RSS 2.0 e Atom, sem 
 - `presentation/screens/NewslettersScreen.kt`: interface acessada pelo menu superior.
 
 ## Fluxo
-1. Usuário informa uma URL HTTP(S) de feed.
-2. O fetcher valida host público, limita redirects a cinco, timeout a seis segundos e payload a 1 MB.
-3. O parser identifica metadados do canal e até 100 artigos.
+1. Usuário informa uma URL HTTP(S) de feed ou de site.
+2. O app tenta o feed direto; se necessário, descobre rel=alternate e caminhos comuns, incluindo /feed para Substack.
+3. O fetcher valida host público, limita redirects a cinco, timeout a seis segundos e payload a 1 MB.
+4. O parser identifica metadados do canal e até 100 artigos.
 4. A fonte e os artigos são persistidos no Room; GUID/ID e URL canônica evitam duplicação.
-5. Atualização é manual e usa ETag/Last-Modified quando disponíveis.
+5. Atualização manual por fonte ou em lote usa ETag/Last-Modified quando disponíveis.
 6. Artigos excedentes são removidos por retenção, preservando registros já salvos na Biblioteca.
 7. Salvar artigo cria uma referência na categoria `Ler depois`; abrir original direciona ao navegador.
 

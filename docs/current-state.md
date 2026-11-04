@@ -133,10 +133,10 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 
 ## Newsletters
 - A entrada fica no menu superior da Biblioteca; não há bottom navigation.
-- Fontes RSS 2.0 e Atom são adicionadas por URL e persistidas localmente em `newsletter_sources`; artigos são armazenados em `newsletter_articles`.
+- Fontes RSS 2.0 e Atom podem ser adicionadas por URL direta do feed ou URL do site; a descoberta usa rel=alternate e caminhos comuns, incluindo /feed para Substack. Fontes são persistidas localmente em `newsletter_sources`; artigos em `newsletter_articles`.
 - O parser trata links relativos, GUID/ID, título, datas, resumo, conteúdo e imagens; payload XML limitado a 1 MB e até 100 artigos por leitura.
 - A busca de feed usa HTTP(S), bloqueia hosts locais/endereços privados após resolução DNS, limita redirecionamentos a cinco, timeout a seis segundos e resposta a 1 MB; usa ETag/Last-Modified quando disponíveis.
-- Atualização é manual nesta entrega. A retenção mantém até 100 artigos não salvos por fonte; artigos vinculados à Biblioteca são preservados.
+- Atualização manual está disponível para a fonte selecionada ou todas as fontes; a UI mostra a última atualização e o erro da fonte. WorkManager periódico está pendente de definição de frequência. A retenção mantém até 100 artigos não salvos por fonte; artigos vinculados à Biblioteca são preservados.
 - O leitor mostra título e resumo/conteúdo disponível no feed; **Abrir original** abre o artigo no navegador. Salvar na Biblioteca cria uma referência em `Ler depois` e vincula o artigo ao ID salvo.
 - Não há scraping de páginas autenticadas, bypass de paywall, embed Instagram próprio ou sincronização em nuvem.
 

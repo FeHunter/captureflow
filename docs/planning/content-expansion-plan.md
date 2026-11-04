@@ -804,10 +804,13 @@ As referências são pontos de partida. Confirmar versão, requisitos e polític
 ### Etapa 3 — Newsletters RSS/Atom
 - [x] Modelos de domínio, entidades Room, DAO, repositório e migration 10→11.
 - [x] Parser RSS 2.0/Atom com suporte a IDs/GUIDs, links relativos, datas, resumo, conteúdo e imagem.
+- [x] Descoberta por rel=alternate e caminhos comuns; convenção /feed para publicações Substack.
 - [x] Fetch HTTP com limite de tamanho, timeout, redirecionamentos limitados, validação de host público e ETag/Last-Modified.
-- [x] Cadastro de fonte, atualização manual, deduplicação e retenção de 100 artigos não salvos por fonte.
+- [x] Cadastro de fonte por URL de feed ou site, atualização manual de uma/todas as fontes, deduplicação e retenção de 100 artigos não salvos por fonte.
+- [x] Exibição da última atualização/erro e confirmação para remover fonte.
 - [x] Tela Newsletters no menu superior, seleção de fontes, abertura do original, marcação lido/não lido e ação explícita para salvar na Biblioteca.
 - [ ] Testes instrumentados executados em dispositivo/emulador (os testes atuais foram adicionados ao source set, mas o workflow só compila androidTest).
+- [ ] WorkManager para atualização periódica: aguarda decisão de frequência/consumo de rede; atualização manual continua disponível.
 - [x] Adicionar confirmação antes de excluir uma fonte; erros de feed inválido e de rede são apresentados como mensagem na tela.
 
 ### YouTube e Instagram
