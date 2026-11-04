@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.Add
@@ -73,6 +74,7 @@ fun FullscreenCaptureDialog(
     onSubtaskCompleted: (String, Boolean) -> Unit,
     onDeleteSubtask: (String) -> Unit,
 ) {
+    val uriHandler = LocalUriHandler.current
     var showEditTitle by remember(capture?.id) { mutableStateOf(false) }
     var editedTitle by remember(capture?.id) { mutableStateOf(capture?.title.orEmpty()) }
     var editedCategory by remember(capture?.id) { mutableStateOf(capture?.category.orEmpty()) }
