@@ -2,7 +2,6 @@ package com.fehunter.captureflow.features.fullscreen.presentation.components
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.webkit.SafeBrowsingResponse
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
