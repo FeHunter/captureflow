@@ -34,12 +34,11 @@ fun CategoryManagementDialog(
     var editedCategoryName by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
 
-    val isDark = MaterialTheme.colorScheme.background == Color(0xFF07182B)
-    val dialogBackground = if (isDark) Color(0xFF102A43) else Color(0xFFFDFEFF)
-    val dialogContent = if (isDark) Color(0xFFF3F7FB) else Color(0xFF0A1B33)
-    val mutedContent = if (isDark) Color(0xFFA9C0D2) else Color(0xFF566878)
-    val accent = if (isDark) Color(0xFF63C4F0) else Color(0xFF1F6F83)
-    val outline = if (isDark) Color(0xFF31536D) else Color(0xFFDCE5EA)
+    val dialogBackground = MaterialTheme.colorScheme.surface
+    val dialogContent = MaterialTheme.colorScheme.onSurface
+    val mutedContent = MaterialTheme.colorScheme.onSurfaceVariant
+    val accent = MaterialTheme.colorScheme.primary
+    val outline = MaterialTheme.colorScheme.outlineVariant
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(

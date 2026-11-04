@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Color as AndroidColor
 import android.view.View
 import android.webkit.CookieManager
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -84,7 +85,6 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                     WebView(viewContext).apply {
                         webView = this
                         setBackgroundColor(AndroidColor.BLACK)
-                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
                         isVerticalScrollBarEnabled = false
                         isHorizontalScrollBarEnabled = false
                         overScrollMode = View.OVER_SCROLL_NEVER
@@ -103,6 +103,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
                             useWideViewPort = true
                         }
                         CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                        webChromeClient = WebChromeClient()
                         webViewClient = object : WebViewClient() {
                             override fun shouldOverrideUrlLoading(
                                 view: WebView,

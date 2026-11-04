@@ -7,6 +7,7 @@ Feature responsável exclusivamente pela reprodução incorporada de vídeos do 
 - Enviar a identidade do app explicitamente no cabeçalho HTTP `Referer`, usando `WebView.loadUrl(url, additionalHttpHeaders)`.
 - Definir também o parâmetro `origin` da incorporação, alinhado ao applicationId.
 - Aplicar controles habilitados, reprodução inline e autoplay desabilitado.
+- Configurar `WebChromeClient` junto ao `WebViewClient` para dar suporte à camada multimídia do Chromium e à renderização do vídeo incorporado.
 - Manter aceleração de hardware, lifecycle pause/resume, estados de carregamento/erro e destruição segura da instância.
 - Restringir navegação principal a hosts HTTPS do YouTube; sub-recursos do player continuam permitidos.
 

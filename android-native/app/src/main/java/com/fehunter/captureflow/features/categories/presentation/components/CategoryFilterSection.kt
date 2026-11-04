@@ -75,7 +75,16 @@ fun CategoryFilterSection(
     if (showAllCategories) {
         AlertDialog(
             onDismissRequest = { showAllCategories = false },
-            title = { Text("Filtrar por categoria") },
+            title = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Ver todas as categorias", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        "${categories.size} categorias disponíveis",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth().heightIn(max = 380.dp).verticalScroll(rememberScrollState()),
@@ -88,7 +97,13 @@ fun CategoryFilterSection(
                                 showAllCategories = false
                             },
                             shape = MaterialTheme.shapes.medium,
-                            color = if (selectedCategory == item) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                            color = if (selectedCategory == item) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (selectedCategory == item) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            ),
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 12.dp),
@@ -108,7 +123,19 @@ fun CategoryFilterSection(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showAllCategories = false }) { Text("Fechar") } },
+            confirmButton = {
+                TextButton(
+                    onClick = { showAllCategories = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                ) { Text("Fechar") }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(26.dp),
         )
     }
 }
