@@ -140,3 +140,17 @@ Este inventário é o contrato de regressão para o rebrand **Hybrid Personal No
 - [ ] Nenhuma permissão nova é introduzida.
 - [ ] Executar testes unitários e `assembleDebug`; registrar CI do commit candidato.
 - [ ] Comparar screenshots Light/Dark e testar tela estreita, fonte ampliada, títulos longos, ausência de imagem, estados vazios/erro/loading e modais.
+
+
+## 11. Melhorias aprovadas: criação manual, capa padrão, exclusão e movimento
+
+- [ ] A opção Nova tarefa aparece ao lado de Fotografar e Galeria.
+- [ ] Tarefa manual exige título e categoria válida, aceita até 160 caracteres e permite títulos repetidos.
+- [ ] Tarefa manual persiste como texto, sem imagem, URL de origem ou processamento OCR.
+- [ ] Tarefa sem imagem exibe folha pautada padrão em miniatura, preview de categoria e Fullscreen.
+- [ ] Capa padrão é desenhada em Compose; nenhum arquivo placeholder é criado/persistido.
+- [ ] Na aba Concluídas, o card oferece excluir além de reabrir/alternar estado.
+- [ ] Excluir tarefa concluída solicita confirmação e reutiliza limpeza de mídia, notas e subtarefas do fluxo existente.
+- [ ] Entrada/saída de cards, status e progresso animam suavemente sem atrasar a ação.
+- [ ] Imagens entram com fade-in sem decodificação na main thread.
+- [ ] Animações não bloqueiam navegação, Back, clique ou acessibilidade quando a escala do sistema está reduzida.

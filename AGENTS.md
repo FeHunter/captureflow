@@ -326,3 +326,13 @@ A especificação visual canônica é [docs/design-system.md](docs/design-system
 Antes de alterar uma feature, inventariar os seus estados, ações, entradas/saídas, navegação, gestos, integrações e persistência; comparar com a documentação e o código atual. Se houver divergência documental, investigar e registrar antes de decidir. Preservar o comportamento observado no código e contratos funcionais mais recentes; nunca tratar wireframe ou plano visual como autorização para mudar comportamento.
 
 A ordem de execução é: baseline e inventário; tokens/temas; componentes; Biblioteca; Fullscreen/Notes; Categorias/Dashboard/Newsletters/Settings; fluxos de captura; regressão visual e funcional. Executar testes relevantes, `testDebugUnitTest` e `assembleDebug` antes de concluir. Não combinar redesign com refatoração arquitetural ou mudança de produto.
+
+
+## Melhorias funcionais aprovadas — tarefas manuais, capas e movimento (2026-11-04)
+
+Estas melhorias são uma exceção explicitamente aprovada ao escopo presentation-only do rebrand:
+- A Biblioteca oferece três entradas: Fotografar, Galeria e Nova tarefa. A tarefa manual exige título e categoria válida, é criada sem imagem, sem URL de origem e sem OCR. A criação pertence a Captures; a UI encaminha o evento pelo CaptureViewModel.
+- Referências sem imagem usam `core/ui/components/TaskPaperCover.kt` como capa visual. A capa é desenhada em Compose e não gera arquivo, URI ou dado persistido.
+- Na grade Concluídas, cada card expõe exclusão com confirmação. A ação reutiliza `CaptureViewModel.deleteCapture`, incluindo limpeza de subtarefas, mídias e imagens privadas.
+- Animações são curtas e orientadas a feedback: fade/scale de cards, crossfade de capas, transição de estado e progresso. Evitar animações infinitas, loops, bitmaps decorativos e trabalho na main thread. Testar com escala de animação do sistema reduzida/desativada.
+- Não adicionar dependências, permissões, migrations ou mudanças no schema Room para estas melhorias.
