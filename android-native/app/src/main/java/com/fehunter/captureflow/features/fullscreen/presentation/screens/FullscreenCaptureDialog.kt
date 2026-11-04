@@ -27,7 +27,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,7 +73,6 @@ fun FullscreenCaptureDialog(
     onSubtaskCompleted: (String, Boolean) -> Unit,
     onDeleteSubtask: (String) -> Unit,
 ) {
-    val uriHandler = LocalUriHandler.current
     var showEditTitle by remember(capture?.id) { mutableStateOf(false) }
     var editedTitle by remember(capture?.id) { mutableStateOf(capture?.title.orEmpty()) }
     var editedCategory by remember(capture?.id) { mutableStateOf(capture?.category.orEmpty()) }
@@ -149,16 +147,6 @@ fun FullscreenCaptureDialog(
                                 modifier = Modifier.size(44.dp),
                             ) {
                                 Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                        sourceUrl?.let { url ->
-                            if (YoutubeVideoIdParser.extractVideoId(url) == null) {
-                                IconButton(
-                                    onClick = { showWebReader = true },
-                                    modifier = Modifier.size(44.dp),
-                                ) {
-                                    Icon(Icons.Default.Language, contentDescription = "Visualizar conteúdo no CaptureFlow", tint = MaterialTheme.colorScheme.primary)
-                                }
                             }
                         }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
@@ -390,15 +378,17 @@ fun FullscreenCaptureDialog(
                                         )
                                     }
                                     sourceUrl?.let { url ->
-                                        IconButton(
-                                            onClick = { runCatching { uriHandler.openUri(url) } },
-                                            modifier = Modifier.size(48.dp),
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Link,
-                                                contentDescription = "Abrir link original",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                            )
+                                        if (YoutubeVideoIdParser.extractVideoId(url) == null) {
+                                            IconButton(
+                                                onClick = { showWebReader = true },
+                                                modifier = Modifier.size(48.dp),
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Language,
+                                                    contentDescription = "Visualizar conteúdo no CaptureFlow",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                )
+                                            }
                                         }
                                     }
                                     IconButton(

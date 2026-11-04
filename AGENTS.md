@@ -345,3 +345,12 @@ Estas melhorias são uma exceção explicitamente aprovada ao escopo presentatio
 - Preferir Custom Tabs/navegador externo para fluxos que exijam JavaScript, login, downloads ou APIs nativas. Não habilitar JavaScript globalmente para fazer sites funcionarem.
 - A WebView deve respeitar o histórico do botão Back e liberar recursos com `stopLoading()` e `destroy()` ao sair da tela.
 - Manter a ação de navegador externo disponível como fallback. Não interceptar URLs de plataformas que já possuam fluxo dedicado (ex.: player YouTube).
+
+
+## Conteúdo de privacidade e ajuda (2026-11-04)
+
+- As telas Privacidade e Tutoriais são conteúdo informativo da feature Settings, acessadas pelo menu do cabeçalho.
+- A política deve refletir o comportamento implementado: dados de referências, notas, categorias, subtarefas, preferências e imagens são locais; não há conta nem sincronização própria em nuvem.
+- Não afirmar que o app é totalmente offline: importação de links, feeds RSS/Atom, leitor web e navegador externo podem acessar serviços de terceiros. Explicar esse compartilhamento técnico e não prometer controle sobre políticas de terceiros.
+- Backup JSON + arquivos de imagem é roadmap, não funcionalidade disponível. Deixar explícito que o usuário será responsável por escolher o destino e guardar a cópia quando a exportação existir.
+- Revisar a tela de privacidade sempre que forem adicionados analytics, telemetria, contas, sincronização, anúncios, pagamentos ou novos serviços externos.
