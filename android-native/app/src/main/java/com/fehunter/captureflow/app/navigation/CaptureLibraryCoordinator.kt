@@ -181,7 +181,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             )) {
                 Column(
                     Modifier.fillMaxWidth()
-                        .background(Brush.linearGradient(listOf(Color(0xFF1F6F83), Color(0xFF12335A), Color(0xFF0A1B33))))
+                        .background(Brush.linearGradient(listOf(Color(0xFF1F6F83), Color(0xFF12335A), Color.Black.copy(alpha = 0.56f))))
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -204,7 +204,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { showCameraCapture = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29B3C7), contentColor = Color(0xFF0A1B33)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29B3C7), contentColor = Color.Black.copy(alpha = 0.56f)),
                             modifier = Modifier.weight(1f),
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = null)
@@ -594,7 +594,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     shape = RoundedCornerShape(28.dp),
@@ -663,7 +663,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             onDismissRequest = { imageImportViewModel.cancelPendingSharedLink(); sharedLinkCategory = null },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     shape = RoundedCornerShape(28.dp),
@@ -740,7 +740,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             },
             properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
         ) {
-            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(20.dp),
                     shape = RoundedCornerShape(28.dp),
