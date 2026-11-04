@@ -2,6 +2,7 @@ package com.fehunter.captureflow.features.backup.data
 
 import android.content.Context
 import android.net.Uri
+import com.fehunter.captureflow.BuildConfig
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatch
@@ -58,7 +59,7 @@ class BackupArchiveManager(
         }
 
         val manifest = JSONObject().put("format", FORMAT_NAME).put("version", FORMAT_VERSION)
-            .put("createdAt", System.currentTimeMillis()).put("appVersion", "0.4.0")
+            .put("createdAt", System.currentTimeMillis()).put("appVersion", BuildConfig.VERSION_NAME)
         val categoryArray = JSONArray()
         categories.forEach { category ->
             categoryArray.put(JSONObject().put("name", category.name).put("sortOrder", category.sortOrder))
