@@ -102,8 +102,10 @@ class BackupArchiveManager(
 
         context.contentResolver.openOutputStream(destination, "w")?.use { stream ->
             ZipOutputStream(stream).use { zip ->
+                val manifestBytes = manifest.toString().toByteArray(Charsets.UTF_8)
+                require(manifestBytes.size <= MAX_MANIFEST_BYTES) { "O manifesto excede o limite de 10 MB." }
                 zip.putNextEntry(ZipEntry(MANIFEST_ENTRY))
-                zip.write(manifest.toString().toByteArray(Charsets.UTF_8))
+                zip.write(manifestBytes)
                 zip.closeEntry()
                 imageEntries.forEach { (name, bytes) ->
                     zip.putNextEntry(ZipEntry(name))
@@ -230,17 +232,20 @@ class BackupArchiveManager(
 
             val categoryNames = existingCategories.map { it.name }.toMutableSet()
             val importedCategories = mutableListOf<CaptureCategory>()
+            var nextCategoryOrder = (existingCategories.maxOfOrNull { it.sortOrder } ?: -1) + 1
             val categoryJson = manifest.optJSONArray("categories") ?: JSONArray()
-            for (index in 0 until categoryJson.length()) {
-                val item = categoryJson.getJSONObject(index)
+            val orderedCategories = (0 until categoryJson.length())
+                .map { categoryJson.getJSONObject(it) }
+                .sortedBy { it.optInt("sortOrder", Int.MAX_VALUE) }
+            orderedCategories.forEach { item ->
                 val name = item.getString("name").trim()
                 if (name.isNotBlank() && categoryNames.add(name)) {
-                    importedCategories += CaptureCategory(name, item.optInt("sortOrder", categoryNames.size))
+                    importedCategories += CaptureCategory(name, nextCategoryOrder++)
                 }
             }
             importedCaptures.forEach { capture ->
                 if (categoryNames.add(capture.category)) {
-                    importedCategories += CaptureCategory(capture.category, categoryNames.size)
+                    importedCategories += CaptureCategory(capture.category, nextCategoryOrder++)
                 }
             }
 
@@ -289,8 +294,9 @@ class BackupArchiveManager(
                 importedMedia.mapTo(this) { it.uri }
                 importedCaptures.flatMap { CaptureNotesCodec.decode(it.notes) }.mapNotNullTo(this) { it.imageUri }
             }
-            createdFiles.filterNot { Uri.fromFile(it).toString() in referencedUris }.forEach { it.delete() }
-            return BackupSummary(importedCaptures.size, importedCategories.size, createdFiles.size)
+            val retainedFiles = createdFiles.filter { Uri.fromFile(it).toString() in referencedUris }
+            createdFiles.filterNot { it in retainedFiles }.forEach { it.delete() }
+            return BackupSummary(importedCaptures.size, importedCategories.size, retainedFiles.size)
         } catch (error: Exception) {
             createdFiles.forEach { it.delete() }
             throw error
