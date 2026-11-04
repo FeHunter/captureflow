@@ -4,31 +4,56 @@ import androidx.room.withTransaction
 import com.fehunter.captureflow.features.captures.data.local.CaptureDatabase
 import com.fehunter.captureflow.features.captures.data.mapper.toDomain
 import com.fehunter.captureflow.features.captures.data.mapper.toEntity
+import com.fehunter.captureflow.features.captures.data.mapper.toDomain as mediaToDomain
+import com.fehunter.captureflow.features.captures.data.mapper.toEntity as mediaToEntity
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class RoomCaptureRepository(
-    private val database: CaptureDatabase,
-) : CaptureRepository {
+class RoomCaptureRepository(private val database: CaptureDatabase) : CaptureRepository {
     private val captures get() = database.captureDao()
     private val categories get() = database.categoryDao()
     private val subtasks get() = database.captureSubtaskDao()
+    private val media get() = database.captureMediaDao()
     private val legacyTasks get() = database.checklistDao()
 
     override fun observeCaptures(): Flow<List<Capture>> =
         captures.observeAll().map { items -> items.map { it.toDomain() } }
-
     override suspend fun findById(id: String): Capture? = captures.findById(id)?.toDomain()
-
     override fun observeCategories(): Flow<List<CaptureCategory>> =
         categories.observeAll().map { items -> items.map { it.toDomain() } }
-
     override fun observeSubtasks(): Flow<List<CaptureSubtask>> =
         subtasks.observeAll().map { items -> items.map { it.toDomain() } }
+    override fun observeMedia(): Flow<List<CaptureMedia>> =
+        media.observeAll().map { items -> items.map { it.mediaToDomain() } }
+
+    override suspend fun addMedia(items: List<CaptureMedia>) {
+        if (items.isEmpty()) return
+        database.withTransaction {
+            val captureId = items.first().captureId
+            require(items.all { it.captureId == captureId }) { "All media must belong to one capture" }
+            require(captures.findById(captureId) != null) { "Capture does not exist" }
+            val existing = media.findForCapture(captureId)
+            val merged = (existing.map { it.mediaToDomain() } + items)
+                .distinctBy { it.uri }
+                .take(MAX_MEDIA_PER_CAPTURE)
+                .mapIndexed { index, item ->
+                    item.copy(position = index, isCover = (existing.isEmpty() && index == 0) || item.isCover)
+                }
+            media.deleteForCapture(captureId)
+            media.insertAll(merged.map { it.mediaToEntity() })
+        }
+    }
+    override suspend fun setCover(captureId: String, mediaId: String) {
+        database.withTransaction {
+            media.clearCover(captureId)
+            media.setCover(captureId, mediaId)
+        }
+    }
 
     override suspend fun save(capture: Capture) = captures.insert(capture.toEntity())
     override suspend fun findByContent(content: String) = captures.containsContent(content)
@@ -39,22 +64,19 @@ class RoomCaptureRepository(
     override suspend fun updateTitle(id: String, title: String) = captures.updateTitle(id, title)
     override suspend fun updateNotes(id: String, notes: String?) = captures.updateNotes(id, notes)
     override suspend fun updateCategory(id: String, category: String) = captures.updateCategory(id, category)
-
     override suspend fun setCompleted(id: String, completed: Boolean) {
         if (completed) captures.markCompleted(id) else captures.markPending(id)
     }
-
     override suspend fun delete(id: String) {
         database.withTransaction {
             subtasks.deleteForCapture(id)
+            media.deleteForCapture(id)
             captures.delete(id)
         }
     }
-
     override suspend fun addCategory(name: String, sortOrder: Int) {
         categories.insert(com.fehunter.captureflow.features.captures.data.local.CaptureCategoryEntity(name, sortOrder))
     }
-
     override suspend fun renameCategory(oldName: String, newName: String) {
         database.withTransaction {
             captures.renameCategoryReferences(oldName, newName)
@@ -63,7 +85,6 @@ class RoomCaptureRepository(
             categories.rename(oldName, newName)
         }
     }
-
     override suspend fun deleteCategory(name: String, fallbackCategory: String) {
         database.withTransaction {
             captures.renameCategoryReferences(name, fallbackCategory)
@@ -72,14 +93,13 @@ class RoomCaptureRepository(
             categories.delete(name)
         }
     }
-
     override suspend fun addSubtask(subtask: CaptureSubtask) {
         database.withTransaction {
-            if (captures.findById(subtask.captureId) != null) {
-                subtasks.insert(subtask.toEntity())
-            }
+            if (captures.findById(subtask.captureId) != null) subtasks.insert(subtask.toEntity())
         }
     }
     override suspend fun setSubtaskCompleted(id: String, completed: Boolean) = subtasks.setCompleted(id, completed)
     override suspend fun deleteSubtask(id: String) = subtasks.delete(id)
+
+    private companion object { const val MAX_MEDIA_PER_CAPTURE = 10 }
 }
