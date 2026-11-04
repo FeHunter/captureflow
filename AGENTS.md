@@ -315,3 +315,14 @@ Antes de declarar a migração validada, exigir CI verde para o HEAD atual (`tes
 - O dado continua pertencendo ao agregado `Capture` e é persistido pela feature `captures`; Notes não acessa Room nem mantém uma cópia da fonte de verdade.
 - `app/navigation` integra o callback do fullscreen com o editor Notes. Features não importam implementações internas de outras features.
 - O editor deve oferecer área de texto ampla, contador de até 10.000 caracteres e ações explícitas de salvar/cancelar.
+
+
+## 10. Rebrand — Personal Notebook (aprovado em 2026-11-04)
+
+A especificação visual canônica é [docs/design-system.md](docs/design-system.md). Ela define a direção Hybrid Personal Notebook, temas claro/escuro, tokens, tipografia, componentes, diretrizes por tela e contrato de não regressão.
+
+**Regra obrigatória: o rebrand é presentation-only.** Não remover, adicionar ou alterar funcionalidades, ações, estados de negócio, navegação, gestos, callbacks, contratos, UseCases, ViewModels, schema Room, migrations, preferências persistidas, formatos serializados, intents, permissões, OCR, compressão, storage, player YouTube, Newsletters ou fluxos de captura.
+
+Antes de alterar uma feature, inventariar os seus estados, ações, entradas/saídas, navegação, gestos, integrações e persistência; comparar com a documentação e o código atual. Se houver divergência documental, investigar e registrar antes de decidir. Preservar o comportamento observado no código e contratos funcionais mais recentes; nunca tratar wireframe ou plano visual como autorização para mudar comportamento.
+
+A ordem de execução é: baseline e inventário; tokens/temas; componentes; Biblioteca; Fullscreen/Notes; Categorias/Dashboard/Newsletters/Settings; fluxos de captura; regressão visual e funcional. Executar testes relevantes, `testDebugUnitTest` e `assembleDebug` antes de concluir. Não combinar redesign com refatoração arquitetural ou mudança de produto.
