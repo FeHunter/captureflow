@@ -362,7 +362,7 @@ Estas melhorias são uma exceção explicitamente aprovada ao escopo presentatio
 - O formato inicial é ZIP com `manifest.json` versionado e arquivos em `images/`; não persistir URIs do aparelho de origem como se fossem caminhos válidos no destino.
 - Exportar referências, categorias, subtarefas, mídias e anotações, incluindo imagens das capas, galerias e blocos de anotação.
 - Importação é aditiva e não destrutiva. Categoria com nome já existente mantém sua ordenação local.
-- Referência duplicada é identificada por URL normalizada + título + conteúdo; sem URL, por título + conteúdo + tipo. Duplicatas são ignoradas. Colisão de ID com conteúdo diferente gera novo ID e os filhos devem apontar para esse novo ID.
+- Referência duplicada é identificada por URL normalizada e identidade textual/organizacional (título, conteúdo, tipo, categoria, conclusão e notas); sem URL, usa a mesma identidade sem a URL. Duplicatas são ignoradas. Colisão de ID com conteúdo diferente gera novo ID e os filhos devem apontar para esse novo ID.
 - IDs de subtarefas e mídias também devem ser regenerados em colisão. Nunca sobrescrever silenciosamente dados locais.
 - Inserção dos registros deve ser atômica no Room. Validar manifesto, versão, caminhos ZIP, tamanhos e imagens antes de confirmar os registros.
 - Versão inicial não inclui Newsletters nem preferências; manter esse limite documentado até ampliação explícita do escopo.

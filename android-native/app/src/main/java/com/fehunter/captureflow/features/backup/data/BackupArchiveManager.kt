@@ -49,7 +49,11 @@ class BackupArchiveManager(
             val digest = java.security.MessageDigest.getInstance("SHA-256")
                 .digest(bytes).joinToString("") { "%02x".format(it) }
             val entry = "images/$digest.bin"
-            imageEntries.putIfAbsent(entry, bytes)
+            if (entry !in imageEntries) {
+                val currentBytes = imageEntries.values.sumOf { it.size.toLong() }
+                require(currentBytes + bytes.size <= MAX_ARCHIVE_BYTES) { "O backup excede o limite de 250 MB." }
+                imageEntries[entry] = bytes
+            }
             return entry
         }
 
@@ -118,6 +122,7 @@ class BackupArchiveManager(
             ZipInputStream(raw).use { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: break
+                    require(entries.size < MAX_ARCHIVE_ENTRIES) { "O backup contém arquivos demais." }
                     require(!entry.isDirectory && !entry.name.startsWith("/") &&
                         !entry.name.contains("..") && '\\' !in entry.name) {
                         "O backup contém um caminho inválido."
@@ -180,10 +185,12 @@ class BackupArchiveManager(
             val importedKeys = mutableSetOf<String>()
             val captureJson = manifest.getJSONArray("captures")
             require(captureJson.length() <= MAX_RECORDS) { "O backup contém referências demais." }
+            val seenCaptureIds = mutableSetOf<String>()
 
             for (index in 0 until captureJson.length()) {
                 val item = captureJson.getJSONObject(index)
                 val oldId = item.getString("id")
+                require(seenCaptureIds.add(oldId)) { "O manifesto contém IDs de referência duplicados." }
                 val notesRaw = item.optString("notes").takeUnless { it == "null" }
                 val noteImages = item.optJSONArray("noteImages") ?: JSONArray()
                 val noteImageMap = buildMap<String, String?> {
@@ -241,6 +248,7 @@ class BackupArchiveManager(
             val importedSubtasks = mutableListOf<CaptureSubtask>()
             val importedCaptureIds = importedCaptures.map { it.id }.toSet()
             val subtaskJson = manifest.optJSONArray("subtasks") ?: JSONArray()
+            require(subtaskJson.length() <= MAX_RECORDS) { "O backup contém subtarefas demais." }
             for (index in 0 until subtaskJson.length()) {
                 val item = subtaskJson.getJSONObject(index)
                 val mappedCapture = captureIdMap[item.getString("captureId")] ?: continue
@@ -255,6 +263,12 @@ class BackupArchiveManager(
             val existingMediaIds = existingMedia.map { it.id }.toMutableSet()
             val importedMedia = mutableListOf<CaptureMedia>()
             val mediaJson = manifest.optJSONArray("media") ?: JSONArray()
+            require(mediaJson.length() <= MAX_RECORDS) { "O backup contém mídias demais." }
+            val mediaCountByCapture = (0 until mediaJson.length())
+                .map { mediaJson.getJSONObject(it).getString("captureId") }.groupingBy { it }.eachCount()
+            require(mediaCountByCapture.values.all { it <= MAX_MEDIA_PER_CAPTURE }) {
+                "Uma referência do backup excede o limite de imagens permitido."
+            }
             for (index in 0 until mediaJson.length()) {
                 val item = mediaJson.getJSONObject(index)
                 val mappedCapture = captureIdMap[item.getString("captureId")] ?: continue
@@ -285,10 +299,12 @@ class BackupArchiveManager(
 
     private fun duplicateKey(item: Capture): String {
         val url = item.sourceUrl.orEmpty().trim().lowercase().removeSuffix("/")
-        return if (url.isNotBlank()) "$url|${item.title.trim().lowercase()}|${item.content.trim()}"
-        else "${item.title.trim().lowercase()}|${item.content.trim()}|${item.kind}"
+        val notes = CaptureNotesCodec.decode(item.notes).joinToString("|") {
+            "${it.text.trim()}:${!it.imageUri.isNullOrBlank()}"
+        }
+        val identity = "${item.title.trim().lowercase()}|${item.content.trim()}|${item.kind}|${item.category}|${item.isCompleted}|$notes"
+        return if (url.isNotBlank()) "$url|$identity" else identity
     }
-
     data class BackupSummary(val captures: Int, val categories: Int, val images: Int)
 
     private companion object {
@@ -299,5 +315,7 @@ class BackupArchiveManager(
         const val MAX_MANIFEST_BYTES = 10 * 1024 * 1024
         const val MAX_ARCHIVE_BYTES = 250L * 1024 * 1024
         const val MAX_RECORDS = 50_000
+        const val MAX_ARCHIVE_ENTRIES = 50_002
+        const val MAX_MEDIA_PER_CAPTURE = 10
     }
 }
