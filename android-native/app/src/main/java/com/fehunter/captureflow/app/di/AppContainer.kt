@@ -23,6 +23,10 @@ import com.fehunter.captureflow.features.imagecompression.data.ImageCompressionS
 import com.fehunter.captureflow.features.newsletters.data.repository.RoomNewsletterRepository
 import com.fehunter.captureflow.features.newsletters.domain.usecase.NewsletterUseCases
 import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModelFactory
+import com.fehunter.captureflow.features.backup.data.BackupArchiveManager
+import com.fehunter.captureflow.features.backup.data.BackupArchiveRepository
+import com.fehunter.captureflow.features.backup.domain.usecase.BackupUseCases
+import com.fehunter.captureflow.features.backup.presentation.viewmodel.BackupViewModelFactory
 
 /**
  * Manual composition root for the current single-module Android application.
@@ -35,6 +39,9 @@ class AppContainer(application: Application) {
     private val captureRepository = RoomCaptureRepository(database)
     private val newsletterRepository = RoomNewsletterRepository(database.newsletterDao())
     val newsletterUseCases = NewsletterUseCases(newsletterRepository)
+    val backupViewModelFactory = BackupViewModelFactory(
+        BackupUseCases(BackupArchiveRepository(BackupArchiveManager(application, captureUseCases))),
+    )
     val captureUseCases = CaptureUseCases(captureRepository)
     private val privateImageStorage = LocalPrivateImageStorage(application)
     private val imageCompressor = ImageCompressionService(application)

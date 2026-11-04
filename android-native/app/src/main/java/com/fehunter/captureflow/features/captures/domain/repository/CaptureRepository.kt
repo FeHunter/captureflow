@@ -4,6 +4,7 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
+import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatch
 import kotlinx.coroutines.flow.Flow
 
 interface CaptureRepository {
@@ -30,4 +31,5 @@ interface CaptureRepository {
     suspend fun addSubtask(subtask: CaptureSubtask)
     suspend fun setSubtaskCompleted(id: String, completed: Boolean)
     suspend fun deleteSubtask(id: String)
+    suspend fun importBatch(batch: CaptureImportBatch)
 }

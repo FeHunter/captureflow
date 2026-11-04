@@ -10,6 +10,7 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
+import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatch
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -106,6 +107,18 @@ class RoomCaptureRepository(private val database: CaptureDatabase) : CaptureRepo
         }
     }
     override suspend fun setSubtaskCompleted(id: String, completed: Boolean) = subtasks.setCompleted(id, completed)
+
+    override suspend fun importBatch(batch: CaptureImportBatch) {
+        database.withTransaction {
+            batch.categories.forEach { categories.insert(it.toEntity()) }
+            captures.insertImported(batch.captures.map { it.toEntity() })
+            val availableCaptureIds = batch.captures.map { it.id }.toSet()
+            val safeSubtasks = batch.subtasks.filter { it.captureId in availableCaptureIds }
+            val safeMedia = batch.media.filter { it.captureId in availableCaptureIds }
+            subtasks.insertImported(safeSubtasks.map { it.toEntity() })
+            media.insertImported(safeMedia.map { it.mediaToEntity() })
+        }
+    }
     override suspend fun deleteSubtask(id: String) = subtasks.delete(id)
 
     private companion object { const val MAX_MEDIA_PER_CAPTURE = 10 }

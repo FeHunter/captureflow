@@ -10,35 +10,21 @@ import kotlinx.coroutines.flow.Flow
 interface CaptureCategoryDao {
     @Query("SELECT * FROM categories ORDER BY sortOrder ASC, name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<CaptureCategoryEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(category: CaptureCategoryEntity)
-
-    @Query("UPDATE categories SET name = :newName WHERE name = :oldName")
-    suspend fun rename(oldName: String, newName: String)
-
-    @Query("DELETE FROM categories WHERE name = :name")
-    suspend fun delete(name: String)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insert(category: CaptureCategoryEntity)
+    @Query("UPDATE categories SET name = :newName WHERE name = :oldName") suspend fun rename(oldName: String, newName: String)
+    @Query("DELETE FROM categories WHERE name = :name") suspend fun delete(name: String)
 }
 
 @Dao
 interface CaptureSubtaskDao {
     @Query("SELECT * FROM capture_subtasks WHERE captureId = :captureId ORDER BY createdAt ASC")
     fun observeForCapture(captureId: String): Flow<List<CaptureSubtaskEntity>>
-
-    @Query("SELECT * FROM capture_subtasks ORDER BY createdAt ASC")
-    fun observeAll(): Flow<List<CaptureSubtaskEntity>>
-
+    @Query("SELECT * FROM capture_subtasks ORDER BY createdAt ASC") fun observeAll(): Flow<List<CaptureSubtaskEntity>>
     @Insert suspend fun insert(item: CaptureSubtaskEntity)
-
-    @Query("UPDATE capture_subtasks SET isCompleted = :completed WHERE id = :id")
-    suspend fun setCompleted(id: String, completed: Boolean)
-
-    @Query("DELETE FROM capture_subtasks WHERE id = :id")
-    suspend fun delete(id: String)
-
-    @Query("DELETE FROM capture_subtasks WHERE captureId = :captureId")
-    suspend fun deleteForCapture(captureId: String)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertImported(items: List<CaptureSubtaskEntity>)
+    @Query("UPDATE capture_subtasks SET isCompleted = :completed WHERE id = :id") suspend fun setCompleted(id: String, completed: Boolean)
+    @Query("DELETE FROM capture_subtasks WHERE id = :id") suspend fun delete(id: String)
+    @Query("DELETE FROM capture_subtasks WHERE captureId = :captureId") suspend fun deleteForCapture(captureId: String)
 }
 
 @Dao
@@ -46,6 +32,7 @@ interface CaptureDao {
     @Query("SELECT * FROM captures ORDER BY createdAt DESC") fun observeAll(): Flow<List<CaptureEntity>>
     @Query("SELECT * FROM captures WHERE id = :id LIMIT 1") suspend fun findById(id: String): CaptureEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(capture: CaptureEntity)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertImported(items: List<CaptureEntity>)
     @Query("UPDATE captures SET isCompleted = 1, previousCategory = NULL WHERE id = :id") suspend fun markCompleted(id: String)
     @Query("UPDATE captures SET isCompleted = 0, previousCategory = NULL WHERE id = :id") suspend fun markPending(id: String)
     @Query("UPDATE captures SET category = :category WHERE id = :id") suspend fun updateCategory(id: String, category: String)

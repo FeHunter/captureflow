@@ -81,6 +81,7 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 - **notes:** edição da linha de pensamento em blocos ordenados de texto e imagem. O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures; o campo captures.notes armazena a coleção em formato versionado e mantém leitura retrocompatível de anotações antigas.
 - **youtubeplayer:** reprodução incorporada de vídeos do YouTube via IFrame Player API em Android WebView. É proprietária do HTML de embed, identidade HTTP Referer, configuração WebView, ciclo de vida, callbacks de estado/erro e limpeza da instância. Não persiste estado de negócio nem depende de Captures/Fullscreen.
 - **settings:** tema, ordenação da biblioteca e perfil padrão de compressão, persistidos localmente em SharedPreferences.
+- **backup:** exportação/importação ZIP versionada de referências, categorias, subtarefas, mídias e anotações. A camada Data usa os contratos públicos de Captures; a restauração é aditiva e insere o lote em transação Room.
 
 A divisão final de um serviço entre features/core deve seguir sua responsabilidade real. Ex.: OCR, download de capas, cópia de imagens compartilhadas e exclusão best-effort de screenshots pertencem a Image Import; Core mantém apenas o contrato mínimo de armazenamento privado usado por Captures. Não mover serviços indiscriminadamente para Core.
 
@@ -352,5 +353,16 @@ Estas melhorias são uma exceção explicitamente aprovada ao escopo presentatio
 - As telas Privacidade e Tutoriais são conteúdo informativo da feature Settings, acessadas pelo menu do cabeçalho.
 - A política deve refletir o comportamento implementado: dados de referências, notas, categorias, subtarefas, preferências e imagens são locais; não há conta nem sincronização própria em nuvem.
 - Não afirmar que o app é totalmente offline: importação de links, feeds RSS/Atom, leitor web e navegador externo podem acessar serviços de terceiros. Explicar esse compartilhamento técnico e não prometer controle sobre políticas de terceiros.
-- Backup JSON + arquivos de imagem é roadmap, não funcionalidade disponível. Deixar explícito que o usuário será responsável por escolher o destino e guardar a cópia quando a exportação existir.
+- Backup é exportado como ZIP versionado com manifesto JSON e imagens. A importação é aditiva, não apaga dados locais, preserva categorias já existentes e remapeia IDs em colisão. O usuário escolhe o destino e é responsável por guardar a cópia em local seguro.
 - Revisar a tela de privacidade sempre que forem adicionados analytics, telemetria, contas, sincronização, anúncios, pagamentos ou novos serviços externos.
+
+
+## Feature Backup — formato e mesclagem (2026-11-04)
+
+- O formato inicial é ZIP com `manifest.json` versionado e arquivos em `images/`; não persistir URIs do aparelho de origem como se fossem caminhos válidos no destino.
+- Exportar referências, categorias, subtarefas, mídias e anotações, incluindo imagens das capas, galerias e blocos de anotação.
+- Importação é aditiva e não destrutiva. Categoria com nome já existente mantém sua ordenação local.
+- Referência duplicada é identificada por URL normalizada + título + conteúdo; sem URL, por título + conteúdo + tipo. Duplicatas são ignoradas. Colisão de ID com conteúdo diferente gera novo ID e os filhos devem apontar para esse novo ID.
+- IDs de subtarefas e mídias também devem ser regenerados em colisão. Nunca sobrescrever silenciosamente dados locais.
+- Inserção dos registros deve ser atômica no Room. Validar manifesto, versão, caminhos ZIP, tamanhos e imagens antes de confirmar os registros.
+- Versão inicial não inclui Newsletters nem preferências; manter esse limite documentado até ampliação explícita do escopo.
