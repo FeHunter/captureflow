@@ -4,6 +4,7 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
+import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatch
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -29,4 +30,5 @@ class CaptureUseCases(private val repository: CaptureRepository) {
     suspend fun addSubtask(item: CaptureSubtask) = repository.addSubtask(item)
     suspend fun setSubtaskCompleted(id: String, completed: Boolean) = repository.setSubtaskCompleted(id, completed)
     suspend fun deleteSubtask(id: String) = repository.deleteSubtask(id)
+    suspend fun importBatch(batch: CaptureImportBatch) = repository.importBatch(batch)
 }

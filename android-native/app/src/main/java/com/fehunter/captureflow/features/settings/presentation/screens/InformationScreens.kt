@@ -105,7 +105,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             item {
                 InformationSection(
                     title = "Backups: funcionalidade futura",
-                    body = "O CaptureFlow ainda não possui uma função integrada de backup. Está planejada uma exportação composta por um arquivo JSON com os dados e arquivos separados para as imagens. Quando estiver disponível, você escolherá onde salvar e será responsável por guardar essa cópia em um local seguro. Até lá, recomendamos não desinstalar o aplicativo nem limpar seus dados sem antes considerar que as informações locais podem ser perdidas.",
+                    body = "O CaptureFlow permite exportar referências, categorias, subtarefas, anotações e imagens em um arquivo ZIP. A importação mescla os dados com o caderno atual, sem apagar referências locais. Você escolhe onde salvar o arquivo e é responsável por manter uma cópia segura, preferencialmente fora do dispositivo.",
                 )
             }
             item {

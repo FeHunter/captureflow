@@ -35,6 +35,8 @@ import com.fehunter.captureflow.features.newsletters.presentation.screens.Newsle
 import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
 import com.fehunter.captureflow.features.settings.presentation.screens.PrivacyPolicyScreen
 import com.fehunter.captureflow.features.settings.presentation.screens.TutorialsScreen
+import com.fehunter.captureflow.features.backup.presentation.screens.BackupScreen
+import com.fehunter.captureflow.features.backup.presentation.viewmodel.BackupViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +46,7 @@ fun CaptureFlowApp(
     categoriesViewModel: CategoriesViewModel,
     dashboardViewModel: DashboardViewModel,
     newslettersViewModel: NewslettersViewModel,
+    backupViewModel: BackupViewModel,
     themeMode: String,
     onThemeModeChange: (String) -> Unit,
     categorySortOrder: String,
@@ -64,6 +67,7 @@ fun CaptureFlowApp(
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var showTutorials by remember { mutableStateOf(false) }
     var showNewsletters by remember { mutableStateOf(false) }
+    var showBackup by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -76,13 +80,13 @@ fun CaptureFlowApp(
                 ),
                 title = {
                     Text(
-                        if (showNewsletters) "Newsletters" else "Capture Flow",
+                        when { showNewsletters -> "Newsletters"; showBackup -> "Backup e restauração"; else -> "Capture Flow" },
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 actions = {
-                    if (!showNewsletters) {
+                    if (!showNewsletters && !showBackup) {
                         IconButton(onClick = { showNewsletters = true }) {
                             Icon(Icons.Default.RssFeed, contentDescription = "Abrir Newsletters")
                         }
@@ -134,6 +138,13 @@ fun CaptureFlowApp(
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text("Backup e restauração") },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    showBackup = true
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Alterar tema") },
                                 onClick = {
                                     showOptionsMenu = false
@@ -165,7 +176,9 @@ fun CaptureFlowApp(
         },
     ) { padding ->
         Surface(Modifier.fillMaxSize().padding(padding), color = Color.Transparent) {
-            if (showNewsletters) {
+            if (showBackup) {
+                BackupScreen(viewModel = backupViewModel, onBack = { showBackup = false })
+            } else if (showNewsletters) {
                 NewslettersScreen(
                     viewModel = newslettersViewModel,
                     onBack = { showNewsletters = false },

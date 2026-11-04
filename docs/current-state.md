@@ -257,3 +257,8 @@ Room permanece v11. Não há sincronização cloud e as regras local-first conti
 - O filtro da biblioteca apresenta todas as categorias em duas linhas roláveis horizontalmente, com rolagem independente por linha e opção **Ver todas as categorias**.
 - O fullscreen mostra `CompletedBadge` sobre a imagem quando a referência está concluída.
 - Para referências concluídas, a coluna vertical de ações apresenta somente o checkbox de reabertura; as demais ações voltam a aparecer quando a referência fica pendente. O atalho de anotações permanece separado no canto inferior esquerdo.
+
+
+## Backup e restauração
+
+A feature Backup exporta referências, categorias, subtarefas, mídias e anotações para ZIP versionado com manifesto JSON e imagens. A importação é aditiva e transacional: não substitui registros existentes; categorias existentes preservam a ordenação local; referências equivalentes são ignoradas e colisões de ID com conteúdo diferente recebem novos IDs. A versão inicial não inclui Newsletters nem preferências.
