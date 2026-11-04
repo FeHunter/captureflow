@@ -10,7 +10,7 @@ import java.net.URL
 import java.text.Normalizer
 import java.util.Locale
 
-data class PageMetadata(val title: String, val description: String?, val imageUrl: String?)
+data class PageMetadata(val title: String, val description: String?, val imageUrl: String?, val imageUrls: List<String> = listOfNotNull(imageUrl))
 
 class LinkMetadataService {
     suspend fun fetch(rawUrl: String): PageMetadata? = withContext(Dispatchers.IO) {
@@ -64,12 +64,15 @@ class LinkMetadataService {
                 ?: host.removePrefix("www.")
 
             // Prefer a content image inside article/main over generic social preview metadata.
-            val rawImage = imageInContent(html)
-                ?: meta(html, "og:image")
-                ?: meta(html, "og:image:url")
-                ?: meta(html, "twitter:image")
-                ?: meta(html, "twitter:image:src")
-            val imageUrl = rawImage?.let { resolveHttpUrl(connection.url.toString(), it) }
+            val rawImages = (imageUrlsInContent(html) + listOfNotNull(
+                meta(html, "og:image"),
+                meta(html, "og:image:url"),
+                meta(html, "twitter:image"),
+                meta(html, "twitter:image:src"),
+            )).distinct().take(MAX_LINK_IMAGES)
+            val imageUrls = rawImages.mapNotNull { resolveHttpUrl(connection.url.toString(), it) }
+                .distinct().take(MAX_LINK_IMAGES)
+            val imageUrl = imageUrls.firstOrNull()
             val description = meta(html, "og:description")
                 ?: meta(html, "description")
                 ?: meta(html, "twitter:description")
@@ -78,6 +81,7 @@ class LinkMetadataService {
                 title = normalizeTitle(title, host),
                 description = description?.takeIf(String::isNotBlank),
                 imageUrl = imageUrl,
+                imageUrls = imageUrls,
             )
         } catch (_: Exception) {
             null
@@ -139,6 +143,43 @@ class LinkMetadataService {
         return bestContentImage(article)
             ?: bestContentImage(main)
             ?: bestContentImage(body)
+    }
+
+    private fun imageUrlsInContent(html: String): List<String> {
+        val article = Regex(
+            "<article\\b[^>]*>(.*?)</article>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        ).find(html)?.groupValues?.getOrNull(1)
+        val main = Regex(
+            "<main\\b[^>]*>(.*?)</main>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        ).find(html)?.groupValues?.getOrNull(1)
+        val body = Regex(
+            "<body\\b[^>]*>(.*?)</body>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        ).find(html)?.groupValues?.getOrNull(1) ?: html
+
+        return listOfNotNull(article, main, body).flatMap { region ->
+            val best = bestContentImage(region)
+            val sources = Regex("<img\\b[^>]*>", RegexOption.IGNORE_CASE).findAll(region).mapNotNull { match ->
+                val element = match.value
+                val srcset = attribute(element, "srcset")?.let(::bestSrcSetCandidate)
+                val source = sequenceOf(
+                    attribute(element, "data-src"),
+                    attribute(element, "data-lazy-src"),
+                    attribute(element, "data-original"),
+                    attribute(element, "data-url"),
+                    attribute(element, "src"),
+                    srcset,
+                ).filterNotNull().firstOrNull(String::isNotBlank) ?: return@mapNotNull null
+                val hint = listOf(attribute(element, "alt").orEmpty(), attribute(element, "class").orEmpty(),
+                    attribute(element, "id").orEmpty()).joinToString(" ").lowercase()
+                if (source.startsWith("data:", ignoreCase = true) || source.endsWith(".svg", ignoreCase = true) ||
+                    listOf("logo", "avatar", "icon", "sprite", "tracking", "pixel", "spinner", "advert")
+                        .any(hint::contains)) null else source
+            }.toList()
+            listOfNotNull(best) + sources
+        }.distinct().take(MAX_LINK_IMAGES)
     }
 
     private data class ImageCandidate(val source: String, val score: Int)
@@ -250,6 +291,7 @@ class LinkMetadataService {
 
     private companion object {
         const val MAX_HTML_CHARS = 512_000
+        const val MAX_LINK_IMAGES = 10
         const val MAX_TITLE_WORDS = 12
         const val MAX_TITLE_CHARS = 110
     }

@@ -1,7 +1,7 @@
 # Contrato atual do banco — Captures
 
 **Banco:** Room, arquivo local `captureflow.db`.  
-**Versão Room:** 9.
+**Versão Room:** 11.
 
 ## `captures`
 - `id`: chave primária.
@@ -15,6 +15,38 @@
 - `isCompleted`: estado de conclusão.
 - `previousCategory`: coluna legada mantida no schema por compatibilidade; é limpa pela migração 8→9 e não é usada pela regra atual de conclusão.
 - `notes`: anotações associadas à referência (até 10.000 caracteres).
+
+## `capture_media`
+- `id`: identificador estável da mídia.
+- `captureId`: referência proprietária; chave estrangeira para `captures(id)` com exclusão em cascata.
+- `uri`: URI do arquivo privado local.
+- `mediaType`: MIME/type declarado para a mídia.
+- `position`: ordem estável dentro da referência; índice único composto com `captureId`.
+- `isCover`: indica a capa selecionada.
+- `sourceUrl`: URL original da mídia, quando disponível.
+- `createdAt`: instante de inclusão.
+
+A migration 9→10 importa cada `captures.imageUri` não vazio como uma linha `capture_media` na posição 0, marcada como capa. A coluna legada `captures.imageUri` permanece no schema para compatibilidade e fallback; ela não é removida nesta etapa.
+
+## `newsletter_sources`
+- `id`: identificador da fonte.
+- `title`: nome exibido.
+- `feedUrl`: endereço RSS/Atom; índice único para evitar fontes duplicadas.
+- `siteUrl`, `description`, `imageUrl`: metadados do canal.
+- `createdAt`, `lastFetchedAt`: criação e última atualização.
+- `etag`, `lastModified`: validadores HTTP condicionais.
+- `lastError`: última falha registrada, quando houver.
+
+## `newsletter_articles`
+- `id`: identificador local do artigo.
+- `sourceId`: fonte proprietária, com chave estrangeira e exclusão em cascata.
+- `stableId`: GUID/ID do feed; único por fonte.
+- `title`, `canonicalUrl`, `publishedAt`, `summary`, `contentHtml`, `imageUrl`: conteúdo disponível no feed.
+- `isRead`: estado de leitura.
+- `savedCaptureId`: referência da Biblioteca criada a partir do artigo, se houver.
+- `fetchedAt`: instante de importação.
+
+A retenção remove artigos mais antigos não salvos acima de 100 por fonte; artigos com `savedCaptureId` não são removidos pela limpeza automática.
 
 ## `checklist_tasks`
 - `id`: chave primária.
@@ -40,8 +72,10 @@
 - v6 → v7: alteração histórica que adicionou `previousCategory` e migrou referências concluídas para a categoria `Concluído`.
 - v7 → v8: adiciona `notes` às referências.
 - v8 → v9: restaura a categoria original dos registros que estavam em `Concluído` usando `previousCategory` (fallback `Salvar`), limpa a coluna legada e remove a categoria `Concluído` da tabela `categories`.
+- v9 → v10: cria `capture_media`, índices por `captureId` e por (`captureId`, `position`), e migra `imageUri` legado para a nova coleção como capa.
+- v10 → v11: cria `newsletter_sources` com índice único por `feedUrl` e `newsletter_articles` com FK em `sourceId`, índices e deduplicação por GUID/ID e URL canônica.
 
-Ao excluir uma referência, o ViewModel remove seus sub-itens antes de excluir a referência.
+Ao excluir uma referência, o repositório remove subtarefas e mídias relacionadas dentro de transação; a chave estrangeira também define `ON DELETE CASCADE` para `capture_media`. A limpeza física de arquivos privados é responsabilidade da camada de aplicação/armazenamento.
 
 A conclusão é independente da categoria: `isCompleted` é o único estado de conclusão. Marcar ou reabrir uma referência não altera `category`. A coluna `previousCategory` permanece apenas por compatibilidade com o schema histórico e não é mais consumida pelo domínio.
 

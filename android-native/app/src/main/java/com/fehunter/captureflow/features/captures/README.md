@@ -3,10 +3,10 @@
 Feature responsável pelo ciclo de vida das referências salvas.
 
 ## Estrutura
-- `domain/model`: `Capture`, `CaptureCategory`, `CaptureSubtask` e `CaptureNote`.
+- `domain/model`: `Capture`, `CaptureCategory`, `CaptureSubtask`, `CaptureNote` e `CaptureMedia`.
 - `domain/repository`: contrato `CaptureRepository`.
 - `domain/usecase`: operações de aplicação e regras de criação.
-- `data/local`: entidades, DAOs e Room.
+- `data/local`: entidades, DAOs e Room, incluindo `CaptureMediaEntity`/`CaptureMediaDao`.
 - `data/mapper`: conversão Room↔Domain.
 - `data/repository`: implementação Room.
 - `presentation/viewmodel`: estado e ações de Captures.
@@ -14,3 +14,11 @@ Feature responsável pelo ciclo de vida das referências salvas.
 - A sub-checklist de cada referência é apresentada no fullscreen e permanece vinculada ao `captureId`.
 
 O ViewModel consome `CaptureUseCases`; não deve importar entidades, DAOs ou implementações Data. A conclusão é independente da categoria: concluir/reabrir altera somente `isCompleted`. Os cartões exibem somente referências pendentes na prévia, mantendo a contagem de concluídas/total e a ação para abrir todos os itens. Em `Todas`, cartões sem pendentes são omitidos; no filtro de categoria específica, o cartão continua visível com estado vazio. `CompletedBadge` é aplicado nos thumbnails de referências concluídas. A categoria expandida permite alternar entre Pendentes e Concluídas. A coluna Room `previousCategory` permanece somente como legado de compatibilidade, sem uso na regra de negócio. A biblioteca é composta pelo `CaptureLibraryCoordinator` em `app/navigation`, que integra as features sem criar dependências entre suas camadas de Presentation. Categories, Search, Dashboard, Image Import e Fullscreen mantêm seus componentes e estados próprios.
+
+
+## Múltiplas mídias
+
+- `CaptureMedia` representa uma imagem local vinculada a uma referência, com posição estável e indicação de capa.
+- A migration Room 9→10 cria `capture_media` e importa `captures.imageUri` existente como a primeira capa, sem remover a coluna legada.
+- O limite é de 10 mídias por referência. O import de metadados de links coleta até 10 imagens, limita cada download a 10 MB e valida MIME/decodificação antes de gravar.
+- O fullscreen oferece navegação por controles explícitos e permite definir a capa; a capa também atualiza `captures.imageUri` para compatibilidade.

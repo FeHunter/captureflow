@@ -8,6 +8,7 @@ data class PendingSharedLink(
     val titleManuallyEdited: Boolean = false,
     val description: String? = null,
     val imageUrl: String? = null,
+    val imageUrls: List<String> = listOfNotNull(imageUrl),
     val isLoading: Boolean = true,
     val metadataFound: Boolean = false,
 )

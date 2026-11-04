@@ -2,18 +2,15 @@ package com.fehunter.captureflow.features.youtubeplayer.presentation
 
 import android.annotation.SuppressLint
 import android.graphics.Color as AndroidColor
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,11 +18,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -40,15 +39,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import kotlinx.coroutines.delay
-
-private const val TAG = "YoutubePlayer"
-private const val BRIDGE_NAME = "CaptureFlowYoutube"
 
 private sealed interface PlayerStatus {
     data object Loading : PlayerStatus
     data object Ready : PlayerStatus
-    data class Failed(val code: Int?, val message: String) : PlayerStatus
+    data class Failed(val message: String) : PlayerStatus
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -57,18 +52,12 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var status by remember(videoId) { mutableStateOf<PlayerStatus>(PlayerStatus.Loading) }
-    val setCurrentStatus by rememberUpdatedState<(PlayerStatus) -> Unit>({ status = it })
+    var reloadAttempt by remember(videoId) { mutableIntStateOf(0) }
     val latestStatus by rememberUpdatedState(status)
-    val origin = remember(context.packageName) { "https://" + context.packageName.lowercase() }
-    val html = remember(videoId, origin) { YoutubePlayerHtml.create(videoId, origin) }
-    var webView by remember(videoId) { mutableStateOf<WebView?>(null) }
-
-    LaunchedEffect(videoId) {
-        delay(20_000)
-        if (latestStatus == PlayerStatus.Loading) {
-            setCurrentStatus(PlayerStatus.Failed(null, "O player não respondeu. Verifique a conexão ou abra o link original no YouTube."))
-        }
+    val request = remember(videoId, context.packageName) {
+        YoutubeEmbedRequestFactory.create(videoId, context.packageName)
     }
+    var webView by remember(videoId) { mutableStateOf<WebView?>(null) }
 
     DisposableEffect(lifecycleOwner, webView) {
         val currentWebView = webView
@@ -80,9 +69,7 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Box(
@@ -90,123 +77,124 @@ fun YoutubeEmbeddedPlayer(videoId: String, modifier: Modifier = Modifier) {
             .heightIn(min = 200.dp).background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        key(videoId) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { viewContext ->
-                val bridge = PlayerJavascriptBridge { event ->
-                    when (event) {
-                        PlayerEvent.Ready -> setCurrentStatus(PlayerStatus.Ready)
-                        is PlayerEvent.Error -> setCurrentStatus(PlayerStatus.Failed(event.code, describeError(event.code)))
-                        is PlayerEvent.StateChanged -> Log.d(TAG, "Player state=" + event.state)
-                    }
-                }
-                WebView(viewContext).apply {
-                    webView = this
-                    setBackgroundColor(AndroidColor.BLACK)
-                    setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                    isVerticalScrollBarEnabled = false
-                    isHorizontalScrollBarEnabled = false
-                    overScrollMode = View.OVER_SCROLL_NEVER
-                    isFocusable = true
-                    isFocusableInTouchMode = true
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        mediaPlaybackRequiresUserGesture = true
-                        allowFileAccess = false
-                        allowContentAccess = false
-                        javaScriptCanOpenWindowsAutomatically = false
-                        setSupportMultipleWindows(false)
-                        safeBrowsingEnabled = true
-                        loadWithOverviewMode = true
-                        useWideViewPort = true
-                    }
-                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                    addJavascriptInterface(bridge, BRIDGE_NAME)
-                    webChromeClient = object : WebChromeClient() {
-                        override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
-                            Log.d(TAG, message.message() + " (" + message.sourceId() + ":" + message.lineNumber() + ")")
-                            return true
+        key(videoId, reloadAttempt) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { viewContext ->
+                    WebView(viewContext).apply {
+                        webView = this
+                        setBackgroundColor(AndroidColor.BLACK)
+                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                        isVerticalScrollBarEnabled = false
+                        isHorizontalScrollBarEnabled = false
+                        overScrollMode = View.OVER_SCROLL_NEVER
+                        isFocusable = true
+                        isFocusableInTouchMode = true
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            mediaPlaybackRequiresUserGesture = true
+                            allowFileAccess = false
+                            allowContentAccess = false
+                            javaScriptCanOpenWindowsAutomatically = false
+                            setSupportMultipleWindows(false)
+                            safeBrowsingEnabled = true
+                            loadWithOverviewMode = true
+                            useWideViewPort = true
                         }
-                    }
-                    webViewClient = object : WebViewClient() {
-                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                            if (!request.isForMainFrame) return false
-                            val host = request.url.host?.lowercase().orEmpty().removePrefix("www.")
-                            val youtubeHost = host == "youtube.com" || host.endsWith(".youtube.com") ||
-                                host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com")
-                            return request.url.scheme != "https" || !youtubeHost
-                        }
+                        CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                view: WebView,
+                                request: WebResourceRequest,
+                            ): Boolean {
+                                if (!request.isForMainFrame) return false
+                                val host = request.url.host?.lowercase().orEmpty().removePrefix("www.")
+                                val youtubeHost = host == "youtube.com" || host.endsWith(".youtube.com") ||
+                                    host == "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com")
+                                return request.url.scheme != "https" || !youtubeHost
+                            }
 
-                        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
-                            super.onReceivedError(view, request, error)
-                            if (request.isForMainFrame) {
-                                setCurrentStatus(PlayerStatus.Failed(null, "Não foi possível carregar o player. Verifique sua conexão e tente novamente."))
+                            override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+                                super.onPageStarted(view, url, favicon)
+                                status = PlayerStatus.Loading
+                            }
+
+                            override fun onPageFinished(view: WebView, url: String) {
+                                super.onPageFinished(view, url)
+                                if (url.startsWith("https://www.youtube-nocookie.com/embed/")) {
+                                    status = PlayerStatus.Ready
+                                }
+                            }
+
+                            override fun onReceivedError(
+                                view: WebView,
+                                request: WebResourceRequest,
+                                error: android.webkit.WebResourceError,
+                            ) {
+                                super.onReceivedError(view, request, error)
+                                if (request.isForMainFrame) {
+                                    status = PlayerStatus.Failed(
+                                        "Não foi possível carregar o player. Verifique sua conexão e tente novamente.",
+                                    )
+                                }
+                            }
+
+                            override fun onReceivedHttpError(
+                                view: WebView,
+                                request: WebResourceRequest,
+                                errorResponse: android.webkit.WebResourceResponse,
+                            ) {
+                                super.onReceivedHttpError(view, request, errorResponse)
+                                if (request.isForMainFrame && errorResponse.statusCode >= 400) {
+                                    status = PlayerStatus.Failed(
+                                        "O YouTube respondeu com HTTP ${errorResponse.statusCode}. Abra o link original se o problema persistir.",
+                                    )
+                                }
                             }
                         }
+                        loadUrl(request.url, request.headers)
+                        requestFocus()
                     }
-                    // Android's documented WebView approach: baseUrl supplies the HTTP Referer.
-                    tag = videoId
-                    loadDataWithBaseURL(origin + "/", html, "text/html", "UTF-8", null)
-                    requestFocus()
-                }
-            },
-            update = { view ->
-                if (view.tag != videoId) {
-                    view.tag = videoId
-                    view.loadDataWithBaseURL(origin + "/", html, "text/html", "UTF-8", null)
-                }
-            },
-            onRelease = { released ->
-                released.stopLoading()
-                released.onPause()
-                released.removeJavascriptInterface(BRIDGE_NAME)
-                released.loadUrl("about:blank")
-                released.clearHistory()
-                released.destroy()
-                if (webView === released) webView = null
-            },
-        )
+                },
+                update = { view ->
+                    if (view.tag != request.url) {
+                        view.tag = request.url
+                        view.loadUrl(request.url, request.headers)
+                    }
+                },
+                onRelease = { released ->
+                    released.stopLoading()
+                    released.onPause()
+                    released.loadUrl("about:blank")
+                    released.clearHistory()
+                    released.destroy()
+                    if (webView === released) webView = null
+                },
+            )
         }
 
         when (val current = status) {
             PlayerStatus.Loading -> CircularProgressIndicator(color = Color.White)
             PlayerStatus.Ready -> Unit
-            is PlayerStatus.Failed -> Text(
-                text = current.message + (current.code?.let { "\nCódigo do YouTube: " + it } ?: ""),
+            is PlayerStatus.Failed -> Column(
                 modifier = Modifier.fillMaxWidth(0.88f),
-                color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    current.message,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                TextButton(onClick = {
+                    status = PlayerStatus.Loading
+                    reloadAttempt += 1
+                }) {
+                    Text("Tentar novamente", color = Color.White)
+                }
+            }
         }
     }
-}
-
-private sealed interface PlayerEvent {
-    data object Ready : PlayerEvent
-    data class Error(val code: Int) : PlayerEvent
-    data class StateChanged(val state: Int) : PlayerEvent
-}
-
-private class PlayerJavascriptBridge(private val onEvent: (PlayerEvent) -> Unit) {
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    @JavascriptInterface fun onReady() = dispatch(PlayerEvent.Ready)
-    @JavascriptInterface fun onError(code: Int) = dispatch(PlayerEvent.Error(code))
-    @JavascriptInterface fun onStateChange(state: Int) = dispatch(PlayerEvent.StateChanged(state))
-
-    private fun dispatch(event: PlayerEvent) {
-        mainHandler.post { onEvent(event) }
-    }
-}
-
-private fun describeError(code: Int): String = when (code) {
-    2 -> "O YouTube recebeu um identificador ou parâmetro inválido."
-    5 -> "O vídeo não pôde ser reproduzido pelo player HTML5."
-    100 -> "Este vídeo não está disponível ou é privado."
-    101, 150, 152 -> "Este vídeo não permite reprodução incorporada. Abra o link original no YouTube."
-    153 -> "O YouTube não reconheceu a identificação da aplicação (HTTP Referer)."
-    else -> "O YouTube não conseguiu reproduzir este vídeo."
 }

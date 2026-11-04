@@ -1,21 +1,25 @@
 # Capture Flow — estado atual do aplicativo
 
-**Atualizado:** 2026-11-01. Este documento registra o comportamento observado no código; não é uma promessa de release.
+**Atualizado:** 2026-11-04. Este documento registra o comportamento observado no código; não é uma promessa de release.
 
 ## Produto e fonte de verdade
 Capture Flow guarda links, textos e imagens compartilhados como referências locais, organizáveis por categoria e com sub-checklists. O app ativo é Kotlin/Android/Jetpack Compose em `android-native/`; `legacy-expo/` é histórico. Banco local Room/SQLite em `captureflow.db`; sem sincronização em nuvem.
 
 ## Arquitetura
-- `MainActivity.kt`: intents do launcher, Android Sharesheet e notificação.
-- `ui/CaptureFlowApp.kt`: tela única, cartões, busca, filtros, diálogos, visualizadores fullscreen e sub-checklist.
-- `ui/CaptureViewModel.kt`: StateFlow, operações assíncronas, captura pendente de link, persistência, OCR e subtarefas.
-- `data/CaptureDatabase.kt`: entidades, DAOs, classificação e migrações Room.
-- `services/LinkMetadataService.kt`: requisição HTTP(S) e parsing best-effort de HTML.
-- `services/OcrService.kt`: ML Kit Text Recognition no dispositivo e heurísticas de título.
-- `services/SharedImageStorageService.kt`: cópia/download de imagem para diretório privado e remoção segura de arquivos próprios.
-- `ScreenshotMonitor.kt` e `ScreenshotNotificationService.kt`: detecção opcional de screenshots pelo MediaStore.
-- Direção de dependências: UI → ViewModel → serviços/DAOs. Composables não devem acessar DAOs diretamente.
-
+- Plataforma ativa: Android nativo, Kotlin, Jetpack Compose e Material 3 em `android-native/`; `legacy-expo/` é histórico.
+- Organização Feature-first + MVVM, ainda em um único módulo Gradle.
+- `MainActivity.kt`: entrada Android, permissões e encaminhamento de intents/Sharesheet.
+- `app/navigation/`: shell Compose e composição da biblioteca; `CaptureLibraryCoordinator` coordena features, sem concentrar regras de negócio.
+- `app/di/`: composição de dependências.
+- `core/`: utilitários compartilhados e UI infrastructure, sem dependência de features.
+- `features/captures/`: domínio, contratos, casos de uso, persistência Room e estado das referências/subtarefas.
+- `features/imageimport/`: adaptação de Sharesheet/Photo Picker/câmera, metadados, armazenamento privado e OCR.
+- `features/categories/`, `search/`, `dashboard/` e `settings/`: estado e apresentação separados por feature.
+- `features/fullscreen/`: visualizador e ações por callbacks; não possui ViewModel próprio enquanto não houver estado de negócio independente.
+- `features/youtubeplayer/`: player IFrame em WebView, isolado da feature Fullscreen, com ação de retry em falhas.
+- `features/newsletters/`: fontes RSS/Atom, parser, fetch limitado, persistência local, atualização manual e salvamento explícito na Biblioteca.
+- Direção de dependências: Presentation → Domain/UseCases/contratos; Data implementa repositórios e acessa Room. Domain não importa Android, Compose, Room ou Data. Features não importam implementações internas umas das outras.
+- Composables não acessam DAOs, Room ou rede diretamente. A persistência local Room/SQLite é a fonte canônica; não há sincronização em nuvem.
 ## Tela principal
 - Nome do produto na barra superior e launcher: **Capture Flow**.
 - Uma tela principal de referências; sem bottom navigation e sem tela separada de tarefas.
@@ -73,7 +77,7 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - O WebView fica fora da árvore do HorizontalPager para evitar que transformações/recortes das páginas afetem a superfície de vídeo do Chromium.
 - A página HTML usa YouTube IFrame Player API, loadDataWithBaseURL com base URL https://{applicationId}/, meta referrer strict-origin-when-cross-origin, origin correspondente ao base URL, playsinline=1, controles e autoplay desabilitado.
 - A feature não falsifica User-Agent, não expõe permissões nativas ao conteúdo e não persiste dados. O JavaScript bridge é limitado a callbacks de prontidão/erro/estado; a instância WebView é pausada/retomada com o lifecycle e destruída ao sair da composição.
-- O YouTube documenta erro 153 como ausência de HTTP Referer ou identificação equivalente. Erros de incorporação (ex.: 101/150 e códigos equivalentes) são restrições do vídeo e não podem ser corrigidos pelo app. Em falha, o link original permanece disponível no cabeçalho.
+- O YouTube documenta erro 153 como ausência de HTTP Referer ou identificação equivalente. Erros de incorporação (ex.: 101/150 e códigos equivalentes) são restrições do vídeo e não podem ser corrigidos pelo app. Em falha, o link original permanece disponível no cabeçalho e a UI oferece retry. O retry ainda precisa ser validado em dispositivo.
 
 ## Compartilhamento de link
 1. Android envia `ACTION_SEND` com `text/plain`; `CaptureClassifier` identifica URL HTTP(S).
@@ -87,6 +91,12 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 9. Texto compartilhado sem URL continua sendo salvo diretamente com deduplicação por conteúdo. Imagem compartilhada segue importação/OCR, não o diálogo de link.
 
 **Limite:** o parser usa regex sobre o HTML recebido e não executa JavaScript. Páginas dinâmicas, autenticadas ou que bloqueiem requisições podem não fornecer H1/imagem. Não é um navegador/DOM completo.
+
+## Múltiplas imagens por referência
+- A tabela `capture_media` armazena até 10 imagens locais por referência, com posição, MIME type, URL de origem e indicador de capa.
+- A migration 9→10 importa `captures.imageUri` como capa inicial e mantém a coluna legada para compatibilidade com cartões e telas antigas.
+- O import de metadados de links coleta até 10 candidatos de imagem. O download aceita imagens HTTP(S) com MIME de imagem, valida que o arquivo pode ser decodificado e limita cada arquivo a 10 MB.
+- O fullscreen permite navegar por imagens com controles explícitos e escolher outra capa. A capa selecionada também atualiza `captures.imageUri`.
 
 ## Imagens e OCR
 - Photo Picker ou compartilhamento fornece URI; o app tenta copiar a imagem para armazenamento privado, mantendo a URI original como fallback em caso de falha.
@@ -119,7 +129,16 @@ Capture Flow guarda links, textos e imagens compartilhados como referências loc
 - `captures`: id, title, content, kind, category, `sourceUrl` opcional, `imageUri` opcional, `notes` opcional (texto legado ou coleção versionada de blocos), createdAt e `isCompleted`. A coluna legada `previousCategory` continua no schema para compatibilidade, mas é limpa e não participa mais das regras de negócio.
 - `capture_subtasks`: id, captureId, title, isCompleted e createdAt; índice por captureId.
 - `checklist_tasks`: entidade/DAO legado ainda presente, mas sem tela de tarefas independente na navegação atual.
-- Versão Room no código: **9**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adicionou historicamente `previousCategory` e a categoria `Concluído`; 7→8 adiciona `notes`; 8→9 restaura a categoria original dos registros que estavam em `Concluído`, limpa `previousCategory` e remove essa categoria da tabela. Concluir/desconcluir altera somente `isCompleted`.
+- Versão Room no código: **11**. Migrações recentes: 5→6 adiciona persistência de categorias; 6→7 adicionou historicamente `previousCategory` e a categoria `Concluído`; 7→8 adiciona `notes`; 8→9 restaura a categoria original dos registros que estavam em `Concluído`, limpa `previousCategory` e remove essa categoria da tabela; 9→10 cria `capture_media` e migra `imageUri` legado para a coleção; 10→11 cria `newsletter_sources` e `newsletter_articles`. Concluir/desconcluir altera somente `isCompleted`.
+
+## Newsletters
+- A entrada fica no menu superior da Biblioteca; não há bottom navigation.
+- Fontes RSS 2.0 e Atom podem ser adicionadas por URL direta do feed ou URL do site; a descoberta usa rel=alternate e caminhos comuns, incluindo /feed para Substack. Fontes são persistidas localmente em `newsletter_sources`; artigos em `newsletter_articles`.
+- O parser trata links relativos, GUID/ID, título, datas, resumo, conteúdo e imagens; payload XML limitado a 1 MB e até 100 artigos por leitura.
+- A busca de feed usa HTTP(S), bloqueia hosts locais/endereços privados após resolução DNS, limita redirecionamentos a cinco, timeout a seis segundos e resposta a 1 MB; usa ETag/Last-Modified quando disponíveis.
+- Atualização manual está disponível para a fonte selecionada ou todas as fontes; a UI mostra a última atualização e o erro da fonte. WorkManager periódico está pendente de definição de frequência. A retenção mantém até 100 artigos não salvos por fonte; artigos vinculados à Biblioteca são preservados.
+- O leitor mostra título e resumo/conteúdo disponível no feed; **Abrir original** abre o artigo no navegador. Salvar na Biblioteca cria uma referência em `Ler depois` e vincula o artigo ao ID salvo.
+- Não há scraping de páginas autenticadas, bypass de paywall, embed Instagram próprio ou sincronização em nuvem.
 
 ## Privacidade e validação
 - Dados e imagens permanecem no dispositivo; sem cloud sync.
@@ -135,7 +154,7 @@ A UI foi dividida entre shell de navegação e `CaptureLibraryCoordinator` no Ap
 
 A tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema; as subtarefas ativas são propriedade de Captures e vinculadas por `captureId`. Fullscreen não tem ViewModel independente por não possuir estado de negócio isolado.
 
-Room permanece v8. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
+Room permanece v11. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
 
 
 ## Atualização — câmera e metadados do YouTube
@@ -225,7 +244,7 @@ A UI foi dividida entre shell de navegação e `CaptureLibraryCoordinator` no Ap
 
 A tabela histórica `checklist_tasks` permanece apenas como compatibilidade de schema; as subtarefas ativas são propriedade de Captures e vinculadas por `captureId`. Fullscreen não tem ViewModel independente por não possuir estado de negócio isolado.
 
-Room permanece v8. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
+Room permanece v11. Não há sincronização cloud e as regras local-first continuam preservadas. A validação final depende de CI verde no HEAD mais recente e revisão manual dos fluxos existentes.
 
 
 ## Atualização — câmera e metadados do YouTube

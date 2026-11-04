@@ -76,6 +76,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val categoryEntities by categoriesViewModel.categories.collectAsState()
     val dashboardSummary by dashboardViewModel.summary.collectAsState()
     val allSubtasks by viewModel.captureSubtasks.collectAsState()
+    val captureMedia by viewModel.captureMedia.collectAsState()
     val searchViewModel: SearchViewModel = viewModel()
     val query by searchViewModel.query.collectAsState()
     var category by remember { mutableStateOf("Todas") }
@@ -428,6 +429,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     FullscreenCaptureDialog(
         capture = selectedCapture,
         captures = fullscreenCaptures,
+        mediaByCapture = remember(captureMedia) { captureMedia.groupBy { it.captureId } },
+        onSetCover = viewModel::setCaptureCover,
         onDismiss = { selectedCapture = null },
         onCaptureSelected = { selectedCapture = it },
         onCompleted = { id, completed ->

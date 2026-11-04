@@ -6,6 +6,7 @@ data class ImportedLinkMetadata(
     val title: String,
     val description: String?,
     val imageUrl: String?,
+    val imageUrls: List<String> = listOfNotNull(imageUrl),
 )
 
 data class ImportedImageAnalysis(
