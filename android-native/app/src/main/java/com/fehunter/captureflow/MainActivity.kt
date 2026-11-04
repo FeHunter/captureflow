@@ -27,6 +27,7 @@ import com.fehunter.captureflow.features.settings.presentation.viewmodel.Setting
 import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
 import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
 import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
+import com.fehunter.captureflow.features.backup.presentation.viewmodel.BackupViewModel
 import com.fehunter.captureflow.features.imageimport.data.android.ScreenshotNotificationService
 import com.fehunter.captureflow.app.di.AppContainer
 import com.fehunter.captureflow.features.imageimport.data.android.SharedContentIntentParser
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
     private val categoriesViewModel: CategoriesViewModel by viewModels { appContainer.categoriesViewModelFactory }
     private val dashboardViewModel: DashboardViewModel by viewModels { appContainer.dashboardViewModelFactory }
     private val newslettersViewModel: NewslettersViewModel by viewModels { appContainer.newslettersViewModelFactory }
+    private val backupViewModel: BackupViewModel by viewModels { appContainer.backupViewModelFactory }
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
     private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
     private var pendingScreenshotImportUri by mutableStateOf<Uri?>(null)
@@ -90,6 +92,7 @@ class MainActivity : ComponentActivity() {
                     categoriesViewModel = categoriesViewModel,
                     dashboardViewModel = dashboardViewModel,
                     newslettersViewModel = newslettersViewModel,
+                    backupViewModel = backupViewModel,
                     themeMode = themeMode,
                     onThemeModeChange = settingsViewModel::setThemeMode,
                     categorySortOrder = categorySortOrder,

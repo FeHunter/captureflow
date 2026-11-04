@@ -4,6 +4,7 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
+import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatch
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import kotlinx.coroutines.flow.Flow
@@ -65,6 +66,7 @@ class ObserveDashboardSummaryUseCaseTest {
         override suspend fun addCategory(name: String, sortOrder: Int) = Unit
         override suspend fun renameCategory(oldName: String, newName: String) = Unit
         override suspend fun deleteCategory(name: String, fallbackCategory: String) = Unit
+        override suspend fun importBatch(batch: CaptureImportBatch) = Unit
         override suspend fun addSubtask(subtask: CaptureSubtask) = Unit
         override suspend fun setSubtaskCompleted(id: String, completed: Boolean) = Unit
         override suspend fun deleteSubtask(id: String) = Unit
