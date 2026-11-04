@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.newsletters.data.feed.NewsletterFeedFetcher
+import com.fehunter.captureflow.features.newsletters.data.feed.NewsletterFeedDiscoveryService
 import com.fehunter.captureflow.features.newsletters.data.feed.NewsletterFetchResult
 import com.fehunter.captureflow.features.newsletters.data.feed.RssAtomFeedParser
 import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterArticle
