@@ -83,7 +83,7 @@ fun FullscreenCaptureDialog(
     var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
 
     capture?.let { selected ->
-        val viewerCaptures = captures.filter { it.category == selected.category }
+        val viewerCaptures = captures.filter { it.category == selected.category && it.isCompleted == selected.isCompleted }
         val initialPage = viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
         val sourceUrl = selected.sourceUrl?.takeIf { url ->
             runCatching {
@@ -412,26 +412,31 @@ fun FullscreenCaptureDialog(
                     color = Color(0xFF63C4F0),
                     trackColor = Color(0xFF164B62),
                 )
-                selectedSubtasks.forEach { subtask ->
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                        color = Color(0xFF164B62),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(selectedSubtasks, key = { it.id }) { subtask ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
+                            color = Color(0xFF164B62),
                         ) {
-                            Checkbox(checked = subtask.isCompleted, onCheckedChange = { onSubtaskCompleted(subtask.id, it) })
-                            Text(
-                                subtask.title,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                color = if (subtask.isCompleted) Color(0xFFA9C0D2) else Color.White,
-                            )
-                            IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Excluir item", tint = Color(0xFFA9C0D2))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
+                            ) {
+                                Checkbox(checked = subtask.isCompleted, onCheckedChange = { onSubtaskCompleted(subtask.id, it) })
+                                Text(
+                                    subtask.title,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = if (subtask.isCompleted) Color(0xFFA9C0D2) else Color.White,
+                                )
+                                IconButton(onClick = { onDeleteSubtask(subtask.id) }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Excluir item", tint = Color(0xFFA9C0D2))
+                                }
                             }
                         }
                     }
