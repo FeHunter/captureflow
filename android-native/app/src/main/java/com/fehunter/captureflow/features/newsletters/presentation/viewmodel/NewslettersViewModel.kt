@@ -25,6 +25,7 @@ class NewslettersViewModel(
     private val newsletterUseCases: NewsletterUseCases,
     private val captureUseCases: CaptureUseCases,
     private val fetcher: NewsletterFeedFetcher,
+    private val discovery: NewsletterFeedDiscoveryService,
     private val parser: RssAtomFeedParser,
 ) : ViewModel() {
     val sources = newsletterUseCases.observeSources().stateIn(
@@ -70,18 +71,20 @@ class NewslettersViewModel(
                     refresh(existing)
                     return@launch
                 }
-                val result = fetcher.fetch(feedUrl)
-                if (result !is NewsletterFetchResult.Success) {
-                    throw IllegalStateException("O feed não retornou conteúdo atualizado.")
+                val (result, parsed) = fetchInitialFeed(feedUrl)
+                val canonicalFeedUrl = result.finalUrl
+                val existingFinal = newsletterUseCases.findSourceByFeedUrl(canonicalFeedUrl)
+                if (existingFinal != null) {
+                    _selectedSourceId.value = existingFinal.id
+                    refresh(existingFinal)
+                    return@launch
                 }
-                val parsed = parser.parse(result.xml, result.finalUrl)
-                if (parsed.articles.isEmpty()) throw IllegalArgumentException("Não encontramos artigos válidos neste feed.")
                 val now = System.currentTimeMillis()
                 val source = NewsletterSource(
                     id = UUID.randomUUID().toString(),
                     title = parsed.title?.takeIf(String::isNotBlank) ?: URI(result.finalUrl).host.orEmpty(),
-                    feedUrl = feedUrl,
-                    siteUrl = parsed.siteUrl,
+                    feedUrl = canonicalFeedUrl,
+                    siteUrl = parsed.siteUrl ?: feedUrl,
                     description = parsed.description,
                     imageUrl = null,
                     createdAt = now,
@@ -189,6 +192,23 @@ class NewslettersViewModel(
         }
     }
 
+    private fun fetchInitialFeed(inputUrl: String): Pair<NewsletterFetchResult.Success, com.fehunter.captureflow.features.newsletters.domain.model.ParsedNewsletterFeed> {
+        var lastError: Exception? = null
+        val candidates = (listOf(inputUrl) + discovery.discoverFeedUrls(inputUrl)).distinct().take(MAX_DISCOVERED_FEEDS)
+        for (candidate in candidates) {
+            try {
+                val result = fetcher.fetch(candidate)
+                if (result !is NewsletterFetchResult.Success) continue
+                val parsed = parser.parse(result.xml, result.finalUrl)
+                if (parsed.articles.isNotEmpty()) return result to parsed
+                lastError = IllegalArgumentException("O feed não contém artigos reconhecíveis.")
+            } catch (error: Exception) {
+                lastError = error
+            }
+        }
+        throw lastError ?: IllegalArgumentException("Não encontramos um feed RSS/Atom nesta publicação.")
+    }
+
     private fun normalizeFeedUrl(raw: String): String {
         val value = raw.trim()
         require(value.isNotBlank()) { "Informe o endereço do feed." }
@@ -198,5 +218,5 @@ class NewslettersViewModel(
         return uri.normalize().toString()
     }
 
-    private companion object { const val RETENTION_PER_SOURCE = 100 }
+    private companion object { const val RETENTION_PER_SOURCE = 100; const val MAX_DISCOVERED_FEEDS = 8 }
 }

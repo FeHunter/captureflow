@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import com.fehunter.captureflow.features.newsletters.data.feed.NewsletterFeedFetcher
+import com.fehunter.captureflow.features.newsletters.data.feed.NewsletterFeedDiscoveryService
 import com.fehunter.captureflow.features.newsletters.data.feed.RssAtomFeedParser
 import com.fehunter.captureflow.features.newsletters.domain.usecase.NewsletterUseCases
 
@@ -18,6 +19,7 @@ class NewslettersViewModelFactory(
                 newsletterUseCases = newsletterUseCases,
                 captureUseCases = captureUseCases,
                 fetcher = NewsletterFeedFetcher(),
+                discovery = NewsletterFeedDiscoveryService(),
                 parser = RssAtomFeedParser(),
             ) as T
         }
