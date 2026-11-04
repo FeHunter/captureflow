@@ -3,6 +3,7 @@ package com.fehunter.captureflow.features.captures.presentation.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -201,38 +202,81 @@ fun CategoryCard(
             if (captures.isEmpty()) {
                 Text("Nenhuma referência pendente nesta categoria.", modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 22.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
+                ) {
                     captures.take(3).forEach { capture ->
                         val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, capture.imageUri) {
                             value = capture.imageUri?.let { raw -> withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() } }
                         }
                         val loadedBitmap = bitmap
-                        Box(
-                            modifier = Modifier.weight(1f).aspectRatio(0.92f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
-                                .clickable { onOpenCapture(capture) },
+                        Card(
+                            modifier = Modifier.weight(1f).clickable { onOpenCapture(capture) },
+                            shape = RoundedCornerShape(13.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.85f)),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         ) {
-                            if (loadedBitmap != null) {
-                                Image(bitmap = loadedBitmap, contentDescription = capture.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                            } else {
-                                Column(modifier = Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                    Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().aspectRatio(1.12f)
+                                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                ) {
+                                    if (loadedBitmap != null) {
+                                        Image(
+                                            bitmap = loadedBitmap,
+                                            contentDescription = capture.title,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop,
+                                        )
+                                    } else {
+                                        Column(
+                                            modifier = Modifier.fillMaxSize().padding(6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center,
+                                        ) {
+                                            Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    if (capture.isCompleted) {
+                                        CompletedBadge(modifier = Modifier.align(Alignment.TopStart).padding(4.dp))
+                                    }
+                                    val ocrState = ocrStates[capture.id]
+                                    if (ocrState?.isProcessing == true || ocrState?.isError == true) {
+                                        Surface(
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                                            shape = MaterialTheme.shapes.small,
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                        ) {
+                                            Text(
+                                                if (ocrState.isError) "⚠" else "◌",
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = if (ocrState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                    }
                                 }
-                            }
-                            if (capture.isCompleted) CompletedBadge(modifier = Modifier.align(Alignment.TopStart).padding(4.dp))
-                            val ocrState = ocrStates[capture.id]
-                            if (ocrState?.isProcessing == true || ocrState?.isError == true) {
-                                Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)) {
-                                    Text(if (ocrState.isError) "⚠" else "◌", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                            Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)))).padding(horizontal = 7.dp, vertical = 6.dp)) {
-                                Text(capture.title, style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    capture.title,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 7.dp, vertical = 7.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 2,
+                                    minLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
                     }
-                    repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) { Spacer(Modifier.weight(1f).aspectRatio(0.92f)) }
+                    repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) {
+                        Spacer(Modifier.weight(1f).aspectRatio(0.92f))
+                    }
                 }
             }
         }

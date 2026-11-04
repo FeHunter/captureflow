@@ -2,6 +2,7 @@ package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.rememberScrollState
@@ -130,7 +131,7 @@ fun FullscreenCaptureDialog(
                                     selected.category,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
                         }
@@ -209,16 +210,36 @@ fun FullscreenCaptureDialog(
                                             .padding(horizontal = 8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                     ) {
-                                        TextButton(
-                                            onClick = { mediaIndex = (mediaIndex - 1).coerceAtLeast(0) },
-                                            enabled = mediaIndex > 0,
-                                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                                        ) { Text("‹", style = MaterialTheme.typography.headlineLarge) }
-                                        TextButton(
-                                            onClick = { mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex) },
-                                            enabled = mediaIndex < pageMedia.lastIndex,
-                                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-                                        ) { Text("›", style = MaterialTheme.typography.headlineLarge) }
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                            shadowElevation = 3.dp,
+                                        ) {
+                                            TextButton(
+                                                onClick = { mediaIndex = (mediaIndex - 1).coerceAtLeast(0) },
+                                                enabled = mediaIndex > 0,
+                                                colors = ButtonDefaults.textButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.primary,
+                                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                                ),
+                                            ) { Text("‹", style = MaterialTheme.typography.headlineLarge) }
+                                        }
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                            shadowElevation = 3.dp,
+                                        ) {
+                                            TextButton(
+                                                onClick = { mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex) },
+                                                enabled = mediaIndex < pageMedia.lastIndex,
+                                                colors = ButtonDefaults.textButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.primary,
+                                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                                                ),
+                                            ) { Text("›", style = MaterialTheme.typography.headlineLarge) }
+                                        }
                                     }
                                     Surface(
                                         modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
@@ -343,7 +364,7 @@ fun FullscreenCaptureDialog(
                                     TextButton(
                                         onClick = { showSubtasks = true },
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                                     ) {
                                         val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
                                         Text(

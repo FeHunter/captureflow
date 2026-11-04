@@ -180,11 +180,11 @@ A revisão das views identificou que a primeira etapa havia atualizado principal
 |---|---|
 | Biblioteca / categorias | Cards em formato de ficha, cabeçalho com cor suave, contagem pendente/concluída, progresso e ação Ver todas |
 | Dashboard / Meu progresso | Painel de caderno com resumo total e fichas de progresso por categoria |
-| Thumbnails e status | Badges de concluído com cores semânticas e contornos suaves |
+| Thumbnails e status | Badges de concluído com cores semânticas; previews de categoria em mini-fichas com moldura, capa recortada e título em legenda de papel separada |
 | Filtros de categoria | Etiquetas com estado selecionado em papel colorido |
 | Categoria expandida | Cabeçalho aquecido e filtros Pendentes/Concluídas alinhados ao tema |
 | Notes | Cabeçalho de caderno e área de escrita pautada com margem lateral |
-| Fullscreen | Header e título em superfície de papel; mídia continua sobre fundo escuro; dock de ações com superfície quente |
+| Fullscreen | Header e título em superfície de papel; mídia continua sobre fundo escuro; dock de ações com superfície quente; botões de navegação com fundo opaco e cores semânticas para manter contraste |
 | Newsletters | Cards editoriais com bordas suaves e leitor com tipografia/cores quentes |
 | Captura e recorte | Tela de recorte com cabeçalho editorial; viewfinder da câmera continua escura por legibilidade |
 | Settings / navegação | App bar e menus usam tokens semânticos do tema |
@@ -192,3 +192,9 @@ A revisão das views identificou que a primeira etapa havia atualizado principal
 O componente compartilhado `NotebookPaper` está disponível em `core/ui/components/NotebookPaper.kt` e já é utilizado no Dashboard. A textura pautada é aplicada somente ao campo de escrita de Notes, não em imagens, vídeos ou controles gerais.
 
 A implementação preserva os callbacks, os dados, os filtros, as ordenações, os fluxos de navegação, o armazenamento e os contratos funcionais. A conclusão de regressão ainda depende de CI e validação visual em dispositivo físico/emulador.
+
+
+### Ajuste de contraste e integração dos previews — 2026-11-04
+
+- No Fullscreen, texto da etiqueta de categoria usa `onPrimaryContainer`; o contador/atalho de sub-checklist usa `primary` sobre a superfície do dock, evitando texto branco sobre papel claro. Setas de navegação de mídia recebem superfície própria, contorno e estado desabilitado com contraste controlado.
+- Na Biblioteca, previews de categoria deixam de parecer imagens soltas com texto sobreposto: cada referência passa a ser uma mini-ficha com moldura, capa recortada e legenda de título em superfície de papel. A ação de abrir a referência e os indicadores de conclusão/OCR permanecem os mesmos.
