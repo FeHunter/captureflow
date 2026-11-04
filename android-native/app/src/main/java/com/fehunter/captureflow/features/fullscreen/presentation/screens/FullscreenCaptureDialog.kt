@@ -142,7 +142,7 @@ fun FullscreenCaptureDialog(
                             }
                         }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = Color.White)
                         }
                     }
                     Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -249,16 +249,19 @@ fun FullscreenCaptureDialog(
                                         checked = true,
                                         onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
+                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF63C4F0), checkmarkColor = Color(0xFF07182B), uncheckedColor = Color.White),
                                     )
                                 } else {
                                     Checkbox(
                                         checked = false,
                                         onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
+                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF63C4F0), checkmarkColor = Color(0xFF07182B), uncheckedColor = Color.White),
                                     )
                                     TextButton(
                                         onClick = { showSubtasks = true },
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
                                     ) {
                                         val selectedSubtasks = allSubtasks.filter { it.captureId == selected.id }
                                         Text(
@@ -275,7 +278,7 @@ fun FullscreenCaptureDialog(
                                             Icon(
                                                 Icons.Default.Link,
                                                 contentDescription = "Abrir link original",
-                                                tint = MaterialTheme.colorScheme.onSurface,
+                                                tint = Color.White,
                                             )
                                         }
                                     }
@@ -283,13 +286,13 @@ fun FullscreenCaptureDialog(
                                         onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
                                         modifier = Modifier.size(48.dp),
                                     ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.onSurface)
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = Color.White)
                                     }
                                     IconButton(
                                         onClick = { onDelete(selected.id); onDismiss() },
                                         modifier = Modifier.size(48.dp),
                                     ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
+                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = Color(0xFFFF8A80))
                                     }
                                 }
                             }
