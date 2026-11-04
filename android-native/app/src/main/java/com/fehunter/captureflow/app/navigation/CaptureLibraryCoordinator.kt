@@ -343,7 +343,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
                     Column(
                         modifier = Modifier.fillMaxWidth()
-                            .background(Brush.linearGradient(listOf(Color(0xFF29B3C7).copy(alpha = 0.34f), Color(0xFF2E6BB0).copy(alpha = 0.22f), Color.Transparent)))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f), RoundedCornerShape(16.dp))
                             .padding(horizontal = 8.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -370,6 +370,12 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             modifier = Modifier.weight(1f),
                             selected = !showCompletedInExpandedCategory,
                             onClick = { showCompletedInExpandedCategory = false },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                             label = {
                                 Text(
                                     "Pendentes · ${expandedCategoryCaptures.count { !it.isCompleted }}",
@@ -382,6 +388,12 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             modifier = Modifier.weight(1f),
                             selected = showCompletedInExpandedCategory,
                             onClick = { showCompletedInExpandedCategory = true },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                             label = {
                                 Text(
                                     "Concluídas · ${expandedCategoryCaptures.count { it.isCompleted }}",

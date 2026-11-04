@@ -111,8 +111,8 @@ fun FullscreenCaptureDialog(
             Surface(Modifier.fillMaxSize(), color = Color.Black) {
                 Column(Modifier.fillMaxSize()) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().background(Color.Transparent)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 8.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f).padding(start = 8.dp)) {
@@ -120,11 +120,11 @@ fun FullscreenCaptureDialog(
                                 SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault())
                                     .format(Date(selected.createdAt)),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White.copy(alpha = 0.76f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Surface(
                                 shape = MaterialTheme.shapes.small,
-                                color = Color.White.copy(alpha = 0.14f),
+                                color = MaterialTheme.colorScheme.primaryContainer,
                             ) {
                                 Text(
                                     selected.category,
@@ -141,19 +141,19 @@ fun FullscreenCaptureDialog(
                                 },
                                 modifier = Modifier.size(44.dp),
                             ) {
-                                Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = Color.White)
+                                Icon(Icons.Default.Link, contentDescription = "Abrir link original", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                         IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = Color.White)
+                            Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Text(
                         text = viewerCaptures.getOrNull(pagerState.settledPage)?.title ?: selected.title,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
+                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 20.dp, vertical = 12.dp),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -212,12 +212,12 @@ fun FullscreenCaptureDialog(
                                         TextButton(
                                             onClick = { mediaIndex = (mediaIndex - 1).coerceAtLeast(0) },
                                             enabled = mediaIndex > 0,
-                                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                                         ) { Text("‹", style = MaterialTheme.typography.headlineLarge) }
                                         TextButton(
                                             onClick = { mediaIndex = (mediaIndex + 1).coerceAtMost(pageMedia.lastIndex) },
                                             enabled = mediaIndex < pageMedia.lastIndex,
-                                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                                         ) { Text("›", style = MaterialTheme.typography.headlineLarge) }
                                     }
                                     Surface(
@@ -275,7 +275,7 @@ fun FullscreenCaptureDialog(
                                                 onLongClick = { onEditNote(selected.id, note.id) },
                                             ),
                                             shape = MaterialTheme.shapes.medium,
-                                            color = Color.Black.copy(alpha = 0.76f),
+                                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                                             shadowElevation = 4.dp,
                                         ) {
                                             Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -283,7 +283,7 @@ fun FullscreenCaptureDialog(
                                                     Text(
                                                         text = note.text,
                                                         style = MaterialTheme.typography.bodyMedium,
-                                                        color = Color.White,
+                                                        color = MaterialTheme.colorScheme.onSurface,
                                                     )
                                                 }
                                                 note.imageUri?.let { rawUri ->
@@ -300,7 +300,7 @@ fun FullscreenCaptureDialog(
                             }
                             Surface(
                                 shape = MaterialTheme.shapes.extraLarge,
-                                color = Color(0x990A1B33),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                                 shadowElevation = 8.dp,
                             ) {
                                 IconButton(
@@ -310,7 +310,7 @@ fun FullscreenCaptureDialog(
                                     Icon(
                                         Icons.Default.ChatBubbleOutline,
                                         contentDescription = if (thoughtNotes.isEmpty()) "Adicionar anotações" else "Editar anotações",
-                                        tint = Color.White,
+                                        tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
@@ -318,7 +318,7 @@ fun FullscreenCaptureDialog(
                         Surface(
                             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
                             shape = MaterialTheme.shapes.extraLarge,
-                            color = Color(0x990A1B33),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                             shadowElevation = 8.dp,
                         ) {
                             Column(
@@ -331,14 +331,14 @@ fun FullscreenCaptureDialog(
                                         checked = true,
                                         onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
-                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF63C4F0), checkmarkColor = Color(0xFF07182B), uncheckedColor = Color.White),
+                                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, checkmarkColor = MaterialTheme.colorScheme.onPrimary, uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant),
                                     )
                                 } else {
                                     Checkbox(
                                         checked = false,
                                         onCheckedChange = { onCompleted(selected.id, it) },
                                         modifier = Modifier.size(48.dp),
-                                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF63C4F0), checkmarkColor = Color(0xFF07182B), uncheckedColor = Color.White),
+                                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary, checkmarkColor = MaterialTheme.colorScheme.onPrimary, uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant),
                                     )
                                     TextButton(
                                         onClick = { showSubtasks = true },
@@ -360,7 +360,7 @@ fun FullscreenCaptureDialog(
                                             Icon(
                                                 Icons.Default.Link,
                                                 contentDescription = "Abrir link original",
-                                                tint = Color.White,
+                                                tint = MaterialTheme.colorScheme.primary,
                                             )
                                         }
                                     }
@@ -368,13 +368,13 @@ fun FullscreenCaptureDialog(
                                         onClick = { editedTitle = selected.title; editedCategory = selected.category; showEditTitle = true },
                                         modifier = Modifier.size(48.dp),
                                     ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = Color.White)
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar título", tint = MaterialTheme.colorScheme.primary)
                                     }
                                     IconButton(
                                         onClick = { onDelete(selected.id); onDismiss() },
                                         modifier = Modifier.size(48.dp),
                                     ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = Color(0xFFFF8A80))
+                                        Icon(Icons.Default.Delete, contentDescription = "Excluir captura", tint = MaterialTheme.colorScheme.error)
                                     }
                                 }
                             }

@@ -170,3 +170,25 @@ Cada etapa deve ser revisada antes da próxima. Não combinar redesign com refat
 - Testes unitários/build aprovados no commit candidato.
 - Documentação da feature e `AGENTS.md` atualizados.
 - Comparação visual antes/depois registrada por tela.
+
+
+## 10. Auditoria e aplicação visual — 2026-11-04
+
+A revisão das views identificou que a primeira etapa havia atualizado principalmente o tema global, deixando superfícies locais com gradientes e cores azuis hardcoded. Esta rodada corrige os pontos de maior impacto e estabelece a linguagem compartilhada:
+
+| View / feature | Aplicação |
+|---|---|
+| Biblioteca / categorias | Cards em formato de ficha, cabeçalho com cor suave, contagem pendente/concluída, progresso e ação Ver todas |
+| Dashboard / Meu progresso | Painel de caderno com resumo total e fichas de progresso por categoria |
+| Thumbnails e status | Badges de concluído com cores semânticas e contornos suaves |
+| Filtros de categoria | Etiquetas com estado selecionado em papel colorido |
+| Categoria expandida | Cabeçalho aquecido e filtros Pendentes/Concluídas alinhados ao tema |
+| Notes | Cabeçalho de caderno e área de escrita pautada com margem lateral |
+| Fullscreen | Header e título em superfície de papel; mídia continua sobre fundo escuro; dock de ações com superfície quente |
+| Newsletters | Cards editoriais com bordas suaves e leitor com tipografia/cores quentes |
+| Captura e recorte | Tela de recorte com cabeçalho editorial; viewfinder da câmera continua escura por legibilidade |
+| Settings / navegação | App bar e menus usam tokens semânticos do tema |
+
+O componente compartilhado `NotebookPaper` está disponível em `core/ui/components/NotebookPaper.kt` e já é utilizado no Dashboard. A textura pautada é aplicada somente ao campo de escrita de Notes, não em imagens, vídeos ou controles gerais.
+
+A implementação preserva os callbacks, os dados, os filtros, as ordenações, os fluxos de navegação, o armazenamento e os contratos funcionais. A conclusão de regressão ainda depende de CI e validação visual em dispositivo físico/emulador.

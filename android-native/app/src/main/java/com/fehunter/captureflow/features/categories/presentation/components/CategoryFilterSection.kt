@@ -48,15 +48,15 @@ fun CategoryFilterSection(
                     categoryPair.forEach { item ->
                         Surface(
                             onClick = { onCategorySelected(item) },
-                            shape = RoundedCornerShape(99.dp),
-                            color = if (selectedCategory == item) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f)
-                            else MaterialTheme.colorScheme.surface.copy(alpha = 0.58f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selectedCategory == item) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (selectedCategory == item) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant),
                         ) {
                             Text(
                                 item,
-                                modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp),
-                                color = if (selectedCategory == item) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+                                color = if (selectedCategory == item) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (selectedCategory == item) FontWeight.SemiBold else FontWeight.Normal,
                                 maxLines = 1,

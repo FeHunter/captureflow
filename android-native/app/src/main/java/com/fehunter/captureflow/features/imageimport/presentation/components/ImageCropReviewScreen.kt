@@ -71,7 +71,16 @@ fun ImageCropReviewScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Ajustar foto", style = MaterialTheme.typography.titleLarge)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("CAPTURA DO CADERNO", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f))
+                    Text("Ajustar foto", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
             Text(
                 "Escolha o enquadramento",
                 style = MaterialTheme.typography.bodyMedium,
@@ -89,7 +98,7 @@ fun ImageCropReviewScreen(
                         .fillMaxWidth()
                         .weight(1f)
                         .then(if (selectedRatio > 0f) Modifier.aspectRatio(selectedRatio) else Modifier)
-                        .clip(RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(18.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
                 Row(

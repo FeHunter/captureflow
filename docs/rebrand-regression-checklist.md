@@ -117,7 +117,19 @@ Este inventário é o contrato de regressão para o rebrand **Hybrid Personal No
 - [ ] Perfil de compressão continua persistido e aplicado aos fluxos de imagem.
 - [ ] Não alterar nomes de chaves, valores persistidos ou defaults sem aprovação explícita.
 
-## 9. Integridade técnica e privacidade
+## 9. Revisão visual por feature
+
+- [ ] Biblioteca: card de categoria, previews e ação Ver todas em tema claro/escuro.
+- [ ] Dashboard: painel Meu progresso e fichas por categoria em tema claro/escuro.
+- [ ] Pendentes/concluídas: badges e filtros no estado selecionado/não selecionado.
+- [ ] Notes: campo pautado, imagem, recorte, erro, loading e salvamento.
+- [ ] Fullscreen: header/título, mídia, player, notas, dock de ações e sub-checklist.
+- [ ] Newsletters: fontes, artigos, status, estados vazios e leitor interno.
+- [ ] Captura: painel de importação, câmera, revisão e recorte.
+- [ ] Settings/menu: tema system/light/dark e legibilidade dos menus.
+- [ ] Acessibilidade: tela estreita, fonte ampliada, títulos longos e contraste em ambos os temas.
+
+## 10. Integridade técnica e privacidade
 
 - [ ] MVVM e limites Feature-first / Presentation / Domain / Data permanecem.
 - [ ] Nenhum Composable passa a acessar DAO, Room ou rede diretamente.

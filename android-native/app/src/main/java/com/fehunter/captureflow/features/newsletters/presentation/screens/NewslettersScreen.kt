@@ -158,10 +158,9 @@ fun NewslettersScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                    ),
+                    shape = RoundedCornerShape(18.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     Column(
@@ -508,10 +507,9 @@ private fun NewsletterArticleCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        ),
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
@@ -523,9 +521,9 @@ private fun NewsletterArticleCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
-                    shape = RoundedCornerShape(9.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = if (article.isRead) MaterialTheme.colorScheme.surfaceVariant
-                    else MaterialTheme.colorScheme.primaryContainer,
+                    else MaterialTheme.colorScheme.secondaryContainer,
                 ) {
                     Text(
                         if (article.isRead) "LIDO" else "NÃO LIDO",
