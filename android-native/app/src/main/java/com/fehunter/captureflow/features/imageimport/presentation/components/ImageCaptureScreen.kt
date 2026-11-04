@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -153,10 +154,13 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onClose) {
+                IconButton(onClick = onClose, modifier = Modifier.size(44.dp)) {
                     Icon(Icons.Default.Close, contentDescription = "Fechar câmera", tint = androidx.compose.ui.graphics.Color.White)
                 }
-                Text("Nova captura", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.titleMedium)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text("Nova captura", color = androidx.compose.ui.graphics.Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                }
+                Spacer(Modifier.size(44.dp))
             }
             captureError?.let {
                 Text(it, modifier = Modifier.align(Alignment.Center).padding(24.dp), color = androidx.compose.ui.graphics.Color.White)
@@ -191,11 +195,11 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
                     })
                 },
                 enabled = hasPermission && imageCapture != null && !isCapturing,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 34.dp)
-                    .size(76.dp).background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f), CircleShape),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)
+                    .size(84.dp).background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f), CircleShape),
             ) {
                 if (isCapturing) CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.White)
-                else Box(Modifier.size(58.dp).background(androidx.compose.ui.graphics.Color.White, CircleShape))
+                else Box(Modifier.size(60.dp).background(androidx.compose.ui.graphics.Color.White, CircleShape))
             }
         }
         }

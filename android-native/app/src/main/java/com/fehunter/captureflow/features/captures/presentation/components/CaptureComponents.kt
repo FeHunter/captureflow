@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.model.CaptureImageProcessingStatus
@@ -146,33 +149,52 @@ fun CategoryCard(
     val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        shape = RoundedCornerShape(26.dp),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             MaterialTheme.colorScheme.outlineVariant,
         ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
         ),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
+            val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
+            val accent = when (title.lowercase()) {
+                "ler depois" -> Color(0xFF29B3C7)
+                "verificar" -> Color(0xFF5AA9E6)
+                "salvar" -> Color(0xFF63B7A6)
+                "importante" -> Color(0xFFD59A55)
+                else -> MaterialTheme.colorScheme.primary
+            }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    title,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    "${completedCount}/${totalCount} itens",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(52.dp)) {
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.fillMaxSize(),
+                        color = accent,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        strokeWidth = 4.dp,
+                    )
+                    Icon(Icons.Default.Image, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "${completedCount} de ${totalCount} concluídas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onExpand) {
+                    Text("Ver todas · ${(totalCount - captures.size).coerceAtLeast(0)}", color = accent, maxLines = 1)
+                }
             }
 
             if (captures.isEmpty()) {
@@ -283,28 +305,7 @@ fun CategoryCard(
                 }
             }
 
-            Surface(
-                onClick = onExpand,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                color = Color.Transparent,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Icon(
-                        Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        "Ver todas · ${totalCount}",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            }
+
         }
     }
 }

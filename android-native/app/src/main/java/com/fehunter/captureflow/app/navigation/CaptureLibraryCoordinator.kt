@@ -1,6 +1,7 @@
 package com.fehunter.captureflow.app.navigation
 
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
+import com.fehunter.captureflow.core.ui.theme.CaptureFlowBackdrop
 
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.categories.presentation.components.CategorySelectionSection
@@ -28,6 +29,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
@@ -53,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -162,17 +167,21 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         showCompleted = showCompletedCaptures,
     )
 
-    LazyColumn(
+    Box(Modifier.fillMaxSize()) {
+        CaptureFlowBackdrop(Modifier.matchParentSize())
+        LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(key = "image-picker") {
-            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            Card(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp), colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
             )) {
                 Column(
-                    Modifier.fillMaxWidth().padding(14.dp),
+                    Modifier.fillMaxWidth()
+                        .background(Brush.linearGradient(listOf(Color(0xFF1F6F83), Color(0xFF12335A), Color(0xFF0A1B33))))
+                        .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -180,20 +189,21 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             Icons.Default.Image,
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            tint = Color.White,
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Adicionar imagem", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                            Text("Escolha uma foto ou captura de tela para extrair o texto no próprio aparelho.",
+                                fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("O texto é extraído localmente, no seu dispositivo.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                color = Color.White.copy(alpha = 0.82f))
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { showCameraCapture = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF29B3C7), contentColor = Color(0xFF0A1B33)),
                             modifier = Modifier.weight(1f),
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = null)
@@ -201,6 +211,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             Text("Fotografar")
                         }
                         OutlinedButton(
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
                             onClick = {
                                 imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                             },
@@ -292,6 +303,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 }
             }
         }
+        }
     }
     if (showCategoryManager) {
         CategoryManagementDialog(
@@ -320,23 +332,30 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             BackHandler { expandedCategory = null }
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background,
+                color = Color.Transparent,
             ) {
-                Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                Box(Modifier.fillMaxSize()) {
+                    CaptureFlowBackdrop(Modifier.matchParentSize())
+                    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .background(Brush.linearGradient(listOf(Color(0xFF29B3C7).copy(alpha = 0.34f), Color(0xFF2E6BB0).copy(alpha = 0.22f), Color.Transparent)))
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        IconButton(onClick = { expandedCategory = null }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Voltar à biblioteca")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { expandedCategory = null }, modifier = Modifier.size(48.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Voltar à biblioteca")
+                            }
+                            Text(tag, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            Spacer(Modifier.size(44.dp))
                         }
-                        Column(Modifier.weight(1f)) {
-                            Text(tag, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "${expandedCategoryCaptures.size} itens · ${expandedCategoryCaptures.count { it.isCompleted }} concluídas",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(expandedCategoryCaptures.size.toString(), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold, lineHeight = MaterialTheme.typography.displayMedium.lineHeight)
+                            Column(Modifier.padding(bottom = 6.dp)) {
+                                Text("referências", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${expandedCategoryCaptures.count { it.isCompleted }} concluídas", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                     Row(
@@ -391,6 +410,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                                 )
                             }
                         }
+                    }
                     }
                 }
             }
@@ -471,65 +491,81 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         }
     }
     pendingImageReview?.let { pending ->
-        AlertDialog(
+        Dialog(
             onDismissRequest = imageImportViewModel::cancelPendingImageReview,
-            title = { Text("Revisar nova captura") },
-            text = {
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxSize().padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    Text("Revisar nova captura", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     pendingImagePreview?.let { preview ->
                         Image(
                             bitmap = preview,
                             contentDescription = "Prévia da imagem capturada",
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
+                            modifier = Modifier.fillMaxWidth().height(210.dp)
+                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp)),
                             contentScale = ContentScale.Fit,
                         )
-                    }
-
-                    if (pendingImagePreview == null && pending.isProcessing) {
-                        Box(
-                            Modifier.fillMaxWidth().height(140.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
+                    } ?: if (pending.isProcessing) {
+                        Box(Modifier.fillMaxWidth().height(210.dp), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
+                    } else {
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Text("Texto analisado no dispositivo", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     OutlinedTextField(
                         value = pending.title,
                         onValueChange = imageImportViewModel::updatePendingImageTitle,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Título da tarefa") },
+                        label = { Text("Título") },
                         placeholder = { Text("Digite um título") },
                         maxLines = 2,
+                        shape = RoundedCornerShape(15.dp),
                     )
-                    CategorySelectionSection(
-                        categories = activeCategories,
-                        selectedCategory = pending.category,
-                        onCategorySelected = imageImportViewModel::updatePendingImageCategory,
-                    )
+                    Text("Categoria (obrigatória)", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        activeCategories.forEach { item ->
+                            FilterChip(
+                                selected = pending.category == item,
+                                onClick = { imageImportViewModel.updatePendingImageCategory(item) },
+                                label = { Text(item, maxLines = 1) },
+                            )
+                        }
+                    }
                     if (pending.isProcessing) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Text("Analisando imagem com OCR…", style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    pending.error?.let {
-                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    pending.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    Spacer(Modifier.weight(1f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = imageImportViewModel::cancelPendingImageReview,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(15.dp),
+                        ) { Text("Cancelar") }
+                        Button(
+                            onClick = imageImportViewModel::confirmPendingImageReview,
+                            enabled = !pending.isProcessing && pending.title.isNotBlank() && pending.category in activeCategories,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(15.dp),
+                        ) { Text("Salvar referência") }
                     }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = imageImportViewModel::confirmPendingImageReview,
-                    enabled = !pending.isProcessing && pending.title.isNotBlank() && pending.category in activeCategories,
-                ) { Text("Salvar tarefa") }
-            },
-            dismissButton = {
-                TextButton(onClick = imageImportViewModel::cancelPendingImageReview) { Text("Cancelar") }
-            },
-        )
+            }
+        }
     }
 
     if (showCameraCapture) {
@@ -548,148 +584,224 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     }
 
     screenshotToConfirm?.let { uri ->
-        AlertDialog(
+        Dialog(
             onDismissRequest = {
                 screenshotToConfirm = null
                 onScreenshotImportHandled()
             },
-            title = { Text("Adicionar screenshot às referências?") },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 430.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
-                    Text("A captura foi aberta pela notificação. Escolha em qual categoria deseja salvá-la.")
-                    screenshotPreview?.let { preview ->
-                        Image(
-                            bitmap = preview,
-                            contentDescription = "Prévia da screenshot que será salva como referência",
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 220.dp),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                    CategorySelectionSection(
-                        categories = activeCategories,
-                        selectedCategory = screenshotImportCategory,
-                        onCategorySelected = { screenshotImportCategory = it },
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        screenshotImportCategory?.let { selectedCategory ->
-                            imageImportViewModel.addImageCapture(
-                                uri.toString(),
-                                category = selectedCategory,
-                                deleteSourceScreenshotAfterImport = true,
-                                compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile),
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Text("Adicionar screenshot às referências?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("Esta captura foi aberta pela notificação. Nada é salvo até você confirmar.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        screenshotPreview?.let { preview ->
+                            Image(
+                                bitmap = preview,
+                                contentDescription = "Prévia da screenshot que será salva como referência",
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
+                                contentScale = ContentScale.Fit,
                             )
-                            screenshotToConfirm = null
-                            onScreenshotImportHandled()
+                        } ?: Spacer(Modifier.height(12.dp))
+                        Text("Categoria (obrigatória)", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            activeCategories.forEach { item ->
+                                FilterChip(
+                                    selected = screenshotImportCategory == item,
+                                    onClick = { screenshotImportCategory = item },
+                                    label = { Text(item, maxLines = 1) },
+                                )
+                            }
                         }
-                    },
-                    enabled = screenshotImportCategory != null,
-                ) { Text("Salvar referência") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    screenshotToConfirm = null
-                    onScreenshotImportHandled()
-                }) { Text("Cancelar") }
-            },
-        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = {
+                                    screenshotToConfirm = null
+                                    onScreenshotImportHandled()
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Cancelar") }
+                            Button(
+                                onClick = {
+                                    screenshotImportCategory?.let { selectedCategory ->
+                                        imageImportViewModel.addImageCapture(
+                                            uri.toString(),
+                                            category = selectedCategory,
+                                            deleteSourceScreenshotAfterImport = true,
+                                            compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile),
+                                        )
+                                        screenshotToConfirm = null
+                                        onScreenshotImportHandled()
+                                    }
+                                },
+                                enabled = screenshotImportCategory != null,
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Salvar referência") }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pendingSharedLink?.let { pending ->
-        AlertDialog(
+        Dialog(
             onDismissRequest = { imageImportViewModel.cancelPendingSharedLink(); sharedLinkCategory = null },
-            title = { Text("Salvar link como referência") },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 430.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
-                    CategorySelectionSection(
-                        categories = activeCategories,
-                        selectedCategory = sharedLinkCategory,
-                        onCategorySelected = { sharedLinkCategory = it },
-                    )
-                    OutlinedTextField(
-                        value = pending.title,
-                        onValueChange = imageImportViewModel::updatePendingSharedLinkTitle,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Título principal") },
-                        placeholder = { Text("Digite um título") },
-                        maxLines = 2,
-                        singleLine = false,
-                    )
-                    Text(
-                        pending.url,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (pending.isLoading) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                            Text("Buscando informações do link…", style = MaterialTheme.typography.bodySmall)
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Text("Salvar link como referência", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        OutlinedTextField(
+                            value = pending.title,
+                            onValueChange = imageImportViewModel::updatePendingSharedLinkTitle,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Título principal") },
+                            placeholder = { Text("Digite um título") },
+                            maxLines = 2,
+                            shape = RoundedCornerShape(15.dp),
+                        )
+                        Text(pending.url, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (pending.isLoading) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                Text("Buscando informações do link…", style = MaterialTheme.typography.bodySmall)
+                            }
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    if (pending.metadataFound) "Informações do link carregadas" else "Não foi possível obter informações automaticamente.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
-                    } else if (!pending.metadataFound) {
-                        Text("Não foi possível obter o título automaticamente.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Categoria (obrigatória)", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            activeCategories.forEach { item ->
+                                FilterChip(
+                                    selected = sharedLinkCategory == item,
+                                    onClick = { sharedLinkCategory = item },
+                                    label = { Text(item, maxLines = 1) },
+                                )
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = { imageImportViewModel.cancelPendingSharedLink(); sharedLinkCategory = null },
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Cancelar") }
+                            Button(
+                                onClick = {
+                                    sharedLinkCategory?.let(imageImportViewModel::confirmPendingSharedLink)
+                                    sharedLinkCategory = null
+                                },
+                                enabled = !pending.isLoading && sharedLinkCategory != null && pending.title.isNotBlank(),
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Salvar referência") }
+                        }
                     }
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        sharedLinkCategory?.let(imageImportViewModel::confirmPendingSharedLink)
-                        sharedLinkCategory = null
-                    },
-                    enabled = !pending.isLoading && sharedLinkCategory != null && pending.title.isNotBlank(),
-                ) { Text("Salvar referência") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    imageImportViewModel.cancelPendingSharedLink()
-                    sharedLinkCategory = null
-                }) { Text("Cancelar") }
-            },
-        )
+            }
+        }
     }
 
     selectedImageUri?.let { uri ->
-        AlertDialog(onDismissRequest = {
-            selectedImageUri = null
-            if (uri == detectedScreenshotUri) onScreenshotHandled()
-        }, title = { Text(if (uri == detectedScreenshotUri) "Screenshot detectada" else "Vincular imagem a uma tag") }, text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(if (uri == detectedScreenshotUri) {
-                    "Uma nova captura de tela foi encontrada. Deseja enviá-la ao CaptureFlow?"
-                } else {
-                    "Escolha a categoria para organizar esta imagem."
-                })
-                CategorySelectionSection(
-                    categories = activeCategories,
-                    selectedCategory = imageCategory,
-                    onCategorySelected = { imageCategory = it },
-                )
+        Dialog(
+            onDismissRequest = {
+                selectedImageUri = null
+                if (uri == detectedScreenshotUri) onScreenshotHandled()
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color(0xFF0A1B33)), contentAlignment = Alignment.Center) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Text(
+                            if (uri == detectedScreenshotUri) "Screenshot detectada" else "Adicionar imagem às referências",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            if (uri == detectedScreenshotUri) "Encontramos uma nova captura de tela. O monitoramento é opcional e pode ser desligado no ícone de sino."
+                            else "Escolha a categoria para organizar esta imagem.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val detectedPreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, uri) {
+                            value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, uri.toString()) }.getOrNull() }
+                        }
+                        detectedPreview?.let { preview ->
+                            Image(
+                                bitmap = preview,
+                                contentDescription = "Prévia da screenshot detectada",
+                                modifier = Modifier.fillMaxWidth().height(150.dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                        } ?: Spacer(Modifier.height(12.dp))
+                        Text("Enviar para a categoria", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            activeCategories.forEach { item ->
+                                FilterChip(
+                                    selected = imageCategory == item,
+                                    onClick = { imageCategory = item },
+                                    label = { Text(item, maxLines = 1) },
+                                )
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = {
+                                    selectedImageUri = null
+                                    if (uri == detectedScreenshotUri) onScreenshotHandled()
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Agora não") }
+                            Button(
+                                onClick = {
+                                    imageImportViewModel.addImageCapture(uri.toString(), imageCategory, compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile))
+                                    selectedImageUri = null
+                                    if (uri == detectedScreenshotUri) onScreenshotHandled()
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) { Text(if (uri == detectedScreenshotUri) "Enviar para o app" else "Salvar referência") }
+                        }
+                    }
+                }
             }
-        }, confirmButton = {
-            Button(onClick = {
-                imageImportViewModel.addImageCapture(uri.toString(), imageCategory, compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile))
-                selectedImageUri = null
-                if (uri == detectedScreenshotUri) onScreenshotHandled()
-            }) { Text("Enviar para o app") }
-        }, dismissButton = {
-            TextButton(onClick = {
-                selectedImageUri = null
-                if (uri == detectedScreenshotUri) onScreenshotHandled()
-            }) { Text("Agora não") }
-        })
+        }
     }
 }

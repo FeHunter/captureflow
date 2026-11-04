@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,7 +73,7 @@ fun ImageCropReviewScreen(
         ) {
             Text("Ajustar foto", style = MaterialTheme.typography.titleLarge)
             Text(
-                "Escolha o enquadramento da imagem antes de continuar.",
+                "Escolha o enquadramento",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -88,25 +89,21 @@ fun ImageCropReviewScreen(
                         .fillMaxWidth()
                         .weight(1f)
                         .then(if (selectedRatio > 0f) Modifier.aspectRatio(selectedRatio) else Modifier)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(22.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
-                Text("Formato do recorte", style = MaterialTheme.typography.labelLarge)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     listOf("Original" to 0f, "1:1" to 1f, "4:5" to 0.8f, "16:9" to (16f / 9f))
                         .forEach { (label, ratio) ->
-                            if (selectedRatio == ratio) {
-                                Button(onClick = { selectedRatio = ratio }, modifier = Modifier.weight(1f)) {
-                                    Text(label)
-                                }
-                            } else {
-                                OutlinedButton(onClick = { selectedRatio = ratio }, modifier = Modifier.weight(1f)) {
-                                    Text(label)
-                                }
-                            }
+                            FilterChip(
+                                selected = selectedRatio == ratio,
+                                onClick = { selectedRatio = ratio },
+                                modifier = Modifier.weight(1f),
+                                label = { Text(label, maxLines = 1) },
+                            )
                         }
                 }
             }

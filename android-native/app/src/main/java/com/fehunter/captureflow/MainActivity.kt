@@ -10,7 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.material3.MaterialTheme
+import com.fehunter.captureflow.core.ui.theme.CaptureFlowTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
@@ -72,28 +72,7 @@ class MainActivity : ComponentActivity() {
                 "light" -> false
                 else -> androidx.compose.foundation.isSystemInDarkTheme()
             }
-            val navy = Color(0xFF07182B)
-            val deepBlue = Color(0xFF0C2B46)
-            val ocean = Color(0xFF164B62)
-            val blue = Color(0xFF1F5F8B)
-            val cyan = Color(0xFF39A6D6)
-            val lightSurface = Color(0xFFF4F8FC)
-            val scheme = if (isDark) darkColorScheme(
-                primary = Color(0xFF63C4F0), onPrimary = Color(0xFF002033),
-                secondary = Color(0xFF58B9D6), onSecondary = Color(0xFF06212C),
-                tertiary = Color(0xFF8ABFE8), background = navy,
-                onBackground = Color(0xFFF3F7FB), surface = deepBlue,
-                onSurface = Color(0xFFF3F7FB), surfaceVariant = ocean,
-                onSurfaceVariant = Color(0xFFB7CEDF), outline = Color(0xFF52758E),
-            ) else lightColorScheme(
-                primary = blue, onPrimary = Color.White,
-                secondary = ocean, onSecondary = Color.White,
-                tertiary = cyan, background = lightSurface, onBackground = navy,
-                surface = Color.White, onSurface = navy,
-                surfaceVariant = Color(0xFFE1EDF6),
-                onSurfaceVariant = Color(0xFF3D5D73), outline = Color(0xFF7D9AAF),
-            )
-            MaterialTheme(colorScheme = scheme) {
+            CaptureFlowTheme(darkTheme = isDark) {
                 val shared = pendingShareIntent
                 LaunchedEffect(shared) {
                     if (shared?.action == Intent.ACTION_SEND || shared?.action == Intent.ACTION_SEND_MULTIPLE) {
