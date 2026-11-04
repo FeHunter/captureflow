@@ -32,3 +32,12 @@ Os documentos devem descrever o código atual e identificar divergências conhec
 
 ## Estado atual e fluxos recentes
 Consulte [Estado atual completo do app](../../current-state.md) para o inventário da arquitetura, layout e comportamento. Links compartilhados agora exigem seleção de categoria antes da persistência; a extração tenta H1 e imagem de article/main antes de usar metadados sociais como fallback.
+
+
+## Melhorias aprovadas em 04/11/2026
+
+- A Biblioteca oferece Fotografar, Galeria e Nova tarefa. A tarefa manual exige título e categoria existente; salva como texto sem imagem ou URL e não executa OCR/compressão.
+- O modelo é criado por `CaptureFactory.createTask` e persistido pelo `CaptureViewModel`; Room/schema permanecem inalterados.
+- `TaskPaperCover` em Core fornece capa pautada desenhada em Compose para cards e Fullscreen, sem arquivo placeholder.
+- Na grade Concluídas, a mini-ficha inclui ação de exclusão com confirmação e reutiliza o fluxo existente de limpeza de arquivos associados.
+- Animações locais e curtas foram aplicadas a carregamento de capa, mudança de status/progresso e saída de cards.

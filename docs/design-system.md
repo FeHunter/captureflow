@@ -198,3 +198,12 @@ A implementação preserva os callbacks, os dados, os filtros, as ordenações, 
 
 - No Fullscreen, texto da etiqueta de categoria usa `onPrimaryContainer`; o contador/atalho de sub-checklist usa `primary` sobre a superfície do dock, evitando texto branco sobre papel claro. Setas de navegação de mídia recebem superfície própria, contorno e estado desabilitado com contraste controlado.
 - Na Biblioteca, previews de categoria deixam de parecer imagens soltas com texto sobreposto: cada referência passa a ser uma mini-ficha com moldura, capa recortada e legenda de título em superfície de papel. A ação de abrir a referência e os indicadores de conclusão/OCR permanecem os mesmos.
+
+
+## 11. Tarefas sem imagem, exclusão e movimento
+
+- A criação de tarefa textual fica junto das opções Fotografar e Galeria; exige título e categoria válida, sem OCR ou imagem.
+- Referências sem capa usam folha pautada desenhada em Compose via `TaskPaperCover`, também no Fullscreen. Não armazenar bitmap/arquivo placeholder.
+- Cards concluídos podem ser excluídos na grade, sempre com confirmação e limpeza via fluxo de exclusão existente.
+- Movimento reforça feedback, não decora: crossfade de imagem/capa, fade/scale de entrada/saída, animateContentSize em superfícies locais e progresso animado. Evitar animações infinitas, grandes deslocamentos e sombras pulsantes.
+- Testar com escala de animação do Android reduzida/desativada e garantir ações imediatas.
