@@ -59,7 +59,7 @@ fun CategorySelectionSection(
                 .heightIn(max = 156.dp)
                 .verticalScroll(rememberScrollState())
                 .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
                     MaterialTheme.shapes.medium,
                 )
                 .padding(8.dp),

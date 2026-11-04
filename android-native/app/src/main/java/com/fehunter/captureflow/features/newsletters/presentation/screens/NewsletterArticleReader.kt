@@ -20,6 +20,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,12 @@ import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterArti
 @Composable
 fun NewsletterArticleReader(article: NewsletterArticle, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
+    val pageBackground = MaterialTheme.colorScheme.surface.toCssHex()
+    val pageText = MaterialTheme.colorScheme.onSurface.toCssHex()
+    val quoteBorder = MaterialTheme.colorScheme.primary.toCssHex()
+    val quoteText = MaterialTheme.colorScheme.onSurfaceVariant.toCssHex()
+    val quoteBackground = MaterialTheme.colorScheme.surfaceVariant.toCssHex()
+    val styleKey = listOf(article.id, pageBackground, pageText, quoteBorder, quoteText, quoteBackground).joinToString("|")
     Column(Modifier.fillMaxSize()) {
         Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -53,25 +61,27 @@ fun NewsletterArticleReader(article: NewsletterArticle, onBack: () -> Unit) {
                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     webViewClient = WebViewClient()
                     webChromeClient = WebChromeClient()
-                    tag = article.id
+                    tag = styleKey
                     val html = article.contentHtml?.takeIf(String::isNotBlank)
                     if (html != null) {
                         val document = """<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>
-                            body{font-family:sans-serif;line-height:1.65;padding:20px 18px 40px;color:#172536}
+                            body{font-family:sans-serif;line-height:1.7;padding:20px 18px 40px;color:$pageText;background:$pageBackground}
+                            blockquote{margin-left:0;padding:8px 0 8px 14px;border-left:3px solid $quoteBorder;color:$quoteText;background:$quoteBackground}
                             img,video,iframe{max-width:100%;height:auto}pre,code{white-space:pre-wrap;overflow-wrap:anywhere}
-                            blockquote{margin-left:0;padding-left:14px;border-left:3px solid #4b91aa;color:#526575}
+                            blockquote{margin-left:0;padding:8px 0 8px 14px;border-left:3px solid $quoteBorder;color:$quoteText;background:$quoteBackground}
                             </style></head><body>$html</body></html>"""
                         loadDataWithBaseURL(article.canonicalUrl, document, "text/html", "UTF-8", null)
                     } else loadUrl(article.canonicalUrl)
                 }
             },
             update = { webView ->
-                if (webView.tag != article.id) {
-                    webView.tag = article.id
+                if (webView.tag != styleKey) {
+                    webView.tag = styleKey
                     val html = article.contentHtml?.takeIf(String::isNotBlank)
                     if (html != null) {
                         val document = """<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>
-                            body{font-family:sans-serif;line-height:1.65;padding:20px 18px 40px;color:#172536}
+                            body{font-family:sans-serif;line-height:1.7;padding:20px 18px 40px;color:$pageText;background:$pageBackground}
+                            blockquote{margin-left:0;padding:8px 0 8px 14px;border-left:3px solid $quoteBorder;color:$quoteText;background:$quoteBackground}
                             img,video,iframe{max-width:100%;height:auto}pre,code{white-space:pre-wrap;overflow-wrap:anywhere}
                             </style></head><body>$html</body></html>"""
                         webView.loadDataWithBaseURL(article.canonicalUrl, document, "text/html", "UTF-8", null)
@@ -81,3 +91,7 @@ fun NewsletterArticleReader(article: NewsletterArticle, onBack: () -> Unit) {
         )
     }
 }
+
+
+private fun Color.toCssHex(): String =
+    String.format(java.util.Locale.US, "#%06X", 0xFFFFFF and toArgb())

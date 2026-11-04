@@ -29,7 +29,12 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
             withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() }
         }
     }
-    Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.fillMaxSize().background(
+            if (image != null) Color.Black else MaterialTheme.colorScheme.background,
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
         if (image != null) {
             Image(
                 bitmap = image!!,
@@ -39,12 +44,10 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
             )
         } else {
             Box(
-                Modifier.fillMaxSize().background(
-                    Brush.linearGradient(listOf(Color(0xFF2E6BB0), Color(0xFF12335A), Color(0xFF0A1B33))),
-                ),
+                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Image, contentDescription = null, tint = Color.White.copy(alpha = 0.45f), modifier = Modifier.size(44.dp))
+                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.size(44.dp))
             }
         }
 

@@ -55,82 +55,68 @@ fun CategoryThumbnail(
         capture.imageUri,
     ) {
         value = capture.imageUri?.let { raw ->
-            withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(context, raw) }.getOrNull()
-            }
+            withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() }
         }
     }
 
-    val loadedBitmap = bitmap
-    Box(
-        modifier = Modifier.fillMaxWidth()
-            .aspectRatio(1f)
-            .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick),
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(15.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        if (loadedBitmap != null) {
-            Image(
-                bitmap = loadedBitmap,
-                contentDescription = capture.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+        Column {
+            Box(
+                modifier = Modifier.fillMaxWidth().aspectRatio(0.92f)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
             ) {
-                Icon(
-                    Icons.Default.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap!!,
+                        contentDescription = capture.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                CaptureStatusBadge(
+                    isCompleted = capture.isCompleted,
+                    modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
                 )
-                Text(
-                    "Sem imagem",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (ocrState.isProcessing || ocrState.isError) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                        shape = RoundedCornerShape(7.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    ) {
+                        Text(
+                            if (ocrState.isError) "⚠" else "◌",
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (ocrState.isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
-        }
-
-        if (capture.isCompleted) {
-            CompletedBadge(
-                modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
-            )
-        }
-
-        if (ocrState.isProcessing || ocrState.isError) {
-            Surface(
-                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-            ) {
-                Text(
-                    if (ocrState.isError) "⚠" else "◌",
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
-                    ),
-                )
-                .padding(horizontal = 5.dp, vertical = 5.dp),
-        ) {
             Text(
                 capture.title,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White,
-                maxLines = 1,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 9.dp, vertical = 9.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                minLines = 2,
             )
         }
     }
@@ -147,165 +133,108 @@ fun CategoryCard(
     onOpenCapture: (Capture) -> Unit,
 ) {
     val context = LocalContext.current
+    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
+    val accent = when (title.lowercase()) {
+        "ler depois" -> MaterialTheme.colorScheme.primary
+        "verificar" -> MaterialTheme.colorScheme.secondary
+        "salvar" -> MaterialTheme.colorScheme.tertiary
+        "importante" -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val accentContainer = when (title.lowercase()) {
+        "ler depois" -> MaterialTheme.colorScheme.primaryContainer
+        "verificar" -> MaterialTheme.colorScheme.secondaryContainer
+        "salvar" -> MaterialTheme.colorScheme.tertiaryContainer
+        "importante" -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
-        ),
+        shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-        ) {
-            val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
-            val accent = when (title.lowercase()) {
-                "ler depois" -> Color(0xFF29B3C7)
-                "verificar" -> Color(0xFF5AA9E6)
-                "salvar" -> Color(0xFF63B7A6)
-                "importante" -> Color(0xFFD59A55)
-                else -> MaterialTheme.colorScheme.primary
-            }
+        Column(Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().background(accentContainer.copy(alpha = 0.72f))
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(52.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
                     CircularProgressIndicator(
                         progress = progress,
                         modifier = Modifier.fillMaxSize(),
                         color = accent,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
                         strokeWidth = 4.dp,
                     )
-                    Icon(Icons.Default.Image, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Default.Image, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "${completedCount} de ${totalCount} concluídas",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(totalCount.toString() + " referências nesta seção", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                TextButton(onClick = onExpand) {
-                    Text("Ver todas · ${(totalCount - captures.size).coerceAtLeast(0)}", color = accent, maxLines = 1)
+                TextButton(onClick = onExpand, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+                    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Text("Ver todas", color = accent, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                        Text("abrir seção", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                    }
                 }
             }
-
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+                    Text((totalCount - completedCount).coerceAtLeast(0).toString() + " pendentes", modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                }
+                Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(completedCount.toString() + " concluídas", modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer, fontWeight = FontWeight.Medium)
+                }
+                Spacer(Modifier.weight(1f))
+                Text((progress * 100).toInt().toString() + "%", style = MaterialTheme.typography.labelMedium, color = accent, fontWeight = FontWeight.Bold)
+            }
+            androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
             if (captures.isEmpty()) {
-                Text(
-                    "Nenhuma task pendente nesta categoria.",
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 18.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text("Nenhuma referência pendente nesta categoria.", modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 22.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                     captures.take(3).forEach { capture ->
-                        val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-                            initialValue = null,
-                            capture.imageUri,
-                        ) {
-                            value = capture.imageUri?.let { raw ->
-                                withContext(Dispatchers.IO) {
-                                    runCatching { loadCoverBitmap(context, raw) }.getOrNull()
-                                }
-                            }
+                        val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, capture.imageUri) {
+                            value = capture.imageUri?.let { raw -> withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() } }
                         }
                         val loadedBitmap = bitmap
                         Box(
-                            modifier = Modifier.weight(1f).aspectRatio(1f)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    MaterialTheme.shapes.medium,
-                                )
+                            modifier = Modifier.weight(1f).aspectRatio(0.92f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.medium)
                                 .clickable { onOpenCapture(capture) },
                         ) {
                             if (loadedBitmap != null) {
-                                Image(
-                                    bitmap = loadedBitmap,
-                                    contentDescription = capture.title,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop,
-                                )
+                                Image(bitmap = loadedBitmap, contentDescription = capture.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                             } else {
-                                Column(
-                                    modifier = Modifier.fillMaxSize().padding(6.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                ) {
-                                    Icon(
-                                        Icons.Default.Image,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Text(
-                                        "Sem imagem",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                                Column(modifier = Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                    Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Sem imagem", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-
-                            if (capture.isCompleted) {
-                                CompletedBadge(
-                                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
-                                )
-                            }
-
-                            if (ocrStates[capture.id]?.isProcessing == true ||
-                                ocrStates[capture.id]?.isError == true
-                            ) {
-                                Surface(
-                                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
-                                    shape = MaterialTheme.shapes.small,
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                                ) {
-                                    Text(
-                                        if (ocrStates[capture.id]?.isError == true) "⚠" else "◌",
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                    )
+                            if (capture.isCompleted) CompletedBadge(modifier = Modifier.align(Alignment.TopStart).padding(4.dp))
+                            val ocrState = ocrStates[capture.id]
+                            if (ocrState?.isProcessing == true || ocrState?.isError == true) {
+                                Surface(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)) {
+                                    Text(if (ocrState.isError) "⚠" else "◌", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
                                 }
                             }
-
-                            Box(
-                                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
-                                        ),
-                                    )
-                                    .padding(horizontal = 6.dp, vertical = 5.dp),
-                            ) {
-                                Text(
-                                    capture.title,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                            Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)))).padding(horizontal = 7.dp, vertical = 6.dp)) {
+                                Text(capture.title, style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
-
-                    repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) {
-                        Spacer(Modifier.weight(1f).aspectRatio(1f))
-                    }
+                    repeat((3 - minOf(captures.size, 3)).coerceAtLeast(0)) { Spacer(Modifier.weight(1f).aspectRatio(0.92f)) }
                 }
             }
-
-
         }
     }
 }

@@ -109,7 +109,7 @@ fun CategoryManagementDialog(
                                     }
                                     IconButton(onClick = { deleteTarget = name }, enabled = categories.size > 1) {
                                         Icon(Icons.Default.Delete, contentDescription = "Excluir $name",
-                                            tint = if (categories.size > 1) Color(0xFFE57373) else mutedContent.copy(alpha = 0.45f))
+                                            tint = if (categories.size > 1) MaterialTheme.colorScheme.error else mutedContent.copy(alpha = 0.45f))
                                     }
                                 }
                             }
@@ -130,7 +130,7 @@ fun CategoryManagementDialog(
             text = { Text("As referências e os registros históricos em \"$name\" serão realocados para outra categoria.") },
             confirmButton = {
                 Button(onClick = { onDelete(name); deleteTarget = null },
-                    colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.White)) { Text("Excluir") }
+                    colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = MaterialTheme.colorScheme.onPrimary)) { Text("Excluir") }
             },
             dismissButton = {
                 TextButton(onClick = { deleteTarget = null }, colors = ButtonDefaults.textButtonColors(contentColor = accent)) { Text("Cancelar") }
