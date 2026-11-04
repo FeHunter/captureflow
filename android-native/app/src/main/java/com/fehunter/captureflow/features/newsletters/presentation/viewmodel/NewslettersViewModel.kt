@@ -113,6 +113,22 @@ class NewslettersViewModel(
         }
     }
 
+    fun refreshAll() {
+        val currentSources = sources.value
+        if (currentSources.isEmpty() || _isLoading.value) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoading.value = true
+            _message.value = null
+            var failures = 0
+            currentSources.forEach { source ->
+                runCatching { refresh(source) }.onFailure { failures += 1 }
+            }
+            _message.value = if (failures == 0) "Todas as fontes foram atualizadas."
+                else "$failures fonte(s) não puderam ser atualizadas."
+            _isLoading.value = false
+        }
+    }
+
     fun refreshSelected() {
         val sourceId = _selectedSourceId.value ?: return
         val source = sources.value.firstOrNull { it.id == sourceId } ?: return
@@ -132,34 +148,39 @@ class NewslettersViewModel(
     }
 
     private suspend fun refresh(source: NewsletterSource) {
-        when (val result = fetcher.fetch(source.feedUrl, source.etag, source.lastModified)) {
-            NewsletterFetchResult.NotModified -> newsletterUseCases.updateSource(
-                source.copy(lastFetchedAt = System.currentTimeMillis(), lastError = null),
-            )
-            is NewsletterFetchResult.Success -> {
-                val parsed = parser.parse(result.xml, result.finalUrl)
-                val now = System.currentTimeMillis()
-                newsletterUseCases.updateSource(
-                    source.copy(
-                        title = parsed.title?.takeIf(String::isNotBlank) ?: source.title,
-                        siteUrl = parsed.siteUrl ?: source.siteUrl,
-                        description = parsed.description ?: source.description,
-                        lastFetchedAt = now,
-                        etag = result.etag ?: source.etag,
-                        lastModified = result.lastModified ?: source.lastModified,
-                        lastError = null,
-                    ),
+        try {
+            when (val result = fetcher.fetch(source.feedUrl, source.etag, source.lastModified)) {
+                NewsletterFetchResult.NotModified -> newsletterUseCases.updateSource(
+                    source.copy(lastFetchedAt = System.currentTimeMillis(), lastError = null),
                 )
-                newsletterUseCases.saveArticles(parsed.articles.map { item ->
-                    NewsletterArticle(
-                        id = UUID.randomUUID().toString(), sourceId = source.id,
-                        stableId = item.stableId, title = item.title, canonicalUrl = item.canonicalUrl,
-                        publishedAt = item.publishedAt, summary = item.summary, contentHtml = item.contentHtml,
-                        imageUrl = item.imageUrl, isRead = false, savedCaptureId = null, fetchedAt = now,
+                is NewsletterFetchResult.Success -> {
+                    val parsed = parser.parse(result.xml, result.finalUrl)
+                    val now = System.currentTimeMillis()
+                    newsletterUseCases.updateSource(
+                        source.copy(
+                            title = parsed.title?.takeIf(String::isNotBlank) ?: source.title,
+                            siteUrl = parsed.siteUrl ?: source.siteUrl,
+                            description = parsed.description ?: source.description,
+                            lastFetchedAt = now,
+                            etag = result.etag ?: source.etag,
+                            lastModified = result.lastModified ?: source.lastModified,
+                            lastError = null,
+                        ),
                     )
-                })
-                newsletterUseCases.pruneArticles(source.id, RETENTION_PER_SOURCE)
+                    newsletterUseCases.saveArticles(parsed.articles.map { item ->
+                        NewsletterArticle(
+                            id = UUID.randomUUID().toString(), sourceId = source.id,
+                            stableId = item.stableId, title = item.title, canonicalUrl = item.canonicalUrl,
+                            publishedAt = item.publishedAt, summary = item.summary, contentHtml = item.contentHtml,
+                            imageUrl = item.imageUrl, isRead = false, savedCaptureId = null, fetchedAt = now,
+                        )
+                    })
+                    newsletterUseCases.pruneArticles(source.id, RETENTION_PER_SOURCE)
+                }
             }
+        } catch (error: Exception) {
+            newsletterUseCases.updateSource(source.copy(lastError = error.localizedMessage ?: "Falha ao atualizar."))
+            throw error
         }
     }
 

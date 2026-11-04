@@ -32,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterArticle
 import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
 
@@ -64,6 +67,9 @@ fun NewslettersScreen(
             TextButton(onClick = viewModel::refreshSelected, enabled = selectedSourceId != null && !isLoading) {
                 Text("Atualizar")
             }
+            TextButton(onClick = viewModel::refreshAll, enabled = sources.isNotEmpty() && !isLoading) {
+                Text("Todas")
+            }
         }
 
         Card(Modifier.fillMaxWidth()) {
@@ -83,6 +89,17 @@ fun NewslettersScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Adicionar newsletter") }
             }
+        }
+
+        selectedSource?.let { source ->
+            val updatedAt = source.lastFetchedAt?.let {
+                SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(it))
+            }
+            Text(
+                text = source.lastError ?: updatedAt?.let { "Última atualização: $it" } ?: "Ainda não atualizado",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (source.lastError != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (sources.isNotEmpty()) {
