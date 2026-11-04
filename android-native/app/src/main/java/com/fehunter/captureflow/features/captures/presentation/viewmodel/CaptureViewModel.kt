@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.core.storage.PrivateImageStorage
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
+import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -26,6 +28,17 @@ class CaptureViewModel(
     val captureMedia = captureUseCases.observeMedia().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
     )
+
+    fun createTask(rawTitle: String, category: String) {
+        val title = rawTitle.trim().take(160)
+        val targetCategory = category.trim()
+        if (title.isBlank() || targetCategory.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val availableCategories = captureUseCases.observeCategories().first().map { it.name }
+            if (targetCategory !in availableCategories) return@launch
+            captureUseCases.save(CaptureFactory.createTask(title, targetCategory))
+        }
+    }
 
     fun setCaptureCover(captureId: String, mediaId: String) {
         viewModelScope.launch(Dispatchers.IO) { captureUseCases.setCover(captureId, mediaId) }

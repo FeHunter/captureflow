@@ -1,6 +1,12 @@
 package com.fehunter.captureflow.features.fullscreen.presentation.screens
 
 import com.fehunter.captureflow.core.ui.loadCoverBitmap
+import com.fehunter.captureflow.core.ui.components.TaskPaperCover
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.presentation.components.CompletedBadge
 import androidx.compose.foundation.background
@@ -35,40 +41,39 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
         ),
         contentAlignment = Alignment.Center,
     ) {
-        if (image != null) {
-            Image(
-                bitmap = image!!,
-                contentDescription = "Imagem completa da referência",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-            )
-        } else {
-            Box(
-                Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.size(44.dp))
+        Crossfade(targetState = image, animationSpec = tween(200), label = "fullscreen-cover") { loadedImage ->
+            if (loadedImage != null) {
+                Image(bitmap = loadedImage, contentDescription = "Imagem completa da referência", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            } else {
+                TaskPaperCover(modifier = Modifier.fillMaxSize(), prominent = true)
             }
         }
 
-        Box(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(360.dp)
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.72f), Color.Black))),
-        )
+        if (image != null) {
+            Box(
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(360.dp)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.72f), Color.Black))),
+            )
+        }
 
         if (capture.isCompleted) {
             CompletedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(top = 76.dp, end = 16.dp))
         }
 
-        if (showNavigationHint) {
+        AnimatedVisibility(
+            visible = showNavigationHint,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 34.dp),
+            enter = fadeIn(tween(160)),
+            exit = fadeOut(tween(160)),
+        ) {
+            val hintColor = if (image != null) Color.White.copy(alpha = 0.78f) else MaterialTheme.colorScheme.onSurfaceVariant
             Row(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 34.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("‹", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.78f))
-                Text("Deslize para navegar", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.78f))
-                Text("›", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.78f))
+                Text("‹", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = hintColor)
+                Text("Deslize para navegar", style = MaterialTheme.typography.labelMedium, color = hintColor)
+                Text("›", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = hintColor)
             }
         }
     }
