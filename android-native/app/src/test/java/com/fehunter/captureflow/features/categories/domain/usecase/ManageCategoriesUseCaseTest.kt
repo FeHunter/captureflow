@@ -4,6 +4,7 @@ import com.fehunter.captureflow.features.captures.domain.model.Capture
 import com.fehunter.captureflow.features.captures.domain.model.CaptureCategory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
+import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatch
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -106,6 +107,7 @@ class ManageCategoriesUseCaseTest {
             categories.value = categories.value.filterNot { it.name == name }
         }
 
+        override suspend fun importBatch(batch: CaptureImportBatch) = Unit
         override suspend fun addSubtask(subtask: CaptureSubtask) = Unit
         override suspend fun setSubtaskCompleted(id: String, completed: Boolean) = Unit
         override suspend fun deleteSubtask(id: String) = Unit
