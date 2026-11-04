@@ -148,6 +148,15 @@ fun FullscreenCaptureDialog(
                             Icon(Icons.Default.Close, contentDescription = "Fechar visualizador", tint = Color.White)
                         }
                     }
+                    Text(
+                        text = viewerCaptures.getOrNull(pagerState.settledPage)?.title ?: selected.title,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Box(Modifier.weight(1f).fillMaxWidth()) {
                         val activeCapture = viewerCaptures.getOrNull(pagerState.settledPage)
                         val activeYoutubeVideoId = remember(activeCapture?.sourceUrl) {

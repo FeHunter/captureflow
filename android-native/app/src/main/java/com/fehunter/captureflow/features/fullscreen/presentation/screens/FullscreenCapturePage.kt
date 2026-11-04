@@ -57,15 +57,6 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
             CompletedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(top = 76.dp, end = 16.dp))
         }
 
-        Text(
-            text = capture.title,
-            modifier = Modifier.align(Alignment.BottomStart)
-                .padding(start = 20.dp, end = 96.dp, bottom = 262.dp),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.White,
-        )
-
         if (showNavigationHint) {
             Row(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 34.dp),
