@@ -81,10 +81,11 @@ Essa diferença técnica não garante que o Google Play aceite READ_MEDIA_IMAGES
 ### Ações antes do release
 
 1. Confirmar em dispositivo Android real que o observer inicia em onResume e é encerrado em onPause, inclusive ao abrir outra Activity/app e ao exibir a tela de permissões.
-2. Testar permissão concedida, negada, revogada e acesso parcial em versões Android compatíveis.
-3. Demonstrar que a prévia aparece somente enquanto o app está aberto e que nada é importado sem confirmação.
-4. Atualizar a declaração Play Console para descrever detecção somente em primeiro plano; não declarar foreground service nem specialUse.
-5. Confirmar a elegibilidade de READ_MEDIA_IMAGES com a política vigente. A justificativa não garante aprovação; se rejeitada, remover a detecção automática e manter Photo Picker.
+2. Confirmar que a explicação destacada aparece antes do diálogo de permissão, que Continuar solicita a permissão e Agora não não solicita acesso nem bloqueia o Photo Picker.
+3. Testar permissão concedida, negada, revogada e acesso parcial em versões Android compatíveis.
+4. Demonstrar que a prévia aparece somente enquanto o app está aberto e que nada é importado sem confirmação.
+5. Atualizar a declaração Play Console para descrever detecção somente em primeiro plano; não declarar foreground service nem specialUse.
+6. Confirmar a elegibilidade de READ_MEDIA_IMAGES com a política vigente. A justificativa não garante aprovação; se rejeitada, remover a detecção automática e manter Photo Picker.
 
 ## 5. Backup e dados locais
 

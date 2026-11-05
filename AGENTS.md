@@ -165,6 +165,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Não fazer upload de conteúdo capturado sem consentimento explícito. Cloud sync está fora do escopo.
 - Descoberta de screenshots é opcional e best-effort: observa o MediaStore somente enquanto MainActivity está resumed, consulta metadados/nome/caminho e não pixels de outros apps. Registrar o ContentObserver em onResume e encerrá-lo em onPause. Nunca usar Accessibility Services ou captura de tela entre aplicativos para inferir screenshots.
 - O fluxo de screenshot não usa serviço em segundo plano, foreground service, notificação persistente nem permissão POST_NOTIFICATIONS. Ao detectar uma captura, exibir prévia in-app e exigir confirmação explícita antes de importar.
+- Antes de solicitar READ_MEDIA_IMAGES, exibir disclosure destacado explicando que o acesso consulta metadados para detectar screenshots somente enquanto o app está em primeiro plano, que não há upload e que a importação depende de confirmação. Oferecer cancelamento sem solicitar permissão; manter Photo Picker disponível.
 - READ_MEDIA_IMAGES permanece sujeito à política de acesso amplo a fotos do Google Play; Photo Picker deve continuar disponível para seleção manual. A existência de detecção em primeiro plano não garante elegibilidade da permissão.
 
 ### 6.1 Compartilhamento de links
