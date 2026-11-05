@@ -237,10 +237,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleScreenshotAction(source: Intent?) {
-        val uri = source?.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)
-            ?.let(Uri::parse) ?: return
-        if (source.action == ScreenshotNotificationService.ACTION_IMPORT_SCREENSHOT) {
-            pendingScreenshotImportUri = uri
+        when (source?.action) {
+            ScreenshotNotificationService.ACTION_STOP -> stopScreenshotMonitoring()
+            ScreenshotNotificationService.ACTION_IMPORT_SCREENSHOT -> {
+                source.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)
+                    ?.let(Uri::parse)
+                    ?.let { pendingScreenshotImportUri = it }
+            }
         }
     }
 

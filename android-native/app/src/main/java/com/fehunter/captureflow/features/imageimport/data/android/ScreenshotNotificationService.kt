@@ -235,10 +235,14 @@ class ScreenshotNotificationService : Service() {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val stopIntent = PendingIntent.getService(
+        val stopIntent = PendingIntent.getActivity(
             this,
             ONGOING_NOTIFICATION_ID + 1,
-            Intent(this, ScreenshotNotificationService::class.java).setAction(ACTION_STOP),
+            Intent(this, MainActivity::class.java).apply {
+                action = ACTION_STOP
+                data = Uri.parse("captureflow://screenshot-monitor/stop")
+                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, ONGOING_CHANNEL_ID)
