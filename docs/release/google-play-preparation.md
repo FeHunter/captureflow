@@ -49,24 +49,30 @@ Sem as variáveis, `bundleRelease` valida a compilação e produz bundle não as
 
 A CI executa `bundleRelease` sem segredos para detectar problemas de compilação/configuração. A assinatura e o upload automatizado ficam fora do escopo desta etapa.
 
-## 4. Manifest e permissões — revisão pendente
+## 4. Manifest e permissões — funcionalidades mantidas
 
-Permissões identificadas na auditoria:
+A decisão de produto é manter o monitoramento opt-in de screenshots no primeiro lançamento. As permissões abaixo fazem parte de funcionalidades existentes e não serão removidas apenas para simplificar a submissão:
 
-- INTERNET — requisições de metadados, RSS/Atom e integrações web.
-- CAMERA — captura via CameraX.
-- POST_NOTIFICATIONS — notificações do serviço e do fluxo de screenshots.
-- FOREGROUND_SERVICE e FOREGROUND_SERVICE_SPECIAL_USE — monitoramento opt-in de screenshots.
-- READ_MEDIA_IMAGES — avaliar necessidade real diante do Photo Picker.
-- READ_EXTERNAL_STORAGE com maxSdkVersion 32 — verificar compatibilidade e necessidade residual.
+- INTERNET — requisições de metadados, RSS/Atom, YouTube e integrações web.
+- CAMERA — captura de imagens dentro do aplicativo.
+- POST_NOTIFICATIONS — notificações de screenshots e visibilidade do serviço.
+- FOREGROUND_SERVICE e FOREGROUND_SERVICE_SPECIAL_USE — serviço contínuo, iniciado pelo usuário, para observar novas imagens e apresentar uma ação de importação.
+- READ_MEDIA_IMAGES — consulta ao MediaStore para detectar screenshots recentes.
+- READ_EXTERNAL_STORAGE com maxSdkVersion 32 — permissão equivalente para versões Android anteriores ao Android 13.
+
+### Justificativa funcional para a declaração Play Console
+
+O CaptureFlow é um caderno de referências visuais. A detecção de screenshots permite que o usuário capture conteúdo em outros aplicativos e receba uma notificação para importar essa imagem como referência, sem precisar interromper o fluxo de uso, abrir manualmente a galeria e localizar o arquivo. O acesso à coleção de imagens é utilizado para consultar metadados (nome, caminho e data) e identificar capturas recentes; o serviço não captura a tela, não usa Accessibility Services e não monitora o conteúdo visual de outros aplicativos. A imagem é processada/importada somente quando o usuário escolhe a ação oferecida. O recurso é opcional, exige ativação e permissões explícitas, mantém notificação persistente enquanto ativo e pode ser interrompido a qualquer momento nas opções do app ou pelas configurações Android.
+
+O Photo Picker permanece como alternativa para seleção manual de imagens, mas não oferece monitoramento de novas screenshots em segundo plano e, portanto, não substitui o acesso ao MediaStore necessário para essa funcionalidade.
 
 ### Ações obrigatórias antes do release
 
-1. Mapear todos os pontos de código que usam cada permissão e a versão Android aplicável.
-2. Validar se READ_MEDIA_IMAGES é estritamente necessária para o fluxo de monitoramento; preferir Photo Picker quando o usuário seleciona imagens pontualmente.
-3. Revisar elegibilidade, declaração e justificativa do foreground service `specialUse`, incluindo subtipo, início explícito pelo usuário, notificação persistente, interrupção e vídeo demonstrativo se solicitado pelo Play Console.
+1. Preparar declaração de acesso a fotos/vídeos explicando a funcionalidade principal, o fluxo de detecção e por que o Photo Picker não substitui a consulta contínua.
+2. Preparar declaração de foreground service `specialUse`, incluindo subtipo, início explícito pelo usuário, notificação persistente, forma de interrupção e vídeo demonstrativo se solicitado.
+3. Confirmar elegibilidade e requisitos vigentes do Google Play antes de submeter. A justificativa não garante aprovação; responder a eventuais solicitações de esclarecimento e estar preparado para rever o fluxo caso o Google não aceite a exceção.
 4. Testar concessão, recusa, revogação e comportamento após reinício/atualização.
-5. Não remover permissões até confirmar que nenhum fluxo existente depende delas.
+5. Manter a explicação visível na tela Privacidade e tornar a desativação fácil de encontrar no app.
 
 ## 5. Backup e dados locais
 
@@ -109,7 +115,7 @@ Pendências:
 - [ ] Build release/AAB compila no CI.
 - [ ] Assinatura release validada com chave de upload fora do Git.
 - [ ] Inventário e justificativa de permissões concluídos.
-- [ ] Decisão documentada sobre Auto Backup.
+- [x] Auto Backup e transferência automática desabilitados; regras explícitas e documentação adicionadas.
 - [ ] Política de privacidade publicada e coerente com Data Safety.
 - [ ] Testes funcionais e de compatibilidade aprovados.
 - [ ] Materiais da loja prontos.

@@ -413,3 +413,12 @@ Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado 
 - Política de privacidade e Data Safety devem descrever o comportamento real, inclusive requisições externas de metadados, RSS/Atom, YouTube, navegador e compartilhamento escolhido pelo usuário. Não afirmar que o app é totalmente offline.
 - O pipeline de CI deve executar testes unitários, assembleDebug, compilação dos testes instrumentados e bundleRelease. O bundleRelease sem credenciais é validação de build, não evidência de assinatura pronta para loja.
 - Manter a preparação de publicação documentada em `docs/release/google-play-preparation.md` e atualizar este arquivo quando requisitos de release forem alterados.
+
+
+## Política de backup e privacidade para publicação — 2026-11-05
+
+- Android Auto Backup e transferência automática de dados devem permanecer desabilitados: Manifest com `android:allowBackup="false"`, `android:fullBackupContent="@xml/backup_rules"` e `android:dataExtractionRules="@xml/data_extraction_rules"`; regras devem excluir todos os domínios de backup em nuvem e device transfer.
+- A feature ZIP manual é a única forma suportada de backup/restauração. Não prometer sincronização ou migração automática. Explicar que o usuário deve exportar no aparelho de origem, guardar o arquivo em local seguro e importar no aparelho de destino.
+- Preservar o monitoramento opt-in de screenshots. O serviço consulta metadados do MediaStore para identificar screenshots recentes; não captura tela, não usa Accessibility Services e não envia imagens para servidores. Manter permissão de imagens, serviço foreground specialUse e notificação persistente até decisão explícita de produto ou exigência de política.
+- A justificativa Play Console deve explicar que a detecção automática de screenshots em segundo plano é parte do fluxo central de captura de referências e que o Photo Picker não substitui monitoramento contínuo. A justificativa não garante aprovação: validar a elegibilidade e atender pedidos de evidência/vídeo ou adaptar o recurso se o Google rejeitar.
+- A tela Privacidade deve refletir o comportamento atual: dados locais, requisições externas iniciadas por recursos de links/feeds/web, permissões de câmera/imagens/notificações, compartilhamento de PDF para apps escolhidos pelo usuário e backup exclusivamente manual em ZIP. Não declarar o app totalmente offline.

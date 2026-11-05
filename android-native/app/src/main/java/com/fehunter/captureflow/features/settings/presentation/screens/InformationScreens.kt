@@ -79,7 +79,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Seu caderno é particular. O CaptureFlow foi desenvolvido para organizar referências, tarefas e anotações no próprio dispositivo.",
+                    "Seu caderno fica sob seu controle. O CaptureFlow organiza referências, tarefas, imagens e anotações localmente no dispositivo e não exige criação de conta.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -99,13 +99,13 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             item {
                 InformationSection(
                     title = "Capturas de tela e permissões",
-                    body = "Se você ativar o monitoramento de screenshots, o Android poderá conceder ao aplicativo o acesso necessário para detectar novas capturas e oferecer a importação. O processamento e o salvamento da referência acontecem no dispositivo. Você pode desativar esse recurso nas opções do próprio aplicativo ou nas configurações do Android.",
+                    body = "O monitoramento de screenshots é opcional e só funciona quando você o ativa. Para detectar novas capturas, o CaptureFlow consulta metadados de imagens compartilhadas no dispositivo, como nome, pasta e data, por meio do MediaStore. Essa funcionalidade exige acesso a imagens (READ_MEDIA_IMAGES nas versões recentes ou a permissão equivalente em versões anteriores) e mantém um serviço em primeiro plano com uma notificação visível. O monitoramento não captura a tela, não utiliza Serviços de Acessibilidade e não envia suas imagens ao CaptureFlow ou a servidores. Ao detectar uma captura, o aplicativo oferece a opção de importá-la; o conteúdo da imagem é lido para OCR e salvo localmente somente no fluxo de importação. Você pode interromper o monitoramento a qualquer momento nas opções do aplicativo ou revogar as permissões nas configurações do Android. A câmera também exige permissão própria e só é usada quando você escolhe fotografar dentro do app.",
                 )
             }
             item {
                 InformationSection(
-                    title = "Backups: funcionalidade futura",
-                    body = "O CaptureFlow permite exportar referências, categorias, subtarefas, anotações e imagens em um arquivo ZIP. A importação mescla os dados com o caderno atual, sem apagar referências locais. Você escolhe onde salvar o arquivo e é responsável por manter uma cópia segura, preferencialmente fora do dispositivo.",
+                    title = "Backup e restauração",
+                    body = "O CaptureFlow não utiliza o backup automático do Android nem transfere automaticamente os dados do aplicativo para outro dispositivo. A única forma de backup oferecida pelo app é a exportação manual de um arquivo ZIP, que reúne referências, categorias, subtarefas, mídias, anotações e dados de Newsletters compatíveis com a versão do arquivo. Na importação, os dados são mesclados ao conteúdo existente, sem apagar referências locais. Você escolhe onde salvar e de onde importar o arquivo. O ZIP pode conter informações pessoais e imagens; mantenha-o em local seguro. O CaptureFlow não envia esse arquivo aos nossos servidores.",
                 )
             }
             item {

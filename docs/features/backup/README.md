@@ -23,3 +23,11 @@ Manifesto 10 MB; imagem 25 MB; descompactado 250 MB; 50.000 registros e 50.002 e
 
 ## Validação
 Testar export/import v1 e v2, feed duplicado, source ID conflitante, artigo duplicado por stableId/URL, savedCaptureId remapeado, artigos lidos/não lidos, mídia/Notes e falha parcial. CI e dispositivo ainda pendentes nesta branch.
+
+
+## Relação com o backup do Android
+
+- O Android Auto Backup e a transferência automática de dados do app estão desabilitados no Manifest.
+- O backup do CaptureFlow é exclusivamente manual, em arquivo ZIP escolhido pelo usuário pelo Storage Access Framework.
+- Para migrar dados entre dispositivos, exportar o ZIP no dispositivo de origem e importá-lo manualmente no destino.
+- O usuário é responsável por manter cópia segura do arquivo; o app não envia backups aos seus servidores.

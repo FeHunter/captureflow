@@ -27,3 +27,8 @@ Feature responsável por exportar e importar o caderno local do CaptureFlow.
 ## Validação
 - Testar exportação/importação com tarefas sem imagem, capas, galeria, anotações com imagem, categorias, subtarefas e estados concluídos.
 - Testar reimportação do mesmo backup, colisão de IDs, duplicatas sem colisão de ID, arquivo inválido, versão desconhecida, imagem ausente e arquivo acima dos limites.
+
+
+## Backup do sistema Android
+
+O Android Auto Backup e a transferência automática estão desabilitados. A feature ZIP é a única forma suportada de exportação/restauração e deve continuar explícita, iniciada pelo usuário e documentada na tela Privacidade. A migração entre aparelhos depende de exportar e importar manualmente o arquivo.
