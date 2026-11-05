@@ -25,6 +25,45 @@ jobs:
       - name: Compile instrumentation tests
         working-directory: android-native
         run: ./gradlew assembleDebugAndroidTest
-      - name: Validate release bundle configuration
+      - name: Generate release dependency and bundle audit
         working-directory: android-native
-        run: ./gradlew bundleRelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../audit-output
+
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath \
+            > ../audit-output/release-runtime-dependencies.txt
+          ./gradlew :app:dependencyInsight --configuration releaseRuntimeClasspath --dependency com.google.mlkit \
+            > ../audit-output/mlkit-dependency-insight.txt
+          ./gradlew :app:processReleaseMainManifest
+
+          manifest_path="$(find app/build/intermediates/merged_manifest/release -name AndroidManifest.xml -type f | head -n 1)"
+          test -n "$manifest_path"
+          cp "$manifest_path" ../audit-output/merged-release-AndroidManifest.xml
+
+          ./gradlew :app:bundleRelease
+          bundle_path="app/build/outputs/bundle/release/app-release.aab"
+          test -f "$bundle_path"
+          cp "$bundle_path" ../audit-output/captureflow-release-unsigned.aab
+
+          curl --fail --location --silent --show-error \
+            https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar \
+            --output /tmp/bundletool.jar
+          java -jar /tmp/bundletool.jar dump manifest \
+            --bundle="$bundle_path" --module=base \
+            --output=../audit-output/aab-base-manifest.xml
+          java -jar /tmp/bundletool.jar dump config \
+            --bundle="$bundle_path" \
+            > ../audit-output/aab-bundle-config.txt
+          unzip -l "$bundle_path" > ../audit-output/aab-contents.txt
+          sha256sum ../audit-output/captureflow-release-unsigned.aab \
+            > ../audit-output/SHA256SUMS.txt
+
+      - name: Upload Android release audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: captureflow-android-release-audit
+          path: audit-output/
+          if-no-files-found: error
+          retention-days: 14
