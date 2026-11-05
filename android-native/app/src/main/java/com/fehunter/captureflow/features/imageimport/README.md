@@ -9,7 +9,7 @@ Feature responsável pela entrada de conteúdo externo e processamento de imagen
 - `data/ocr/OcrService.kt`: reconhecimento local via ML Kit e adaptação dos resultados para o domínio.
 - `domain/ocr/TitleDetectionService.kt`: seleção testável do título por geometria, área, posição, confiança e perfil aproximado da interface.
 - `docs/features/image-import/ocr-title-detection.md`: critérios, limitações e casos de teste da detecção de títulos.
-- `data/android/ScreenshotMonitor.kt`: observa o MediaStore somente enquanto a MainActivity está em primeiro plano; não usa serviço, notificações ou execução em segundo plano.
+- `data/android/ScreenshotNotificationService.kt`: serviço em primeiro plano `specialUse`, iniciado após ativação explícita e permissões, observa metadados do MediaStore continuamente enquanto habilitado e mantém notificação persistente com ação de parada.
 - `presentation/model`: estados de importação e OCR.
 - `presentation/viewmodel`: compartilhamento, prévia de links, revisão de imagens, confirmação por categoria, cópia privada e OCR.
 - `presentation/components/ImageCaptureScreen.kt`: câmera própria com CameraX, foco por toque e captura temporária.

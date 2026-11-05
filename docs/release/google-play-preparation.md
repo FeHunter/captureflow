@@ -49,43 +49,47 @@ Sem as variáveis, `bundleRelease` valida a compilação e produz bundle não as
 
 A CI executa `bundleRelease` sem segredos para detectar problemas de compilação/configuração. A assinatura e o upload automatizado ficam fora do escopo desta etapa.
 
-## 4. Manifest e permissões — detecção em primeiro plano
+## 4. Manifest e permissões — monitoramento contínuo opt-in
 
-A decisão de produto é manter a detecção opt-in de screenshots, limitada ao período em que a MainActivity está em primeiro plano (onResume até onPause). Não existe serviço em segundo plano para essa funcionalidade.
+A decisão de produto é oferecer detecção contínua de screenshots enquanto o usuário mantiver a função ativada. O monitoramento é executado por um Foreground Service do tipo `specialUse`, com notificação persistente e ação explícita para interromper.
 
-Permissões mantidas:
+Permissões relacionadas:
 
 - INTERNET — requisições de metadados, RSS/Atom, YouTube e integrações web.
 - CAMERA — captura de imagens dentro do aplicativo.
-- READ_MEDIA_IMAGES — consulta ao MediaStore para identificar screenshots recentes enquanto o app está em primeiro plano.
+- READ_MEDIA_IMAGES — consulta aos metadados do MediaStore para identificar screenshots.
+- READ_MEDIA_VISUAL_USER_SELECTED — identifica o modo de acesso limitado do Android 14+; acesso parcial não habilita o monitoramento contínuo.
 - READ_EXTERNAL_STORAGE com maxSdkVersion 32 — permissão equivalente para versões Android anteriores ao Android 13.
+- POST_NOTIFICATIONS — notificação persistente e alertas de screenshots no Android 13 ou superior.
+- FOREGROUND_SERVICE e FOREGROUND_SERVICE_SPECIAL_USE — execução do serviço em primeiro plano.
 
-Removidas para esse fluxo:
-
-- POST_NOTIFICATIONS — não são emitidas notificações de screenshot.
-- FOREGROUND_SERVICE e FOREGROUND_SERVICE_SPECIAL_USE — não existe serviço foreground de monitoramento.
-- Declaração de ScreenshotNotificationService e propriedade PROPERTY_SPECIAL_USE_FGS_SUBTYPE — removidas do Manifest.
+O Manifest declara `ScreenshotNotificationService` com `foregroundServiceType="specialUse"` e propriedade `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`. Não há inicialização automática no boot.
 
 ### Funcionamento técnico
 
-Quando o usuário ativa a detecção e concede acesso a imagens, ScreenshotMonitor registra um ContentObserver no MediaStore durante o período em que a Activity está resumed. A consulta limita os resultados a imagens adicionadas desde o início da sessão em primeiro plano, inspeciona metadados (nome, caminho relativo e data) e procura padrões conhecidos de screenshots. Ao detectar uma captura, o app apresenta uma prévia dentro da própria interface. A imagem só é importada após confirmação explícita do usuário.
+O usuário ativa o recurso pela interface, após disclosure e concessão das permissões. O serviço inicia a notificação foreground imediatamente, registra um ContentObserver no MediaStore e consulta apenas metadados (ID, nome, data e caminho relativo quando disponível). A busca usa um watermark incremental por `DATE_ADDED`, uma janela de tolerância para gravações atrasadas e deduplicação de URIs para reduzir alertas repetidos. A consulta é limitada a um conjunto recente de registros; não lê pixels, não captura a tela e não utiliza Accessibility Services, overlay ou APIs de gravação de tela.
 
-Em onPause o observer e tarefas pendentes são encerrados. Ao retornar ao primeiro plano, se a preferência continuar ativa e a permissão estiver concedida, o monitor é iniciado novamente. Se a permissão for revogada, a preferência de detecção é desativada. O fluxo não captura a tela, não usa Accessibility Services, não lê pixels durante a varredura e não notifica enquanto o app está em segundo plano.
+Cada screenshot identificada gera uma notificação individual. Ao tocá-la, o usuário abre uma prévia dentro do CaptureFlow, escolhe uma categoria e confirma a importação. A imagem original permanece na galeria. A notificação persistente apresenta a ação **Desativar**, e o cabeçalho do app também permite interromper o serviço. `START_STICKY` permite ao Android tentar recriar o serviço após encerramento do processo; a retomada respeita a preferência de ativação e as permissões. O app não registra receiver de boot e não reativa o recurso após reinicialização do dispositivo.
 
-### Photo Picker e limite de elegibilidade
+No Android 14+, a permissão `READ_MEDIA_VISUAL_USER_SELECTED` permite identificar acesso limitado. Como o recurso precisa observar novas screenshots fora de uma seleção prévia, o serviço só inicia quando `READ_MEDIA_IMAGES` está integralmente concedida. A seleção manual continua disponível pelo Photo Picker.
 
-O Photo Picker continua sendo o caminho de seleção manual e não exige acesso amplo à biblioteca. Ele não oferece uma API para observar automaticamente novas screenshots adicionadas ao MediaStore, mesmo quando o CaptureFlow está aberto. Por isso, não substitui tecnicamente o observador usado para detecção automática em primeiro plano.
+### Justificativa para Google Play e risco de elegibilidade
 
-Essa diferença técnica não garante que o Google Play aceite READ_MEDIA_IMAGES: a política também avalia se o acesso amplo é necessário para uma funcionalidade central do app. O CaptureFlow é um caderno de referências e continua funcional sem a detecção automática. A submissão deve explicar com transparência que a detecção é uma conveniência opt-in, limitada ao primeiro plano, e manter o Photo Picker como alternativa manual. Se o Google considerar que o acesso amplo não é elegível, será necessário remover a detecção automática e depender da seleção manual.
+A justificativa proposta para `specialUse` é: o usuário ativa explicitamente uma função de captura de referências; o serviço observa continuamente o MediaStore para reconhecer novas screenshots enquanto o usuário usa outros aplicativos e apresenta uma notificação que permite revisar e importar a captura. A notificação persistente mantém o usuário informado e oferece parada imediata.
+
+Essa justificativa descreve o comportamento, mas não garante aprovação. O Google Play pode entender que monitoramento contínuo de screenshots não é elegível como funcionalidade central ou que `specialUse` não é apropriado. A submissão deve incluir a declaração de Foreground Service, descrição do subtipo, impacto de interrupção/adiamento e vídeo demonstrativo do fluxo real. Não declarar comportamento que não esteja implementado.
+
+Se houver rejeição, registrar o motivo exato da revisão e avaliar primeiro a correção solicitada. Como alternativa de menor risco, remover o serviço contínuo e manter Photo Picker para seleção manual; não remover funcionalidades nem permissões sem revisar o impacto e a decisão do produto.
 
 ### Ações antes do release
 
-1. Confirmar em dispositivo Android real que o observer inicia em onResume e é encerrado em onPause, inclusive ao abrir outra Activity/app e ao exibir a tela de permissões.
-2. Confirmar que a explicação destacada aparece antes do diálogo de permissão, que Continuar solicita a permissão e Agora não não solicita acesso nem bloqueia o Photo Picker.
-3. Testar permissão concedida, negada, revogada e acesso parcial em versões Android compatíveis.
-4. Demonstrar que a prévia aparece somente enquanto o app está aberto e que nada é importado sem confirmação.
-5. Atualizar a declaração Play Console para descrever detecção somente em primeiro plano; não declarar foreground service nem specialUse.
-6. Confirmar a elegibilidade de READ_MEDIA_IMAGES com a política vigente. A justificativa não garante aprovação; se rejeitada, remover a detecção automática e manter Photo Picker.
+1. Testar início iniciado pela interface, notificação persistente, ação Desativar e parada pelo cabeçalho.
+2. Testar Android 13+ com permissão de notificações concedida, negada e revogada.
+3. Testar READ_MEDIA_IMAGES concedida, negada, acesso limitado e revogada; manter Photo Picker funcional sem acesso amplo.
+4. Testar screenshots criadas em outros apps, várias capturas em sequência, duplicação, MediaStore lento e reinício do processo.
+5. Confirmar que o serviço não inicia após reboot e não importa/apaga a imagem sem confirmação.
+6. Validar a declaração `specialUse`, a justificativa, o impacto de interrupção/adiamento e o vídeo exigidos no Play Console.
+7. Revisar a elegibilidade de READ_MEDIA_IMAGES separadamente da elegibilidade de `specialUse`.
 
 ## 5. Backup e dados locais
 

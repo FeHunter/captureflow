@@ -59,9 +59,11 @@ fun CaptureFlowApp(
     hasScreenshotAccess: Boolean,
     screenshotMonitoringEnabled: Boolean,
     detectedScreenshotUri: Uri?,
+    pendingScreenshotImportUri: Uri?,
     onRequestScreenshotAccess: () -> Unit,
     onStopScreenshotMonitoring: () -> Unit,
     onScreenshotHandled: () -> Unit,
+    onScreenshotImportHandled: () -> Unit,
 ) {
     var showThemeMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -199,9 +201,11 @@ fun CaptureFlowApp(
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
+                    pendingScreenshotImportUri = pendingScreenshotImportUri,
                     onRequestScreenshotAccess = onRequestScreenshotAccess,
                     onStopScreenshotMonitoring = onStopScreenshotMonitoring,
                     onScreenshotHandled = onScreenshotHandled,
+                    onScreenshotImportHandled = onScreenshotImportHandled,
                 )
             }
         }
@@ -212,7 +216,7 @@ fun CaptureFlowApp(
             onDismissRequest = { showScreenshotRationale = false },
             title = { Text("Sobre a detecção de screenshots") },
             text = {
-                Text("Para identificar novas screenshots, o CaptureFlow consulta metadados recentes do MediaStore (como nome, pasta e data) enquanto o app está aberto e em primeiro plano. Essa função exige acesso a imagens. O app não captura a tela nem envia imagens a servidores. Uma prévia será apresentada e nada será salvo sem sua confirmação. A detecção é encerrada automaticamente quando você sai do primeiro plano; a seleção manual pelo Photo Picker continua disponível.")
+                Text("Para identificar novas screenshots, o CaptureFlow consulta metadados recentes do MediaStore (como nome, pasta e data) enquanto o app está aberto e em primeiro plano. Essa função exige acesso completo às imagens e notificações. O acesso limitado a fotos selecionadas não é suficiente para detectar novas screenshots em todos os aplicativos. Enquanto ativada, uma notificação persistente informa que o monitoramento está em execução, inclusive quando você usa outros aplicativos. O CaptureFlow consulta metadados do MediaStore; não captura a tela, não usa Acessibilidade e não envia imagens a servidores. Cada captura gera uma notificação para você revisar. Nada é salvo no caderno até sua confirmação. Você pode interromper o monitoramento pela notificação ou pelo cabeçalho do app. A seleção manual pelo Photo Picker continua disponível.")
             },
             confirmButton = {
                 TextButton(

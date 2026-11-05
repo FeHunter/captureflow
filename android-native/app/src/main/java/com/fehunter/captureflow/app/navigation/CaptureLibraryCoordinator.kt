@@ -79,7 +79,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val coverUpdateError by viewModel.coverUpdateError.collectAsStateWithLifecycle()
@@ -123,6 +123,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var editingNoteId by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
+    var screenshotImportCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
     LaunchedEffect(pendingSharedLink?.id) { sharedLinkCategory = null }
     val categories = listOf("Todas") + categoryEntities.map { it.name }
@@ -153,6 +154,20 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     )
     LaunchedEffect(detectedScreenshotUri) {
         detectedScreenshotUri?.let { selectedImageUri = it }
+    }
+    var screenshotToConfirm by remember { mutableStateOf(pendingScreenshotImportUri) }
+    LaunchedEffect(pendingScreenshotImportUri) {
+        screenshotToConfirm = pendingScreenshotImportUri
+    }
+    LaunchedEffect(screenshotToConfirm) { screenshotImportCategory = null }
+    val screenshotPreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, screenshotToConfirm,
+    ) {
+        value = screenshotToConfirm?.let { uri ->
+            withContext(Dispatchers.IO) {
+                runCatching { loadCoverBitmap(context, uri.toString(), maxDimension = 480) }.getOrNull()
+            }
+        }
     }
     val filterCaptures = remember { FilterCapturesUseCase() }
     val allMatchingCaptures = remember(captures, query, category) {
@@ -746,6 +761,78 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         }
     }
 
+    screenshotToConfirm?.let { uri ->
+        Dialog(
+            onDismissRequest = {
+                screenshotToConfirm = null
+                onScreenshotImportHandled()
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.56f)), contentAlignment = Alignment.Center) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Text("Adicionar screenshot às referências?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        Text("A captura foi identificada pelo monitoramento ativado por você. A imagem original permanece na galeria; nada é salvo no CaptureFlow até sua confirmação.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        screenshotPreview?.let { preview ->
+                            Image(
+                                bitmap = preview,
+                                contentDescription = "Prévia da screenshot que será salva como referência",
+                                modifier = Modifier.fillMaxWidth().height(200.dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                        } ?: Spacer(Modifier.height(12.dp))
+                        Text("Categoria (obrigatória)", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            activeCategories.forEach { item ->
+                                FilterChip(
+                                    selected = screenshotImportCategory == item,
+                                    onClick = { screenshotImportCategory = item },
+                                    label = { Text(item, maxLines = 1) },
+                                )
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = {
+                                    screenshotToConfirm = null
+                                    onScreenshotImportHandled()
+                                },
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Cancelar") }
+                            Button(
+                                onClick = {
+                                    screenshotImportCategory?.let { selectedCategory ->
+                                        imageImportViewModel.addImageCapture(
+                                            uri.toString(),
+                                            category = selectedCategory,
+                                            deleteSourceScreenshotAfterImport = false,
+                                            compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile),
+                                        )
+                                        screenshotToConfirm = null
+                                        onScreenshotImportHandled()
+                                    }
+                                },
+                                enabled = screenshotImportCategory != null,
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Salvar referência") }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pendingSharedLink?.let { pending ->
         Dialog(
             onDismissRequest = { imageImportViewModel.cancelPendingSharedLink(); sharedLinkCategory = null },
@@ -844,7 +931,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            if (uri == detectedScreenshotUri) "Encontramos uma nova captura de tela enquanto o CaptureFlow está aberto. A detecção é opcional e pode ser desligada no ícone de captura."
+                            if (uri == detectedScreenshotUri) "Encontramos uma nova captura de tela. O monitoramento é opcional e pode ser desligado no ícone de sino."
                             else "Escolha a categoria para organizar esta imagem.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
