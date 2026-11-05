@@ -237,10 +237,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleScreenshotAction(source: Intent?) {
-        when (source?.action) {
+        val incomingIntent = source ?: return
+        when (incomingIntent.action) {
             ScreenshotNotificationService.ACTION_STOP -> stopScreenshotMonitoring()
             ScreenshotNotificationService.ACTION_IMPORT_SCREENSHOT -> {
-                source.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)
+                incomingIntent.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)
                     ?.let(Uri::parse)
                     ?.let { pendingScreenshotImportUri = it }
             }
