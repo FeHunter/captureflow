@@ -1,10 +1,9 @@
 # Preparação para publicação — Google Play Store
 
 **Produto:** Capture Flow (Android nativo)  
+**Contato de suporte e privacidade:** captureflowhunter@gmail.com  
 **Data da auditoria inicial:** 2026-11-05  
-**Branch de trabalho:** `chore/google-play-preparation`  
 **Modelo definido:** primeiro lançamento público gratuito  
-**Conta Play Console:** ainda não criada  
 **Status:** preparação técnica em andamento; não publicar ainda.
 
 ## 1. Escopo e princípios
@@ -49,7 +48,75 @@ Sem as variáveis, `bundleRelease` valida a compilação e produz bundle não as
 
 A CI executa `bundleRelease` sem segredos para detectar problemas de compilação/configuração. A assinatura e o upload automatizado ficam fora do escopo desta etapa.
 
-## 4. Manifest e permissões — monitoramento contínuo opt-in
+## 4. Inventário de dependências, SDKs e tráfego de rede
+
+### 4.1 Dependências Android declaradas
+
+Auditoria do `android-native/app/build.gradle.kts` e `android-native/build.gradle.kts` em 2026-11-05:
+
+| Dependência | Uso observado | Implicação de privacidade |
+|---|---|---|
+| AndroidX Activity Compose | Integração Activity/Compose | Sem SDK de analytics próprio identificado |
+| Jetpack Compose BOM, UI, Material 3 e Material Icons | Interface | Não identificado como coleta de dados |
+| CameraX Camera2, Lifecycle e View | Captura escolhida pelo usuário | Acesso à câmera em ação explícita |
+| AndroidX Core KTX | APIs Android auxiliares | Sem coleta própria identificada |
+| AndroidX ExifInterface | Leitura de metadados de imagem | Processamento local de imagens selecionadas |
+| Lifecycle Runtime/ViewModel | Ciclo de vida e estado de UI | Sem coleta própria identificada |
+| Room Runtime/KTX + KSP compiler | Banco local SQLite | Dados do caderno persistidos localmente |
+| Google ML Kit Text Recognition | OCR | Processamento de texto no fluxo local do app; conferir artefatos transitivos e documentação de entrega do modelo antes do formulário final |
+| JUnit e AndroidX Test/Espresso/Compose UI Test | Testes | Dependências de teste; não integram o app release quando corretamente configuradas |
+
+Plugins de build: Android Gradle Plugin 8.13.2, Kotlin 2.2.20 e KSP 2.2.20-2.0.2. Gradle Wrapper 8.13.
+
+Não há dependência direta declarada de Firebase, Google Analytics, Crashlytics, AdMob, SDK de publicidade ou SDK de atribuição no módulo Android examinado. Isso não é uma afirmação sobre toda dependência transitiva nem substitui a análise do AAB final.
+
+### 4.2 Dependências transitivas e validação pendente
+
+O projeto não utiliza Version Catalog. O arquivo de dependências diretas é `android-native/app/build.gradle.kts`; versões de plugins ficam em `android-native/build.gradle.kts`.
+
+Antes do Data Safety definitivo, gerar o inventário resolvido e inspecionar o AAB assinado:
+- `./gradlew :app:dependencies --configuration releaseRuntimeClasspath`
+- `./gradlew :app:bundleRelease`
+- inspecionar o manifesto mesclado do release e os metadados do AAB;
+- verificar presença de bibliotecas que realizem analytics, crash reporting, ads, identificadores, telemetria ou envio de dados;
+- confirmar o modelo/artefatos ML Kit e seu comportamento de download/execução na versão efetivamente empacotada.
+
+A auditoria atual é uma inspeção estática do repositório remoto. Nenhum relatório Gradle de dependências transitivas nem inspeção binária do AAB foi obtido nesta etapa. Não declarar o inventário transitivo como concluído.
+
+### 4.3 Tráfego de rede identificado no código Android
+
+| Recurso | Destinatário/serviço | Dados técnicos potencialmente compartilhados |
+|---|---|---|
+| Importação de links | Site indicado pelo usuário | URL solicitada, cabeçalhos técnicos e endereço IP; recebe HTML limitado para extrair título, descrição e imagens |
+| Links do YouTube | Endpoint oficial oEmbed do YouTube | URL do vídeo submetida ao endpoint para obter título e thumbnail |
+| Descoberta de feeds | Site indicado pelo usuário | URL pública consultada; recebe HTML para descobrir endpoints RSS/Atom |
+| Atualização de feeds | Servidor do feed RSS/Atom | URL do feed, cabeçalhos HTTP condicionais (ETag/Last-Modified) e dados técnicos de conexão |
+| Player incorporado | YouTube / youtube-nocookie e recursos associados | Requisições de rede do WebView; player tem JavaScript e DOM Storage habilitados e cookies de terceiros aceitos |
+| Navegador/leitor web | Sites acessados pelo usuário | Requisições do site e dados técnicos, sujeitos à política do destino |
+| Compartilhamento PDF | Aplicativo destinatário escolhido no Sharesheet | Conteúdo do PDF e arquivos nele incluídos, por ação explícita do usuário |
+
+Não foi identificada no código examinado uma camada própria de analytics ou telemetria. O código do player permite cookies de terceiros, portanto a política não deve sugerir que a interação com YouTube é estritamente sem cookies ou inteiramente local. Sites e serviços de terceiros controlam seus próprios tratamentos de dados e políticas.
+
+### 4.4 Dados armazenados/processados localmente
+
+- Referências, títulos, categorias, subtarefas, anotações, estados e preferências.
+- Imagens importadas e arquivos associados, em armazenamento privado do aplicativo.
+- OCR de imagens selecionadas, executado no dispositivo.
+- Metadados do MediaStore (identificador, nome, data e caminho relativo) consultados pelo monitoramento de screenshots.
+- URI/estado de deduplicação e watermark do serviço, em preferências locais.
+- Arquivo ZIP de backup, gerado apenas quando o usuário solicita exportação; fica no destino escolhido pelo usuário.
+
+O monitoramento não lê pixels durante a varredura de descoberta, não captura a tela, não usa Accessibility Services e não envia imagens aos servidores próprios do CaptureFlow. A importação exige revisão e confirmação do usuário.
+
+### 4.5 Conclusão provisória para Data Safety
+
+- Não afirmar que o aplicativo é totalmente offline: existem requisições a sites, feeds, YouTube e WebView.
+- Não marcar automaticamente toda categoria de coleta como ausente apenas porque não há backend próprio.
+- Avaliar separadamente os dados enviados diretamente pelo app a terceiros, o conteúdo que o usuário compartilha intencionalmente e os dados que provedores externos coletam em seus próprios contextos.
+- Nenhum SDK de anúncios foi identificado nas dependências diretas Android examinadas; confirmar novamente no classpath transitivo/AAB antes de responder à declaração de anúncios.
+- A seção Data Safety deve ser finalizada depois da inspeção do AAB e do inventário transitivo, mantendo consistência com a política publicada.
+
+## 5. Manifest e permissões — monitoramento contínuo opt-in
 
 A decisão de produto é oferecer detecção contínua de screenshots enquanto o usuário mantiver a função ativada. O monitoramento é executado por um Foreground Service do tipo `specialUse`, com notificação persistente e ação explícita para interromper.
 
@@ -81,42 +148,32 @@ Essa justificativa descreve o comportamento, mas não garante aprovação. A pol
 
 Se houver rejeição, registrar o motivo exato da revisão e avaliar primeiro a correção solicitada. Como alternativa de menor risco, remover o serviço contínuo e manter Photo Picker para seleção manual; não remover funcionalidades nem permissões sem revisar o impacto e a decisão do produto.
 
-### Ações antes do release
+## 6. Backup e dados locais
 
-1. Testar início iniciado pela interface, notificação persistente, ação Desativar e parada pelo cabeçalho.
-2. Testar Android 13+ com permissão de notificações concedida, negada e revogada.
-3. Testar READ_MEDIA_IMAGES concedida, negada, acesso limitado e revogada; manter Photo Picker funcional sem acesso amplo.
-4. Testar screenshots criadas em outros apps, várias capturas em sequência, duplicação, MediaStore lento e reinício do processo.
-5. Confirmar que o serviço não inicia após reboot e não importa/apaga a imagem sem confirmação.
-6. Validar a declaração `specialUse`, a justificativa, o impacto de interrupção/adiamento e o vídeo exigidos no Play Console.
-7. Revisar a elegibilidade de READ_MEDIA_IMAGES separadamente da elegibilidade de `specialUse`.
+O Manifest atual usa `android:allowBackup="false"`, com fullBackupContent e dataExtractionRules configurados para excluir os domínios do app do backup em nuvem e da transferência entre dispositivos. A única forma suportada de backup/restauração é a exportação/importação manual em ZIP, iniciada pelo usuário. Manter a tela de privacidade e a documentação alinhadas com essa política.
 
-## 5. Backup e dados locais
+## 7. Política de privacidade e Data Safety
 
-O Manifest atual usa `android:allowBackup="false"`, com fullBackupContent e dataExtractionRules configurados para excluir os domínios do app do backup em nuvem e da transferência entre dispositivos. A única forma suportada de backup/restauração é a exportação/importação manual em ZIP, iniciada pelo usuário. Manter a tela de privacidade e a documentação alinhadas a essa política.
+**Contato de suporte e privacidade:** captureflowhunter@gmail.com
 
-## 6. Privacidade e Data Safety
+A política deve estar disponível em página HTML pública, não editável, acessível mundialmente e sem login, e também deve ser acessível dentro do aplicativo. A URL definitiva deverá ser cadastrada na Play Console.
 
-A declaração deverá refletir o app real, inclusive integrações de terceiros. O app não possui conta nem sincronização própria em nuvem e processa OCR localmente, mas pode realizar requisições externas para metadados, RSS/Atom, YouTube e conteúdo web; o usuário também pode compartilhar documentos com outros apps.
+A versão final deve cobrir:
+- dados locais e permissões usadas;
+- OCR local e eventual comportamento de download do modelo;
+- monitoramento de screenshots e metadados consultados;
+- requisições para sites, feeds, YouTube, player incorporado e leitor web;
+- cookies/armazenamento WebView e terceiros;
+- compartilhamento de PDF por escolha explícita;
+- backup manual, retenção e exclusão;
+- contato do desenvolvedor e canal para solicitações.
 
 Pendências:
-
-- Publicar política de privacidade em URL pública, com contato de suporte.
-- Conferir texto da tela Privacidade contra comportamento atual.
-- Inventariar bibliotecas/SDKs e seus dados/processamentos.
-- Preencher Data Safety com base no inventário completo, não presumir que tudo é local.
-- Definir processo de exclusão/solicitações de privacidade e canal de contato.
-- Declarar anúncios corretamente (modelo inicial definido como gratuito; não implica presença de anúncios).
-
-## 7. Testes de release
-
-- CI: `testDebugUnitTest`, `assembleDebug`, `assembleDebugAndroidTest`, `bundleRelease`.
-- Teste manual em API 26 e versões recentes, incluindo API 36.
-- Testar edge-to-edge, barras do sistema, predictive back, orientação, telas grandes e fontes ampliadas.
-- Testar Photo Picker, câmera, OCR, compartilhamento PDF via FileProvider, backup/restauração, RSS, player e screenshot monitoring opt-in.
-- Testar permissões negadas/revogadas e comportamento sem conexão.
-- Instalar AAB assinado via faixa interna do Play Console e validar atualização sobre instalação anterior.
-- Avaliar compatibilidade de bibliotecas nativas com páginas de memória de 16 KB.
+- Publicar a página de política no domínio do portfólio.
+- Atualizar a tela Privacidade no app se a auditoria revelar conteúdo ausente ou impreciso.
+- Concluir inventário de dependências transitivas e AAB.
+- Preencher Data Safety com base no inventário completo.
+- Declarar anúncios corretamente após confirmar ausência/presença no AAB.
 
 ## 8. Cadastro da loja — pendente
 
@@ -127,8 +184,20 @@ Pendências:
 - Preencher classificação de conteúdo, público-alvo, anúncios, Data Safety e acesso ao app.
 - Preparar faixa de teste interno, depois teste fechado e lançamento gradual.
 
-## 9. Critérios de saída desta preparação técnica
+## 9. Testes de release
 
+- CI: `testDebugUnitTest`, `assembleDebug`, `assembleDebugAndroidTest`, `bundleRelease`.
+- Teste manual em API 26 e versões recentes, incluindo API 36.
+- Testar edge-to-edge, barras do sistema, predictive back, orientação, telas grandes e fontes ampliadas.
+- Testar Photo Picker, câmera, OCR, compartilhamento PDF via FileProvider, backup/restauração, RSS, player e screenshot monitoring opt-in.
+- Testar permissões negadas/revogadas e comportamento sem conexão.
+- Instalar AAB assinado via faixa interna do Play Console e validar atualização sobre instalação anterior.
+- Avaliar compatibilidade de bibliotecas nativas com páginas de memória de 16 KB.
+
+## 10. Critérios de saída desta preparação técnica
+
+- [x] Dependências diretas Android e fluxos de rede revisados estaticamente.
+- [ ] Dependências transitivas e AAB release inspecionados.
 - [ ] Build release/AAB compila no CI.
 - [ ] Assinatura release validada com chave de upload fora do Git.
 - [ ] Inventário e justificativa de permissões concluídos.
