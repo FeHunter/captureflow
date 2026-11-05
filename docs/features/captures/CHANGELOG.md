@@ -1,3 +1,5 @@
+> **Nota:** changelog histórico. Entradas registram o estado no momento de cada alteração e não definem comportamento atual. Consulte [estado atual](../../current-state.md) e [contratos de feature](../README.md).
+
 ## 2026-11-01 — Refatoração da compressão e reativação em Notes
 - Unificado o processamento da feature Image Compression para duas entradas: URIs `file://`/ `content://` (câmera, galeria e screenshot compartilhada) e bytes raster codificados em memória.
 - O serviço inspeciona dimensões antes da decodificação, usa amostragem para limitar memória, corrige orientação EXIF nas entradas URI, limita a maior dimensão a 2560 px, compõe transparência sobre branco e gera JPEG no armazenamento privado.

@@ -65,7 +65,9 @@ android-native/app/src/main/java/com/fehunter/captureflow/
     ├── dashboard/                    # resumo, UseCase e ViewModel
     ├── imagecompression/             # perfis e processamento local de imagens
     ├── notes/                         # blocos de pensamento com texto/imagem
-    └── settings/                     # preferências, UseCases e ViewModel
+    ├── newsletters/                  # feeds RSS/Atom, artigos e leitor
+    ├── settings/                     # preferências e páginas informativas
+    └── backup/                       # exportação ZIP e restauração aditiva
 ```
 
 ### 2.3 Responsabilidade de cada feature
@@ -80,7 +82,8 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 - **imagecompression:** compressão local de imagens antes do armazenamento privado; oferece perfis Médio (JPEG quality 70) e Alto (JPEG quality 50), preservando orientação EXIF para URIs e limitando dimensões. O contrato aceita URI (`file://`/`content://`) ou bytes raster codificados, sem depender de Android no Domain.
 - **notes:** edição da linha de pensamento em blocos ordenados de texto e imagem. O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures; o campo captures.notes armazena a coleção em formato versionado e mantém leitura retrocompatível de anotações antigas.
 - **youtubeplayer:** reprodução incorporada de vídeos do YouTube via IFrame Player API em Android WebView. É proprietária do HTML de embed, identidade HTTP Referer, configuração WebView, ciclo de vida, callbacks de estado/erro e limpeza da instância. Não persiste estado de negócio nem depende de Captures/Fullscreen.
-- **settings:** tema, ordenação da biblioteca e perfil padrão de compressão, persistidos localmente em SharedPreferences.
+- **settings:** tema, ordenação dos containers de categoria e das referências na categoria expandida, perfil de compressão e páginas Privacidade/Tutoriais; preferências em SharedPreferences.
+- **newsletters:** fontes RSS 2.0/Atom, atualização manual, persistência e leitura.
 - **backup:** exportação/importação ZIP versionada de referências, categorias, subtarefas, mídias e anotações. A camada Data usa os contratos públicos de Captures; a restauração é aditiva e insere o lote em transação Room.
 
 A divisão final de um serviço entre features/core deve seguir sua responsabilidade real. Ex.: OCR, download de capas, cópia de imagens compartilhadas e exclusão best-effort de screenshots pertencem a Image Import; Core mantém apenas o contrato mínimo de armazenamento privado usado por Captures. Não mover serviços indiscriminadamente para Core.
@@ -142,8 +145,8 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
 - Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
-- O menu **Ordenar** da biblioteca oferece somente filtros para os containers de categoria: padrão/manual, mais recentes, mais antigas, nome A–Z ou Z–A. Não exibir filtros de ordenação de referências nesse menu. Mais recentes prioriza a categoria cuja referência mais nova tem o maior `createdAt`; mais antigas prioriza a categoria cuja referência mais antiga tem o menor `createdAt`. Em empate, usa a outra extremidade temporal como desempate e preserva a ordem cadastrada se ambas também empatarem. A ordenação não altera a ordem dos thumbnails de preview.
-- A grade de referências dentro da categoria expandida mantém a ordenação padrão mais recentes; não há controles de ordenação de referências na biblioteca.
+- A ordenação de containers de categoria oferece manual, mais recentes, mais antigas, nome A–Z/Z–A; datas derivam de createdAt das referências da categoria. Não altera thumbnails de preview.
+- A ordenação das referências na categoria expandida é uma preferência separada: mais recentes, mais antigas, título A–Z/Z–A. Ambas são persistidas por Settings.
 - Perfis de compressão: Médio usa JPEG quality 70 e Alto usa JPEG quality 50; esses valores representam qualidade de codificação, não uma garantia de redução exata do tamanho em bytes. URIs `file://` de arquivos temporários são lidas diretamente por `FileInputStream`; URIs de provedores usam `ContentResolver`, com fallback para descritor de arquivo.
 - Cartões compactos atualmente usam 272 dp conforme a diretriz visual registrada; não alterar dimensões sem validar o layout atual e a decisão de produto.
 
@@ -187,10 +190,10 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Imagem deve preservar `ContentScale.Fit`; a dica `‹ Deslize para navegar ›` é overlay na área da imagem e não pode reservar altura nem alterar a escala.
 - Títulos longos podem sobrepor a imagem com gradiente escuro forte (quase opaco atrás do texto, dissolvendo para transparência), sem redimensionar a área reservada ao pager.
 - O acesso à linha de pensamento fica no canto inferior esquerdo do fullscreen, com ícone de balão de conversa; abre diretamente o formulário de nova anotação da feature `notes`. Cada bloco aceita texto de até 10.000 caracteres e imagem opcional; toque prolongado em bloco existente abre edição/remoção. Seleção/troca de imagem deve apresentar recorte antes da compressão Alta. Cancelar não persiste.
-- A coluna de ações fullscreen permanece no canto inferior direito. Para referências pendentes, manter checkbox, sub-checklist, link (quando válido), editar e excluir; para referências concluídas, exibir somente o checkbox para reabri-las. O atalho de anotações no canto inferior esquerdo permanece independente dessa coluna.
+- A coluna de ações fullscreen permanece no canto inferior direito. Para referências pendentes, manter checkbox, sub-checklist, Visualizar conteúdo quando elegível, editar e excluir; para concluídas, somente reabrir. O atalho de anotações no canto inferior esquerdo permanece independente dessa coluna.
 - O modal **Editar título** no fullscreen permite editar o título e selecionar outra categoria no mesmo formulário. Persistir cada campo pela operação correspondente de Captures, sem alterar conteúdo, URL ou imagem.
-- Quando `sourceUrl` for HTTP(S) válida, o atalho para abrir o link permanece no cabeçalho e também aparece na coluna vertical de ações fullscreen.
-- Links YouTube válidos (`watch?v=`, `youtu.be`, Shorts, live e embed) são reconhecidos por `core.util.YoutubeVideoIdParser` e devem carregar diretamente o endpoint oficial `youtube-nocookie.com/embed/{id}` no WebView do sistema, com controles visíveis, sem autoplay e viewport mínimo de 200×200 dp. Como WebView não envia Referer por padrão, definir o cabeçalho `Referer` como `https://{applicationId}/` (identidade do app Android) em todo carregamento/recarregamento. Manter hardware acceleration explicitamente ativa no app, Activity e WebView para a superfície de vídeo; não aplicar camada de software ao WebView ou ancestrais. Permitir recursos internos do player e bloquear navegação principal para hosts externos. Image Import não deve baixar/salvar a thumbnail como capa. Manter o link original como fallback; não baixar vídeos.
+- Quando `sourceUrl` for HTTP(S) válida, **Abrir link** fica no cabeçalho; **Visualizar conteúdo** (globo) fica no dock quando elegível. Não duplicar o atalho externo.
+- Links YouTube válidos (`watch?v=`, `youtu.be`, Shorts, live e embed) são reconhecidos por `core.util.YoutubeVideoIdParser` e devem carregar diretamente o endpoint oficial `youtube-nocookie.com/embed/{id}` no WebView do sistema, com controles visíveis, sem autoplay e viewport mínimo de 200×200 dp. Como WebView não envia Referer por padrão, definir o cabeçalho `Referer` como `https://{applicationId}/` (identidade do app Android) em todo carregamento/recarregamento. Manter hardware acceleration explicitamente ativa no app, Activity e WebView para a superfície de vídeo; não aplicar camada de software ao WebView ou ancestrais. Permitir recursos internos do player e bloquear navegação principal para hosts externos. Image Import pode obter e persistir thumbnail/capa quando metadados/download estão disponíveis; o player não baixa vídeos. Manter link original como fallback.
 - Na biblioteca inicial, `categorySortOrder` ordena os containers de categoria (`CategoryCard`); não aplicar essa preferência à ordem dos thumbnails de captura dentro do preview. A preferência `captureSortOrder` controla a ordenação das referências dentro da categoria expandida. Anotações pertencem à referência como uma lista ordenada de blocos; cada bloco aceita até 10.000 caracteres e uma imagem opcional. A lista aparece no canto inferior esquerdo em painel com altura natural do conteúdo, limitada a 248 dp e com rolagem vertical somente quando exceder esse limite. Toque prolongado em um bloco abre sua edição/remoção. O botão de balão abre diretamente o formulário de nova anotação. Imagens selecionadas devem permitir recorte antes de usar compressão Alta; em caso de falha, manter seleção/recorte para nova tentativa e exibir a causa retornada pelo serviço.
 - O armazenamento usa o campo Room captures.notes existente, com serialização versionada. Texto legado é lido como um bloco para preservar dados; não adicionar migration destrutiva.
 - O acesso à sub-checklist permanece no cartão de referência; não restaurar atalho no cabeçalho fullscreen.
@@ -366,3 +369,12 @@ Estas melhorias são uma exceção explicitamente aprovada ao escopo presentatio
 - IDs de subtarefas e mídias também devem ser regenerados em colisão. Nunca sobrescrever silenciosamente dados locais.
 - Inserção dos registros deve ser atômica no Room. Validar manifesto, versão, caminhos ZIP, tamanhos e imagens antes de confirmar os registros.
 - Versão inicial não inclui Newsletters nem preferências; manter esse limite documentado até ampliação explícita do escopo.
+
+
+## Auditoria documental — 2026-11-04
+
+Base auditada: main em 155a49b34eb3e536ade189ce7e84c1344bb44560 (após PR #60). Precedência: código atual define comportamento; este arquivo define regras globais; docs/current-state.md descreve fluxo integrado; docs/features/{feature}/README.md descreve ownership. Handoffs e wireframes antigos são históricos até reconciliação.
+
+Correções consolidadas: Settings mantém duas ordenações independentes; Fullscreen separa Abrir link no header de Visualizar conteúdo no dock; Image Import pode salvar thumbnail de YouTube; Newsletters e Backup são ativos; Backup v1 não inclui Newsletters/preferências; Checklists é legado e subtarefas pertencem a Captures. A tela Privacidade ainda contém texto legado dizendo que backup é futuro; corrigir UI em alteração de código separada.
+
+Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado se houver mudança de fluxo e o índice docs/features/README.md. Marcar documentos históricos e evitar regras contraditórias.

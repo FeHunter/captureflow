@@ -1,12 +1,3 @@
 # Settings
 
-Feature responsável pelas preferências locais do aplicativo.
-
-## Escopo atual
-- Preferência de tema: `system`, `light` ou `dark`.
-- Ordenação dos containers de categoria: padrão/manual, mais recentes, mais antigas, nome A–Z e Z–A. A ordenação por data considera a referência mais recente ou mais antiga dentro de cada categoria; os thumbnails do preview mantêm a ordem original.
-- Ordenação das referências dentro da categoria expandida: mais recentes, mais antigas, título A–Z e Z–A.
-- Persistência por SharedPreferences, encapsulada em `SettingsRepository`.
-- Presentation observa e altera o tema por `SettingsViewModel` e UseCases.
-
-As preferências permanecem locais ao dispositivo em SharedPreferences. As escolhas de ordenação e compressão são observadas pelo SettingsViewModel e aplicadas pela biblioteca. Novas configurações devem seguir o mesmo limite Domain/Data/Presentation. As telas informativas de Privacidade e Tutoriais são apresentadas pelo menu do cabeçalho e documentam o comportamento atual, os acessos externos à internet e os recursos previstos.
+Preferências locais: tema system/light/dark; ordenação de categorias manual/newest/oldest/name A–Z/Z–A; ordenação de referências newest/oldest/title A–Z/Z–A; perfil compressão MEDIUM/HIGH. SharedPreferences via SettingsRepository, estado em SettingsViewModel. Privacidade e Tutoriais no menu. Política não deve prometer app totalmente offline. Backup ZIP v1 existe e não inclui Newsletters/preferências. Divergência: InformationScreens.kt ainda chama backup de futuro; corrigir UI em alteração de código separada.

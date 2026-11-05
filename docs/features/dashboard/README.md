@@ -1,0 +1,3 @@
+# Dashboard — Meu progresso
+
+Resumo derivado de Captures/Categories, sem persistência própria. ObserveDashboardSummaryUseCase combina fluxos. Destaque totaliza concluídas; cada categoria com itens mostra proporção concluído/total e contagens pendentes/concluídas. Independente de busca/filtro/ordenação. Cinco categorias inicialmente, expansão/recolhimento quando houver mais. Não altera estado de Capture.

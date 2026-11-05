@@ -14,7 +14,7 @@
 - `createdAt`: instante de criação.
 - `isCompleted`: estado de conclusão.
 - `previousCategory`: coluna legada mantida no schema por compatibilidade; é limpa pela migração 8→9 e não é usada pela regra atual de conclusão.
-- `notes`: anotações associadas à referência (até 10.000 caracteres).
+- `notes`: coleção de blocos serializada/versionada por CaptureNotesCodec; cada bloco aceita até 10.000 caracteres e imagem opcional.
 
 ## `capture_media`
 - `id`: identificador estável da mídia.
@@ -78,5 +78,8 @@ A retenção remove artigos mais antigos não salvos acima de 100 por fonte; art
 Ao excluir uma referência, o repositório remove subtarefas e mídias relacionadas dentro de transação; a chave estrangeira também define `ON DELETE CASCADE` para `capture_media`. A limpeza física de arquivos privados é responsabilidade da camada de aplicação/armazenamento.
 
 A conclusão é independente da categoria: `isCompleted` é o único estado de conclusão. Marcar ou reabrir uma referência não altera `category`. A coluna `previousCategory` permanece apenas por compatibilidade com o schema histórico e não é mais consumida pelo domínio.
+
+## Backup
+Backup exporta os dados do caderno para ZIP v1 e importa lotes de forma aditiva/transacional; não cria tabelas próprias. Newsletters e SharedPreferences não são incluídos no backup v1.
 
 Não apagar dados nem usar migração destrutiva para alterações compatíveis. Atualizar este contrato e os testes sempre que entidades/DAOs mudarem.

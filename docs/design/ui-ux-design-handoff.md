@@ -1,3 +1,5 @@
+> **Status 2026-11-04:** handoff anterior ao rebrand; não representa a UI atual. Consulte [Design System](../design-system.md), [UI/UX atual](../features/captures/uiux_current.md) e [estado atual](../current-state.md). Paleta azul e pendências de redesign abaixo são históricas.
+
 # Capture Flow — UI/UX Design Handoff
 
 > **Objetivo:** entregar ao Design uma descrição funcional e visual do aplicativo Android atualmente implementado, para criação/renovação da identidade visual sem quebrar fluxos, estados ou contratos de produto.

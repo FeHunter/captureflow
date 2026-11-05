@@ -1,0 +1,3 @@
+# Image Compression
+
+Compressão local: Médio JPEG quality 70, Alto quality 50; dimensão máxima 2560 px, EXIF corrigido, saída JPEG privada. Entradas URI file/content e bytes raster. file:// usa FileInputStream; content:// usa ContentResolver/fallback ParcelFileDescriptor. Image Import usa perfil Settings; Notes usa Alto e envia recorte PNG lossless em memória como ByteArray. Não apaga origem. Quality não garante redução percentual.

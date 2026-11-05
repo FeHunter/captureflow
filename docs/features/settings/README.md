@@ -1,0 +1,3 @@
+# Settings
+
+Preferências locais: tema system/light/dark; ordenação de categorias manual/newest/oldest/name A–Z/Z–A; ordenação de referências newest/oldest/title A–Z/Z–A; perfil compressão MEDIUM/HIGH. SharedPreferences via SettingsRepository, estado em SettingsViewModel. Privacidade e Tutoriais no menu. Política não deve prometer app totalmente offline. Backup ZIP v1 existe e não inclui Newsletters/preferências. Divergência: InformationScreens.kt ainda chama backup de futuro; corrigir UI em alteração de código separada.
