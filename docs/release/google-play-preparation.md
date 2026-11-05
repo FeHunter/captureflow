@@ -49,34 +49,46 @@ Sem as variáveis, `bundleRelease` valida a compilação e produz bundle não as
 
 A CI executa `bundleRelease` sem segredos para detectar problemas de compilação/configuração. A assinatura e o upload automatizado ficam fora do escopo desta etapa.
 
-## 4. Manifest e permissões — funcionalidades mantidas
+## 4. Manifest e permissões — detecção em primeiro plano
 
-A decisão de produto é manter o monitoramento opt-in de screenshots no primeiro lançamento. As permissões abaixo fazem parte de funcionalidades existentes e não serão removidas apenas para simplificar a submissão:
+A decisão de produto é manter a detecção opt-in de screenshots, limitada ao período em que a MainActivity está em primeiro plano (onResume até onPause). Não existe serviço em segundo plano para essa funcionalidade.
+
+Permissões mantidas:
 
 - INTERNET — requisições de metadados, RSS/Atom, YouTube e integrações web.
 - CAMERA — captura de imagens dentro do aplicativo.
-- POST_NOTIFICATIONS — notificações de screenshots e visibilidade do serviço.
-- FOREGROUND_SERVICE e FOREGROUND_SERVICE_SPECIAL_USE — serviço contínuo, iniciado pelo usuário, para observar novas imagens e apresentar uma ação de importação.
-- READ_MEDIA_IMAGES — consulta ao MediaStore para detectar screenshots recentes.
+- READ_MEDIA_IMAGES — consulta ao MediaStore para identificar screenshots recentes enquanto o app está em primeiro plano.
 - READ_EXTERNAL_STORAGE com maxSdkVersion 32 — permissão equivalente para versões Android anteriores ao Android 13.
 
-### Justificativa funcional para a declaração Play Console
+Removidas para esse fluxo:
 
-O CaptureFlow é um caderno de referências visuais. A detecção de screenshots permite que o usuário capture conteúdo em outros aplicativos e receba uma notificação para importar essa imagem como referência, sem precisar interromper o fluxo de uso, abrir manualmente a galeria e localizar o arquivo. O acesso à coleção de imagens é utilizado para consultar metadados (nome, caminho e data) e identificar capturas recentes; o serviço não captura a tela, não usa Accessibility Services e não monitora o conteúdo visual de outros aplicativos. A imagem é processada/importada somente quando o usuário escolhe a ação oferecida. O recurso é opcional, exige ativação e permissões explícitas, mantém notificação persistente enquanto ativo e pode ser interrompido a qualquer momento nas opções do app ou pelas configurações Android.
+- POST_NOTIFICATIONS — não são emitidas notificações de screenshot.
+- FOREGROUND_SERVICE e FOREGROUND_SERVICE_SPECIAL_USE — não existe serviço foreground de monitoramento.
+- Declaração de ScreenshotNotificationService e propriedade PROPERTY_SPECIAL_USE_FGS_SUBTYPE — removidas do Manifest.
 
-O Photo Picker permanece como alternativa para seleção manual de imagens, mas não oferece monitoramento de novas screenshots em segundo plano e, portanto, não substitui o acesso ao MediaStore necessário para essa funcionalidade.
+### Funcionamento técnico
 
-### Ações obrigatórias antes do release
+Quando o usuário ativa a detecção e concede acesso a imagens, ScreenshotMonitor registra um ContentObserver no MediaStore durante o período em que a Activity está resumed. A consulta limita os resultados a imagens adicionadas desde o início da sessão em primeiro plano, inspeciona metadados (nome, caminho relativo e data) e procura padrões conhecidos de screenshots. Ao detectar uma captura, o app apresenta uma prévia dentro da própria interface. A imagem só é importada após confirmação explícita do usuário.
 
-1. Preparar declaração de acesso a fotos/vídeos explicando a funcionalidade principal, o fluxo de detecção e por que o Photo Picker não substitui a consulta contínua.
-2. Preparar declaração de foreground service `specialUse`, incluindo subtipo, início explícito pelo usuário, notificação persistente, forma de interrupção e vídeo demonstrativo se solicitado.
-3. Confirmar elegibilidade e requisitos vigentes do Google Play antes de submeter. A justificativa não garante aprovação; responder a eventuais solicitações de esclarecimento e estar preparado para rever o fluxo caso o Google não aceite a exceção.
-4. Testar concessão, recusa, revogação e comportamento após reinício/atualização.
-5. Manter a explicação visível na tela Privacidade e tornar a desativação fácil de encontrar no app.
+Em onPause o observer e tarefas pendentes são encerrados. Ao retornar ao primeiro plano, se a preferência continuar ativa e a permissão estiver concedida, o monitor é iniciado novamente. Se a permissão for revogada, a preferência de detecção é desativada. O fluxo não captura a tela, não usa Accessibility Services, não lê pixels durante a varredura e não notifica enquanto o app está em segundo plano.
+
+### Photo Picker e limite de elegibilidade
+
+O Photo Picker continua sendo o caminho de seleção manual e não exige acesso amplo à biblioteca. Ele não oferece uma API para observar automaticamente novas screenshots adicionadas ao MediaStore, mesmo quando o CaptureFlow está aberto. Por isso, não substitui tecnicamente o observador usado para detecção automática em primeiro plano.
+
+Essa diferença técnica não garante que o Google Play aceite READ_MEDIA_IMAGES: a política também avalia se o acesso amplo é necessário para uma funcionalidade central do app. O CaptureFlow é um caderno de referências e continua funcional sem a detecção automática. A submissão deve explicar com transparência que a detecção é uma conveniência opt-in, limitada ao primeiro plano, e manter o Photo Picker como alternativa manual. Se o Google considerar que o acesso amplo não é elegível, será necessário remover a detecção automática e depender da seleção manual.
+
+### Ações antes do release
+
+1. Confirmar em dispositivo Android real que o observer inicia em onResume e é encerrado em onPause, inclusive ao abrir outra Activity/app e ao exibir a tela de permissões.
+2. Testar permissão concedida, negada, revogada e acesso parcial em versões Android compatíveis.
+3. Demonstrar que a prévia aparece somente enquanto o app está aberto e que nada é importado sem confirmação.
+4. Atualizar a declaração Play Console para descrever detecção somente em primeiro plano; não declarar foreground service nem specialUse.
+5. Confirmar a elegibilidade de READ_MEDIA_IMAGES com a política vigente. A justificativa não garante aprovação; se rejeitada, remover a detecção automática e manter Photo Picker.
 
 ## 5. Backup e dados locais
 
-O Manifest atual usa `android:allowBackup="true"`. Revisar regras Android Auto Backup e transferência de dispositivo para Room, arquivos privados e imagens. Comparar com o backup ZIP manual do app, que é aditivo e controlado pelo usuário. Decidir explicitamente o que deve ou não migrar; documentar a experiência. Não desabilitar backup por conveniência sem avaliar impacto de troca de aparelho.
+O Manifest atual usa `android:allowBackup="false"`, com fullBackupContent e dataExtractionRules configurados para excluir os domínios do app do backup em nuvem e da transferência entre dispositivos. A única forma suportada de backup/restauração é a exportação/importação manual em ZIP, iniciada pelo usuário. Manter a tela de privacidade e a documentação alinhadas a essa política.
 
 ## 6. Privacidade e Data Safety
 

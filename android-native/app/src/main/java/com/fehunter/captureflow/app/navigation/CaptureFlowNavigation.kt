@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.RssFeed
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -61,8 +62,6 @@ fun CaptureFlowApp(
     onRequestScreenshotAccess: () -> Unit,
     onStopScreenshotMonitoring: () -> Unit,
     onScreenshotHandled: () -> Unit,
-    pendingScreenshotImportUri: Uri?,
-    onScreenshotImportHandled: () -> Unit,
 ) {
     var showThemeMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -70,6 +69,7 @@ fun CaptureFlowApp(
     var showTutorials by remember { mutableStateOf(false) }
     var showNewsletters by remember { mutableStateOf(false) }
     var showBackup by remember { mutableStateOf(false) }
+    var showScreenshotRationale by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -95,21 +95,21 @@ fun CaptureFlowApp(
                         IconButton(
                             onClick = {
                                 if (screenshotMonitoringEnabled) onStopScreenshotMonitoring()
-                                else onRequestScreenshotAccess()
+                                else showScreenshotRationale = true
                             },
                         ) {
                             Icon(
                                 imageVector = if (screenshotMonitoringEnabled) {
-                                    Icons.Default.Notifications
+                                    Icons.Default.PhotoCamera
                                 } else {
-                                    Icons.Default.NotificationsOff
+                                    Icons.Default.PhotoCamera
                                 },
                                 contentDescription = if (screenshotMonitoringEnabled) {
-                                    "Desativar avisos de screenshot"
+                                    "Desativar detecção de screenshots"
                                 } else if (hasScreenshotAccess) {
-                                    "Ativar avisos de screenshot"
+                                    "Ativar detecção de screenshots"
                                 } else {
-                                    "Configurar avisos de screenshot"
+                                    "Configurar detecção de screenshots"
                                 },
                                 tint = if (screenshotMonitoringEnabled) {
                                     MaterialTheme.colorScheme.primary
@@ -199,16 +199,34 @@ fun CaptureFlowApp(
                     hasScreenshotAccess = hasScreenshotAccess,
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
-                    pendingScreenshotImportUri = pendingScreenshotImportUri,
                     onRequestScreenshotAccess = onRequestScreenshotAccess,
                     onStopScreenshotMonitoring = onStopScreenshotMonitoring,
                     onScreenshotHandled = onScreenshotHandled,
-                    onScreenshotImportHandled = onScreenshotImportHandled,
                 )
             }
         }
     }
 
+    if (showScreenshotRationale) {
+        AlertDialog(
+            onDismissRequest = { showScreenshotRationale = false },
+            title = { Text("Sobre a detecção de screenshots") },
+            text = {
+                Text("Para identificar novas screenshots, o CaptureFlow consulta metadados recentes do MediaStore (como nome, pasta e data) enquanto o app está aberto e em primeiro plano. Essa função exige acesso a imagens. O app não captura a tela nem envia imagens a servidores. Uma prévia será apresentada e nada será salvo sem sua confirmação. A detecção é encerrada automaticamente quando você sai do primeiro plano; a seleção manual pelo Photo Picker continua disponível.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showScreenshotRationale = false
+                        onRequestScreenshotAccess()
+                    },
+                ) { Text("Continuar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showScreenshotRationale = false }) { Text("Agora não") }
+            },
+        )
+    }
     if (showPrivacyPolicy) {
         PrivacyPolicyScreen(onBack = { showPrivacyPolicy = false })
     }

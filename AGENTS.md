@@ -129,7 +129,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 
 ## 4. Composition root, Activity e navegação
 
-- `MainActivity` permanece como entrada Android para launcher, Sharesheet/Intents e intents de notificação. Deve encaminhar payloads para o ponto de entrada apropriado, sem concentrar regras de negócio.
+- `MainActivity` permanece como entrada Android para launcher, Sharesheet/Intents, permissões de plataforma e ciclo de vida do ScreenshotMonitor. Deve encaminhar payloads para o ponto de entrada apropriado, sem concentrar regras de negócio.
 - `CaptureFlowApplication` (se/ quando introduzida) e `app/di` são responsáveis por criar e fornecer dependências compartilhadas.
 - `CaptureFlowApp` compõe a experiência principal e integra pontos de entrada das features; não deve concentrar a implementação de todas as telas, diálogos e regras.
 - Navegação de alto nível fica em `app/navigation`; navegação interna e estado visual específico podem pertencer à feature.
@@ -145,7 +145,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Na biblioteca, o filtro de categorias exibe todas as categorias em duas linhas dentro de um único container com rolagem horizontal compartilhada (as duas linhas avançam juntas). O botão **Ver todas as categorias** permanece como atalho para o modal de seleção, sem ocultar categorias da view principal. Em `Todas`, renderizar um cartão de categoria somente se houver ao menos uma referência pendente; com uma categoria específica selecionada, manter o cartão mesmo sem pendentes e explicar o estado vazio da prévia.
 - Referências concluídas exibidas em thumbnails e no fullscreen devem usar o componente reutilizável `CompletedBadge` da feature Captures, sobreposto à imagem no fullscreen. Não duplicar estilos/selo localmente em cada card.
 - A sub-checklist pertence a uma referência e é persistida em `capture_subtasks`, associada por `captureId`. Não restaurar uma tela independente de tarefas sem aprovação.
-- Uma screenshot confirmada pelo fluxo de notificação deve ser persistida como referência na biblioteca, não como `ChecklistTaskEntity`.
+- Uma screenshot detectada enquanto o app está em primeiro plano só deve ser persistida como referência após confirmação explícita do usuário; não usar `ChecklistTaskEntity`.
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
 - A ordenação de containers de categoria oferece manual, mais recentes, mais antigas, nome A–Z/Z–A; datas derivam de createdAt das referências da categoria. Não altera thumbnails de preview.
 - A ordenação das referências na categoria expandida é uma preferência separada: mais recentes, mais antigas, título A–Z/Z–A. Ambas são persistidas por Settings.
@@ -154,18 +154,18 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 
 ## 6. Captura, links, imagens e privacidade
 
-- Entrada primária: Android Sharesheet / `ACTION_SEND` para texto, URLs e imagens, além do Photo Picker e fluxo opt-in de screenshot.
+- Entrada primária: Android Sharesheet / `ACTION_SEND` para texto, URLs e imagens, além do Photo Picker e detecção opt-in de screenshot em primeiro plano.
 - Preservar conteúdo recebido. Tratar origem/app/URL de origem como opcional, salvo quando verificada.
 - Diferenciar conteúdo fornecido pelo usuário, resultado de OCR, metadados obtidos da web e sugestões inferidas.
 - Evitar duplicatas para conteúdo textual normalizado e URLs conforme contrato atual. Não deduplicar imagens distintas usando texto placeholder genérico.
 - OCR é local/on-device. Para referências de imagem, manter a imagem como capa e persistir o título extraído; não gravar OCR bruto em `content` sem decisão explícita.
 - Copiar imagens compartilhadas para armazenamento privado do app quando possível. Se falhar, manter URI original como fallback e tratar falha de acesso sem perder a referência.
 - Nunca excluir imagem escolhida manualmente pelo usuário.
-- Exclusão da screenshot original só pode ocorrer no fluxo de importação confirmado pela notificação, após salvar referência e cópia privada. Falhas de exclusão são não fatais e podem exigir consentimento explícito do Android.
+- Exclusão da screenshot original só pode ocorrer no fluxo de importação confirmado pelo usuário dentro do app, após salvar referência e cópia privada. Falhas de exclusão são não fatais e podem exigir consentimento explícito do Android.
 - Não fazer upload de conteúdo capturado sem consentimento explícito. Cloud sync está fora do escopo.
-- Descoberta de screenshots é opcional e best-effort: inspeciona metadados/nome/caminho do MediaStore, não pixels de outros apps. Nunca usar Accessibility Services ou captura de tela entre aplicativos para inferir screenshots.
-- Monitoramento por notificação deve ser opt-in, ter ação clara para parar, notificação persistente e explicação de permissões de imagem/notificação.
-- Antes de release público, verificar a política vigente do Google Play para foreground service `specialUse`.
+- Descoberta de screenshots é opcional e best-effort: observa o MediaStore somente enquanto MainActivity está resumed, consulta metadados/nome/caminho e não pixels de outros apps. Registrar o ContentObserver em onResume e encerrá-lo em onPause. Nunca usar Accessibility Services ou captura de tela entre aplicativos para inferir screenshots.
+- O fluxo de screenshot não usa serviço em segundo plano, foreground service, notificação persistente nem permissão POST_NOTIFICATIONS. Ao detectar uma captura, exibir prévia in-app e exigir confirmação explícita antes de importar.
+- READ_MEDIA_IMAGES permanece sujeito à política de acesso amplo a fotos do Google Play; Photo Picker deve continuar disponível para seleção manual. A existência de detecção em primeiro plano não garante elegibilidade da permissão.
 
 ### 6.1 Compartilhamento de links
 
@@ -241,7 +241,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
   ./gradlew testDebugUnitTest
   ./gradlew assembleDebug
   ```
-- Executar também verificações em dispositivo para Sharesheet, Photo Picker, notificações, permissões, lifecycle, Back/gestos, pager e exclusão de arquivos privados.
+- Executar também verificações em dispositivo para Sharesheet, Photo Picker, permissões, lifecycle do monitoramento em primeiro plano, Back/gestos, pager e exclusão de arquivos privados.
 - Não afirmar que build/testes passaram sem resultado verificado no commit exato.
 - Não adicionar dependências, frameworks ou abstrações sem necessidade demonstrável.
 
@@ -408,7 +408,7 @@ Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado 
 - Nunca versionar keystore, senhas, certificados privados ou arquivos de configuração contendo segredos. Assinatura release recebe os valores por variáveis de ambiente/segredos do CI.
 - A configuração release pode gerar bundle não assinado em CI para validar compilação. Um AAB só está apto para upload quando assinado com a chave de upload configurada e validado no Play Console.
 - Não incrementar `versionCode` nem definir a versão pública 1.0.0 durante a preparação. Fazer isso somente na etapa de release aprovada, garantindo valor maior que qualquer versão já enviada ao Play Console.
-- Antes da publicação, revisar cada permissão e serviço do Manifest contra o comportamento real, com atenção a `READ_MEDIA_IMAGES`, Photo Picker e foreground service `specialUse`. Não remover permissões nem alterar o monitoramento de screenshots sem análise funcional e política documentada.
+- Antes da publicação, revisar cada permissão do Manifest contra o comportamento real, com atenção a `READ_MEDIA_IMAGES` e Photo Picker. A detecção de screenshots funciona somente enquanto MainActivity está em primeiro plano; não declarar foreground service para esse fluxo.
 - Revisar Android Auto Backup/transferência de dispositivo considerando dados locais, imagens privadas e o backup ZIP manual. Não desabilitar ou ampliar backup sem documentar o impacto para o usuário.
 - Política de privacidade e Data Safety devem descrever o comportamento real, inclusive requisições externas de metadados, RSS/Atom, YouTube, navegador e compartilhamento escolhido pelo usuário. Não afirmar que o app é totalmente offline.
 - O pipeline de CI deve executar testes unitários, assembleDebug, compilação dos testes instrumentados e bundleRelease. O bundleRelease sem credenciais é validação de build, não evidência de assinatura pronta para loja.
@@ -419,6 +419,6 @@ Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado 
 
 - Android Auto Backup e transferência automática de dados devem permanecer desabilitados: Manifest com `android:allowBackup="false"`, `android:fullBackupContent="@xml/backup_rules"` e `android:dataExtractionRules="@xml/data_extraction_rules"`; regras devem excluir todos os domínios de backup em nuvem e device transfer.
 - A feature ZIP manual é a única forma suportada de backup/restauração. Não prometer sincronização ou migração automática. Explicar que o usuário deve exportar no aparelho de origem, guardar o arquivo em local seguro e importar no aparelho de destino.
-- Preservar o monitoramento opt-in de screenshots. O serviço consulta metadados do MediaStore para identificar screenshots recentes; não captura tela, não usa Accessibility Services e não envia imagens para servidores. Manter permissão de imagens, serviço foreground specialUse e notificação persistente até decisão explícita de produto ou exigência de política.
-- A justificativa Play Console deve explicar que a detecção automática de screenshots em segundo plano é parte do fluxo central de captura de referências e que o Photo Picker não substitui monitoramento contínuo. A justificativa não garante aprovação: validar a elegibilidade e atender pedidos de evidência/vídeo ou adaptar o recurso se o Google rejeitar.
-- A tela Privacidade deve refletir o comportamento atual: dados locais, requisições externas iniciadas por recursos de links/feeds/web, permissões de câmera/imagens/notificações, compartilhamento de PDF para apps escolhidos pelo usuário e backup exclusivamente manual em ZIP. Não declarar o app totalmente offline.
+- A detecção opt-in de screenshots ocorre exclusivamente enquanto MainActivity está resumed. ScreenshotMonitor observa metadados do MediaStore e fecha o ContentObserver em onPause; não há serviço em segundo plano, foreground service, notificação persistente ou POST_NOTIFICATIONS. O fluxo não captura tela, não usa Accessibility Services e não envia imagens para servidores.
+- READ_MEDIA_IMAGES é utilizado para identificar screenshots novas durante a sessão em primeiro plano. Photo Picker permanece como alternativa de seleção manual. A justificativa Play Console deve explicar a diferença técnica sem afirmar que isso garante elegibilidade: o Google pode considerar que o acesso amplo não é necessário à funcionalidade central e exigir remoção da detecção automática.
+- A tela Privacidade deve refletir o comportamento atual: dados locais, requisições externas iniciadas por recursos de links/feeds/web, permissões de câmera/imagens, compartilhamento de PDF para apps escolhidos pelo usuário e backup exclusivamente manual em ZIP. Não declarar o app totalmente offline.

@@ -11,7 +11,9 @@ import android.provider.MediaStore
 import java.io.Closeable
 
 /**
- * Best-effort screenshot discovery while CaptureFlow is visible.
+ * Best-effort screenshot discovery while CaptureFlow is in the foreground.
+ * The observer is active only between Activity onResume/onPause and does not
+ * backfill screenshots created before the current foreground session.
  * It does not run a foreground service or monitor other apps.
  */
 class ScreenshotMonitor(
@@ -20,7 +22,7 @@ class ScreenshotMonitor(
 ) : Closeable {
     private val resolver = context.applicationContext.contentResolver
     private val handler = Handler(Looper.getMainLooper())
-    private val startedAtSeconds = System.currentTimeMillis() / 1_000L - RECENT_SCREENSHOT_WINDOW_SECONDS
+    private var startedAtSeconds = 0L
     private var lastEmittedUri: Uri? = null
     private var isRegistered = false
     private val scanRunnable = Runnable { findLatestScreenshot() }
@@ -35,9 +37,9 @@ class ScreenshotMonitor(
 
     fun start() {
         if (isRegistered) return
+        startedAtSeconds = System.currentTimeMillis() / 1_000L
         resolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, observer)
         isRegistered = true
-        handler.postDelayed(scanRunnable, SCAN_DEBOUNCE_MS)
     }
 
     private fun findLatestScreenshot() {
@@ -51,8 +53,8 @@ class ScreenshotMonitor(
             resolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 projection.toTypedArray(),
-                null,
-                null,
+                "${MediaStore.Images.Media.DATE_ADDED} >= ?",
+                arrayOf(startedAtSeconds.toString()),
                 "${MediaStore.Images.Media.DATE_ADDED} DESC",
             )?.use { cursor ->
                 val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
@@ -64,7 +66,7 @@ class ScreenshotMonitor(
                 var checked = 0
                 while (cursor.moveToNext() && checked < MAX_RECENT_IMAGES_TO_CHECK) {
                     checked++
-                    if (cursor.getLong(dateColumn) < startedAtSeconds - CREATION_GRACE_SECONDS) break
+                    if (cursor.getLong(dateColumn) < startedAtSeconds) break
                     val name = cursor.getString(nameColumn).orEmpty()
                     val path = if (pathColumn >= 0) cursor.getString(pathColumn).orEmpty() else ""
                     if (!looksLikeScreenshot(name, path)) continue
@@ -102,10 +104,10 @@ class ScreenshotMonitor(
         handler.removeCallbacks(scanRunnable)
     }
 
-    private companion object {
+    companion object {
         const val SCAN_DEBOUNCE_MS = 650L
         const val MAX_RECENT_IMAGES_TO_CHECK = 50
-        const val CREATION_GRACE_SECONDS = 2L
-        const val RECENT_SCREENSHOT_WINDOW_SECONDS = 30L
+        const val PREFERENCES = "captureflow_preferences"
+        const val PREF_MONITOR_ENABLED = "screenshot_monitor_enabled"
     }
 }
