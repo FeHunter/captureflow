@@ -388,3 +388,12 @@ Base auditada: main em 155a49b34eb3e536ade189ce7e84c1344bb44560 (após PR #60). 
 Correções consolidadas: Settings mantém duas ordenações independentes; Fullscreen separa Abrir link no header de Visualizar conteúdo no dock; Image Import pode salvar thumbnail de YouTube; Newsletters e Backup são ativos; Backup v1 não incluía Newsletters; Backup v2 inclui fontes e artigos, enquanto preferências continuam fora; Checklists é legado e subtarefas pertencem a Captures. A tela Privacidade ainda contém texto legado dizendo que backup é futuro; corrigir UI em alteração de código separada.
 
 Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado se houver mudança de fluxo e o índice docs/features/README.md. Marcar documentos históricos e evitar regras contraditórias.
+
+
+## Share — formato nativo e padrão de PDF (2026-11-05)
+
+- O botão Compartilhar da feature Share envia um único documento PDF pela Android Sharesheet (ACTION_SEND, MIME application/pdf); não anexar imagens separadas (ACTION_SEND_MULTIPLE / image/*).
+- O PDF é gerado antes de abrir a Sharesheet, salvo em cacheDir/share_exports/ e compartilhado exclusivamente por FileProvider com URI content:// e grant temporário read-only. Nunca expor file:// nem usar MIME genérico.
+- O documento contém título, categoria, data, URL/conteúdo disponíveis, capa, galeria na ordem do payload e Notes ordenadas (texto seguido da imagem opcional). Não omitir silenciosamente imagens esperadas: falhar com mensagem compreensível.
+- PDF nativo e PDF exportado pelo SAF usam o mesmo CaptureShareExporter e padrão visual definido em docs/features/share/README.md (A4 retrato, margens 48 pt, paleta Personal Notebook, tipografia hierárquica, imagens proporcionais, paginação e rodapé).
+- Atualizar a documentação e os testes quando esse padrão for alterado. RTF e copiar texto permanecem opções separadas.

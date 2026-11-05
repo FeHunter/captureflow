@@ -26,89 +26,129 @@ class CaptureShareExporter(context: Context) : CaptureShareRepository {
         val document = PdfDocument()
         val pageWidth = 595
         val pageHeight = 842
+        val margin = 48f
+        val contentWidth = pageWidth - margin * 2
+        val ink = Color.rgb(57, 56, 47)
+        val secondary = Color.rgb(117, 111, 97)
+        val accent = Color.rgb(154, 113, 56)
+        val paper = Color.rgb(243, 235, 221)
+        val divider = Color.rgb(216, 204, 184)
         var pageNumber = 0
         var page: PdfDocument.Page? = null
         lateinit var canvas: Canvas
-        var y = 52f
+        var y = 76f
+        val regularTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
+        val mediumTypeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        val boldTypeface = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
 
+        fun finishCurrentPage() {
+            val current = page ?: return
+            val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = secondary; textSize = 8f; typeface = regularTypeface }
+            val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = divider; strokeWidth = 0.8f }
+            canvas.drawLine(margin, pageHeight - 36f, pageWidth - margin, pageHeight - 36f, linePaint)
+            canvas.drawText("CAPTURE FLOW", margin, pageHeight - 21f, footerPaint)
+            val pageLabel = "Página $pageNumber"
+            canvas.drawText(pageLabel, pageWidth - margin - footerPaint.measureText(pageLabel), pageHeight - 21f, footerPaint)
+            document.finishPage(current)
+            page = null
+        }
         fun startPage() {
-            page?.let(document::finishPage)
+            finishCurrentPage()
             pageNumber += 1
             page = document.startPage(PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create())
             canvas = page!!.canvas
             canvas.drawColor(Color.WHITE)
-            y = 54f
+            canvas.drawRect(0f, 0f, pageWidth.toFloat(), 48f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = paper })
+            canvas.drawText("CAPTURE FLOW  /  CADERNO DE IDEIAS", margin, 30f,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent; textSize = 9f; typeface = boldTypeface })
+            y = 76f
         }
         fun ensureSpace(height: Float) {
-            if (page == null || y + height > pageHeight - 48f) startPage()
+            if (page == null || y + height > pageHeight - 52f) startPage()
         }
-        fun paragraph(value: String, size: Float = 11f, bold: Boolean = false, color: Int = Color.DKGRAY) {
-            if (value.isBlank()) return
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textSize = size
-                typeface = if (bold) android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD)
-                    else android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
-                this.color = color
-            }
-            val maxWidth = pageWidth - 96f
+        fun drawWrappedText(value: String, paint: Paint, lineHeight: Float) {
             value.split('\n').forEach { paragraph ->
+                if (paragraph.isBlank()) { y += lineHeight * 0.55f; return@forEach }
                 var line = ""
                 paragraph.split(Regex("\\s+")).forEach { word ->
                     val candidate = if (line.isEmpty()) word else "$line $word"
-                    if (paint.measureText(candidate) > maxWidth && line.isNotEmpty()) {
-                        ensureSpace(size * 1.7f)
-                        canvas.drawText(line, 48f, y, paint)
-                        y += size * 1.55f
-                        line = word
-                    } else line = candidate
+                    if (line.isNotEmpty() && paint.measureText(candidate) > contentWidth) {
+                        ensureSpace(lineHeight); canvas.drawText(line, margin, y, paint); y += lineHeight; line = ""
+                    }
+                    if (paint.measureText(word) > contentWidth) {
+                        var fragment = ""
+                        word.forEach { char ->
+                            val next = fragment + char
+                            if (paint.measureText(next) > contentWidth && fragment.isNotEmpty()) {
+                                ensureSpace(lineHeight); canvas.drawText(fragment, margin, y, paint); y += lineHeight; fragment = char.toString()
+                            } else fragment = next
+                        }
+                        line = fragment
+                    } else line = if (line.isEmpty()) word else "$line $word"
                 }
-                if (line.isNotEmpty()) {
-                    ensureSpace(size * 1.7f)
-                    canvas.drawText(line, 48f, y, paint)
-                    y += size * 1.55f
-                }
+                if (line.isNotEmpty()) { ensureSpace(lineHeight); canvas.drawText(line, margin, y, paint); y += lineHeight }
             }
-            y += 8f
+        }
+        fun paragraph(value: String, size: Float = 11f, bold: Boolean = false, color: Int = ink, extraSpacing: Float = 7f) {
+            if (value.isBlank()) return
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = size
+                typeface = when { bold && size >= 18f -> boldTypeface; bold -> mediumTypeface; else -> regularTypeface }
+                this.color = color
+            }
+            drawWrappedText(value, paint, size * 1.48f)
+            y += extraSpacing
+        }
+        fun section(title: String) {
+            ensureSpace(28f)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent; textSize = 9f; typeface = boldTypeface }
+            canvas.drawText(title.uppercase(Locale.getDefault()), margin, y, paint)
+            y += 7f
+            canvas.drawLine(margin, y, pageWidth - margin, y, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = divider; strokeWidth = 0.8f })
+            y += 17f
         }
         fun addImage(rawUri: String?, label: String) {
             if (rawUri.isNullOrBlank()) return
-            val bitmap = decodeImage(rawUri) ?: return
+            val bitmap = runCatching { decodeImage(rawUri) }.getOrNull()
+                ?: throw IOException("Não foi possível incluir a imagem '$label' no PDF.")
             try {
-                val scale = minOf(500f / bitmap.width, 270f / bitmap.height, 1f)
+                val scale = minOf(contentWidth / bitmap.width, 300f / bitmap.height, 1f)
                 val width = bitmap.width * scale
                 val height = bitmap.height * scale
-                ensureSpace(height + 42f)
-                paragraph(label, 10f, true)
-                canvas.drawBitmap(bitmap, null, RectF(48f, y, 48f + width, y + height), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+                ensureSpace(height + 46f)
+                paragraph(label, 9f, true, secondary, 8f)
+                canvas.drawBitmap(bitmap, null, RectF(margin, y, margin + width, y + height),
+                    Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
                 y += height + 22f
-            } finally {
-                bitmap.recycle()
-            }
+            } finally { bitmap.recycle() }
         }
-
         try {
             startPage()
-            paragraph("CAPTURE FLOW · CADERNO DE IDEIAS", 9f, true, Color.GRAY)
-            paragraph(payload.title, 22f, true, Color.BLACK)
-            paragraph("Categoria: ${payload.category}", 11f, true)
-            paragraph("Criado em: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(payload.createdAt))}", 9f)
-            payload.sourceUrl?.let { paragraph("Link: $it", 9f) }
-            paragraph(payload.content, 11f)
-            addImage(payload.coverUri, "Imagem de capa")
-            payload.mediaUris.filter { it != payload.coverUri }.distinct().forEachIndexed { index, uri ->
-                addImage(uri, "Imagem relacionada ${index + 1}")
+            paragraph(payload.title.ifBlank { "Referência sem título" }, 24f, true, ink, 10f)
+            paragraph(payload.category, 10f, true, accent, 14f)
+            section("Informações")
+            paragraph("Criado em  ${SimpleDateFormat("dd/MM/yyyy 'às' HH:mm", Locale.getDefault()).format(Date(payload.createdAt))}", 9f, false, secondary, 5f)
+            payload.sourceUrl?.takeIf(String::isNotBlank)?.let { paragraph("Link de origem  $it", 9f, false, secondary, 5f) }
+            payload.content.takeIf(String::isNotBlank)?.let { paragraph(it, 11f, false, ink, 10f) }
+            payload.coverUri?.takeIf(String::isNotBlank)?.let { section("Imagem de capa"); addImage(it, "Capa") }
+            val galleryImages = payload.mediaUris.filter { it.isNotBlank() && it != payload.coverUri }.distinct()
+            if (galleryImages.isNotEmpty()) {
+                section("Galeria")
+                galleryImages.forEachIndexed { index, uri -> addImage(uri, "Imagem ${index + 1} da galeria") }
             }
-            payload.notes.forEachIndexed { index, note ->
-                paragraph("ANOTAÇÃO ${index + 1}", 10f, true)
-                paragraph(note.text, 11f)
-                addImage(note.imageUri, "Imagem da anotação ${index + 1}")
+            if (payload.notes.isNotEmpty()) {
+                section("Anotações")
+                payload.notes.forEachIndexed { index, note ->
+                    ensureSpace(24f)
+                    paragraph("Anotação ${index + 1}", 10f, true, accent, 4f)
+                    paragraph(note.text, 11f, false, ink, 8f)
+                    addImage(note.imageUri, "Imagem da anotação ${index + 1}")
+                }
             }
-            page?.let(document::finishPage)
-            appContext.contentResolver.openOutputStream(Uri.parse(destination), "w")?.use { output -> document.writeTo(output) }
+            finishCurrentPage()
+            appContext.contentResolver.openOutputStream(Uri.parse(destination), "w")?.use { document.writeTo(it) }
                 ?: throw IOException("Não foi possível gravar o PDF no destino selecionado.")
-        } finally {
-            document.close()
-        }
+        } finally { document.close() }
     }
 
     override suspend fun exportRtf(payload: CaptureSharePayload, destination: String) = withContext(Dispatchers.IO) {

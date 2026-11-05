@@ -13,6 +13,7 @@ data class CaptureShareUiState(
     val isBusy: Boolean = false,
     val message: String? = null,
     val error: String? = null,
+    val shareablePdfUri: String? = null,
 )
 
 class CaptureShareViewModel(private val useCases: CaptureShareUseCases) : ViewModel() {
@@ -24,6 +25,21 @@ class CaptureShareViewModel(private val useCases: CaptureShareUseCases) : ViewMo
         runCatching { useCases.exportPdf(payload, destination) }
             .onSuccess { _state.value = CaptureShareUiState(message = "PDF exportado com sucesso.") }
             .onFailure { _state.value = CaptureShareUiState(error = it.message ?: "Não foi possível exportar o PDF.") }
+    }
+
+    fun exportPdfForSharing(payload: CaptureSharePayload, destination: String) = viewModelScope.launch(Dispatchers.IO) {
+        _state.value = CaptureShareUiState(isBusy = true)
+        runCatching { useCases.exportPdf(payload, destination) }
+            .onSuccess { _state.value = CaptureShareUiState(message = "PDF pronto para compartilhar.", shareablePdfUri = destination) }
+            .onFailure { _state.value = CaptureShareUiState(error = it.message ?: "Não foi possível preparar o PDF para compartilhamento.") }
+    }
+
+    fun consumeShareablePdf() {
+        _state.value = _state.value.copy(shareablePdfUri = null)
+    }
+
+    fun reportShareError(message: String) {
+        _state.value = _state.value.copy(isBusy = false, error = message, shareablePdfUri = null)
     }
 
     fun exportRtf(payload: CaptureSharePayload, destination: String) = viewModelScope.launch(Dispatchers.IO) {
