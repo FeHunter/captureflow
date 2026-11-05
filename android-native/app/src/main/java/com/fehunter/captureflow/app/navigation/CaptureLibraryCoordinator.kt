@@ -84,25 +84,30 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val coverUpdateError by viewModel.coverUpdateError.collectAsStateWithLifecycle()
     val libraryListState = rememberLazyListState()
+    val showFloatingActions by remember(libraryListState) {
+        androidx.compose.runtime.derivedStateOf {
+            libraryListState.firstVisibleItemIndex > 0 || libraryListState.firstVisibleItemScrollOffset > 96
+        }
+    }
     LaunchedEffect(coverUpdateError) {
         coverUpdateError?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             viewModel.clearCoverUpdateError()
         }
     }
-    val ocrStates by imageImportViewModel.ocrStates.collectAsState()
+    val ocrStates by imageImportViewModel.ocrStates.collectAsStateWithLifecycle()
     val captureImageProcessingStates = remember(ocrStates) {
         ocrStates.mapValues { (_, state) ->
             CaptureImageProcessingStatus(isProcessing = state.isProcessing, isError = state.isError)
         }
     }
-    val pendingSharedLink by imageImportViewModel.pendingSharedLink.collectAsState()
-    val categoryEntities by categoriesViewModel.categories.collectAsState()
-    val dashboardSummary by dashboardViewModel.summary.collectAsState()
-    val allSubtasks by viewModel.captureSubtasks.collectAsState()
-    val captureMedia by viewModel.captureMedia.collectAsState()
+    val pendingSharedLink by imageImportViewModel.pendingSharedLink.collectAsStateWithLifecycle()
+    val categoryEntities by categoriesViewModel.categories.collectAsStateWithLifecycle()
+    val dashboardSummary by dashboardViewModel.summary.collectAsStateWithLifecycle()
+    val allSubtasks by viewModel.captureSubtasks.collectAsStateWithLifecycle()
+    val captureMedia by viewModel.captureMedia.collectAsStateWithLifecycle()
     val searchViewModel: SearchViewModel = viewModel()
-    val query by searchViewModel.query.collectAsState()
+    val query by searchViewModel.query.collectAsStateWithLifecycle()
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showCameraCapture by remember { mutableStateOf(false) }
@@ -160,20 +165,24 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     ) {
         value = screenshotToConfirm?.let { uri ->
             withContext(Dispatchers.IO) {
-                runCatching { loadCoverBitmap(context, uri.toString()) }.getOrNull()
+                runCatching { loadCoverBitmap(context, uri.toString(), maxDimension = 480) }.getOrNull()
             }
         }
     }
     val filterCaptures = remember { FilterCapturesUseCase() }
-    val allMatchingCaptures = filterCaptures(
-        captures = captures,
-        query = query,
-        category = category,
-        showCompleted = true,
-    )
+    val allMatchingCaptures = remember(captures, query, category) {
+        filterCaptures(
+            captures = captures,
+            query = query,
+            category = category,
+            showCompleted = true,
+        )
+    }
+    val capturesByCategory = remember(allMatchingCaptures) {
+        allMatchingCaptures.groupBy { it.category }
+    }
     val sortedCategoryNames = remember(categoryEntities, categorySortOrder, allMatchingCaptures) {
         val names = categoryEntities.map { it.name }
-        val capturesByCategory = allMatchingCaptures.groupBy { it.category }
         val newestCaptureAt = names.associateWith { name ->
             capturesByCategory[name]?.maxOfOrNull { it.createdAt }
         }
@@ -199,13 +208,6 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             else -> names
         }
     }
-    val filtered = filterCaptures(
-        captures = captures,
-        query = query,
-        category = category,
-        showCompleted = true,
-    )
-
     Box(Modifier.fillMaxSize()) {
         CaptureFlowBackdrop(Modifier.matchParentSize())
         LazyColumn(
@@ -331,11 +333,11 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 }
             }
             val visibleCategories = if (category == "Todas") sortedCategoryNames else listOf(category)
-            items(visibleCategories, key = { "category-$it" }) { tag ->
+            items(visibleCategories, key = { "category-$it" }, contentType = { "category-card" }) { tag ->
                 // Category order controls these section containers only. Keep the
                 // preview thumbnails in the library's source order; captureSortOrder
                 // is applied inside the expanded category, not to the category preview.
-                val categoryCaptures = allMatchingCaptures.filter { it.category == tag }
+                val categoryCaptures = capturesByCategory[tag].orEmpty()
                 if (categoryCaptures.isNotEmpty()) {
                     val previewCaptures = categoryCaptures.filterNot { it.isCompleted }
                     if (category != "Todas" || previewCaptures.isNotEmpty()) {
@@ -357,7 +359,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         }
         }
         AnimatedVisibility(
-            visible = libraryListState.firstVisibleItemIndex > 0 || libraryListState.firstVisibleItemScrollOffset > 96,
+            visible = showFloatingActions,
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp),
             enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.96f, animationSpec = tween(160)),
             exit = fadeOut(tween(120)),
@@ -426,8 +428,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         val removedIds = deletingCaptureIds.filter { id -> captures.none { it.id == id } }.toSet()
         if (removedIds.isNotEmpty()) deletingCaptureIds = deletingCaptureIds - removedIds
     }
-    val expandedCategoryCaptures = remember(allMatchingCaptures, expandedCategory, captureSortOrder) {
-        expandedCategory?.let { tag -> sortCaptures(allMatchingCaptures.filter { it.category == tag }) }.orEmpty()
+    val expandedCategoryCaptures = remember(capturesByCategory, expandedCategory, captureSortOrder) {
+        expandedCategory?.let { tag -> sortCaptures(capturesByCategory[tag].orEmpty()) }.orEmpty()
     }
     val expandedCategoryVisibleCaptures = remember(expandedCategoryCaptures, showCompletedInExpandedCategory) {
         expandedCategoryCaptures.filter { it.isCompleted == showCompletedInExpandedCategory }
@@ -522,7 +524,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(expandedCategoryVisibleCaptures, key = { it.id }) { capture ->
+                            items(expandedCategoryVisibleCaptures, key = { it.id }, contentType = { "capture-thumbnail" }) { capture ->
                                 AnimatedVisibility(
                                     visible = capture.id !in deletingCaptureIds,
                                     enter = fadeIn(tween(150)) + scaleIn(initialScale = 0.97f, animationSpec = tween(150)),
@@ -569,7 +571,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         )
     }
 
-    val viewerCandidates = if (expandedCategory != null) expandedCategoryVisibleCaptures else sortCaptures(filtered)
+    val viewerCandidates = if (expandedCategory != null) expandedCategoryVisibleCaptures else sortCaptures(allMatchingCaptures)
     val fullscreenCaptures = remember(viewerCandidates, selectedCapture) {
         val activeCapture = selectedCapture
         if (activeCapture != null && viewerCandidates.none { it.id == activeCapture.id }) {
@@ -935,7 +937,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         val detectedPreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, uri) {
-                            value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, uri.toString()) }.getOrNull() }
+                            value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, uri.toString(), maxDimension = 360) }.getOrNull() }
                         }
                         detectedPreview?.let { preview ->
                             Image(

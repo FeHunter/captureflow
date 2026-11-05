@@ -58,7 +58,7 @@ import kotlinx.coroutines.withContext
 fun CategoryThumbnail(capture: Capture, ocrState: CaptureImageProcessingStatus, onClick: () -> Unit, onDelete: (() -> Unit)? = null) {
     val context = LocalContext.current
     val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, capture.imageUri) {
-        value = capture.imageUri?.let { raw -> withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() } }
+        value = capture.imageUri?.let { raw -> withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw, maxDimension = 360) }.getOrNull() } }
     }
     Card(
         modifier = Modifier.fillMaxWidth().animateContentSize(tween(180)).clickable(onClick = onClick),
@@ -197,7 +197,7 @@ fun CategoryCard(
                 ) {
                     captures.take(3).forEach { capture ->
                         val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, capture.imageUri) {
-                            value = capture.imageUri?.let { raw -> withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() } }
+                            value = capture.imageUri?.let { raw -> withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw, maxDimension = 360) }.getOrNull() } }
                         }
                         val loadedBitmap = bitmap
                         Card(

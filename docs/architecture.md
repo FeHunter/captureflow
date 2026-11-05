@@ -7,7 +7,7 @@ Feature-first + MVVM e separação pragmática Presentation/Domain/Data em um ú
 ## Ownership
 - app/navigation: shell e composição; CaptureLibraryCoordinator integra Biblioteca.
 - app/di: repositórios, gateways, UseCases e factories.
-- core: contratos/utilitários/UI compartilhados.
+- core: contratos/utilitários/UI compartilhados; core/ui/ImageBitmapLoader faz decode local limitado e mantém cache LRU de bitmaps com orçamento de memória restrito.
 - captures: agregado Capture, categorias de domínio, subtarefas, notas, mídias, Room e UseCases.
 - imageimport: intents/Sharesheet, Photo Picker, câmera, metadados, OCR, screenshots e storage.
 - imagecompression: compressão local.
