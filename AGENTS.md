@@ -397,3 +397,19 @@ Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado 
 - O documento contém título, categoria, data, URL/conteúdo disponíveis, capa, galeria na ordem do payload e Notes ordenadas (texto seguido da imagem opcional). Não omitir silenciosamente imagens esperadas: falhar com mensagem compreensível.
 - PDF nativo e PDF exportado pelo SAF usam o mesmo CaptureShareExporter e padrão visual definido em docs/features/share/README.md (A4 retrato, margens 48 pt, paleta Personal Notebook, tipografia hierárquica, imagens proporcionais, paginação e rodapé).
 - Atualizar a documentação e os testes quando esse padrão for alterado. RTF e copiar texto permanecem opções separadas.
+
+
+## Preparação para publicação — Google Play (2026-11-05)
+
+- O produto oficial para distribuição é o app Android nativo em `android-native/`; não publicar o projeto histórico `legacy-expo/`.
+- Manter `applicationId` estável como `com.fehunter.captureflow`. Não alterar o identificador após a primeira publicação.
+- `compileSdk` e `targetSdk` devem acompanhar os requisitos vigentes do Google Play; qualquer alteração deve ser validada em dispositivo/emulador e documentada.
+- `minSdk = 26` permanece até decisão explícita baseada em telemetria/compatibilidade.
+- Nunca versionar keystore, senhas, certificados privados ou arquivos de configuração contendo segredos. Assinatura release recebe os valores por variáveis de ambiente/segredos do CI.
+- A configuração release pode gerar bundle não assinado em CI para validar compilação. Um AAB só está apto para upload quando assinado com a chave de upload configurada e validado no Play Console.
+- Não incrementar `versionCode` nem definir a versão pública 1.0.0 durante a preparação. Fazer isso somente na etapa de release aprovada, garantindo valor maior que qualquer versão já enviada ao Play Console.
+- Antes da publicação, revisar cada permissão e serviço do Manifest contra o comportamento real, com atenção a `READ_MEDIA_IMAGES`, Photo Picker e foreground service `specialUse`. Não remover permissões nem alterar o monitoramento de screenshots sem análise funcional e política documentada.
+- Revisar Android Auto Backup/transferência de dispositivo considerando dados locais, imagens privadas e o backup ZIP manual. Não desabilitar ou ampliar backup sem documentar o impacto para o usuário.
+- Política de privacidade e Data Safety devem descrever o comportamento real, inclusive requisições externas de metadados, RSS/Atom, YouTube, navegador e compartilhamento escolhido pelo usuário. Não afirmar que o app é totalmente offline.
+- O pipeline de CI deve executar testes unitários, assembleDebug, compilação dos testes instrumentados e bundleRelease. O bundleRelease sem credenciais é validação de build, não evidência de assinatura pronta para loja.
+- Manter a preparação de publicação documentada em `docs/release/google-play-preparation.md` e atualizar este arquivo quando requisitos de release forem alterados.
