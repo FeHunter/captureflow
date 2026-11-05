@@ -53,6 +53,7 @@ class ObserveDashboardSummaryUseCaseTest {
         override fun observeMedia(): Flow<List<CaptureMedia>> = MutableStateFlow(emptyList())
         override suspend fun addMedia(items: List<CaptureMedia>) = Unit
         override suspend fun setCover(captureId: String, mediaId: String) = Unit
+        override suspend fun replaceCoverImage(captureId: String, uri: String) = Unit
         override suspend fun save(capture: Capture) = Unit
         override suspend fun findByContent(content: String) = false
         override suspend fun findBySourceUrl(url: String) = false

@@ -10,6 +10,9 @@ import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
+import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterArticle
+import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterSource
+import com.fehunter.captureflow.features.newsletters.domain.usecase.NewsletterUseCases
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,12 +27,18 @@ import java.util.zip.ZipOutputStream
 class BackupArchiveManager(
     private val context: Context,
     private val captures: CaptureUseCases,
+    private val newsletters: NewsletterUseCases,
 ) {
     suspend fun exportTo(destination: Uri): BackupSummary {
         val captureItems = captures.observeCaptures().first()
         val categories = captures.observeCategories().first()
         val subtasks = captures.observeSubtasks().first()
         val media = captures.observeMedia().first()
+        val newsletterSources = newsletters.observeSources().first()
+        val newsletterArticles = newsletterSources.flatMap { source -> newsletters.observeArticles(source.id).first() }
+        require(newsletterSources.size <= MAX_RECORDS && newsletterArticles.size <= MAX_RECORDS) {
+            "O backup contém fontes ou artigos Newsletter demais."
+        }
         val imageEntries = linkedMapOf<String, ByteArray>()
 
         fun imageReference(rawUri: String?): String? {
@@ -101,6 +110,32 @@ class BackupArchiveManager(
         }
         manifest.put("media", mediaArray)
 
+        val newsletterSourceArray = JSONArray()
+        newsletterSources.forEach { source ->
+            newsletterSourceArray.put(JSONObject()
+                .put("id", source.id).put("title", source.title).put("feedUrl", source.feedUrl)
+                .put("siteUrl", source.siteUrl ?: JSONObject.NULL)
+                .put("description", source.description ?: JSONObject.NULL)
+                .put("imageUrl", source.imageUrl ?: JSONObject.NULL)
+                .put("createdAt", source.createdAt).put("lastFetchedAt", source.lastFetchedAt ?: JSONObject.NULL)
+                .put("etag", source.etag ?: JSONObject.NULL).put("lastModified", source.lastModified ?: JSONObject.NULL)
+                .put("lastError", source.lastError ?: JSONObject.NULL))
+        }
+        manifest.put("newsletterSources", newsletterSourceArray)
+
+        val newsletterArticleArray = JSONArray()
+        newsletterArticles.forEach { article ->
+            newsletterArticleArray.put(JSONObject()
+                .put("id", article.id).put("sourceId", article.sourceId).put("stableId", article.stableId)
+                .put("title", article.title).put("canonicalUrl", article.canonicalUrl)
+                .put("publishedAt", article.publishedAt ?: JSONObject.NULL)
+                .put("summary", article.summary ?: JSONObject.NULL)
+                .put("contentHtml", article.contentHtml ?: JSONObject.NULL)
+                .put("imageUrl", article.imageUrl ?: JSONObject.NULL).put("isRead", article.isRead)
+                .put("savedCaptureId", article.savedCaptureId ?: JSONObject.NULL).put("fetchedAt", article.fetchedAt))
+        }
+        manifest.put("newsletterArticles", newsletterArticleArray)
+
         context.contentResolver.openOutputStream(destination, "w")?.use { stream ->
             ZipOutputStream(stream).use { zip ->
                 val manifestBytes = manifest.toString().toByteArray(Charsets.UTF_8)
@@ -115,7 +150,7 @@ class BackupArchiveManager(
                 }
             }
         } ?: throw IllegalStateException("Não foi possível criar o arquivo de backup.")
-        return BackupSummary(captureItems.size, categories.size, imageEntries.size)
+        return BackupSummary(captureItems.size, categories.size, imageEntries.size, newsletterSources.size, newsletterArticles.size)
     }
 
     suspend fun importFrom(source: Uri): BackupSummary {
@@ -159,13 +194,26 @@ class BackupArchiveManager(
         val manifest = runCatching { JSONObject(manifestBytes.toString(Charsets.UTF_8)) }
             .getOrElse { throw IllegalArgumentException("O manifesto do backup está inválido.") }
         require(manifest.optString("format") == FORMAT_NAME) { "Este arquivo não é um backup do CaptureFlow." }
-        require(manifest.optInt("version") == FORMAT_VERSION) { "Versão de backup não suportada." }
+        val backupVersion = manifest.optInt("version")
+        require(backupVersion in MIN_SUPPORTED_VERSION..FORMAT_VERSION) { "Versão de backup não suportada." }
 
         val privateDirectory = File(context.filesDir, "captures").apply { mkdirs() }
         val createdFiles = mutableListOf<File>()
+        var capturesCommitted = false
+        var retainedImageUris = emptySet<String>()
         try {
             val imageUris = entries.filterKeys { it.startsWith("images/") }.mapValues { (_, bytes) ->
-                val file = File(privateDirectory, "backup-${UUID.randomUUID()}.img")
+                val extension = when {
+                    bytes.size >= 12 && bytes.copyOfRange(0, 4).contentEquals(byteArrayOf(0x52, 0x49, 0x46, 0x46)) &&
+                        bytes.copyOfRange(8, 12).contentEquals(byteArrayOf(0x57, 0x45, 0x42, 0x50)) -> "webp"
+                    bytes.size >= 8 && bytes.copyOfRange(0, 8).contentEquals(
+                        byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a),
+                    ) -> "png"
+                    bytes.size >= 3 && bytes[0] == 0xff.toByte() && bytes[1] == 0xd8.toByte() -> "jpg"
+                    bytes.size >= 6 && (bytes.copyOfRange(0, 6).toString(Charsets.US_ASCII) in setOf("GIF87a", "GIF89a")) -> "gif"
+                    else -> "img"
+                }
+                val file = File(privateDirectory, "backup-${UUID.randomUUID()}.$extension")
                 file.writeBytes(bytes)
                 createdFiles += file
                 Uri.fromFile(file).toString()
@@ -289,17 +337,81 @@ class BackupArchiveManager(
                     item.optLong("createdAt"))
             }
 
-            captures.importBatch(CaptureImportBatch(importedCaptures, importedCategories, importedSubtasks, importedMedia))
-            val referencedUris = buildSet {
+            // Compute references before committing the Capture batch so a later Newsletter
+            // restore failure never deletes files already referenced by committed captures.
+            retainedImageUris = buildSet {
                 importedCaptures.mapNotNullTo(this) { it.imageUri }
                 importedMedia.mapTo(this) { it.uri }
                 importedCaptures.flatMap { CaptureNotesCodec.decode(it.notes) }.mapNotNullTo(this) { it.imageUri }
             }
-            val retainedFiles = createdFiles.filter { Uri.fromFile(it).toString() in referencedUris }
+            captures.importBatch(CaptureImportBatch(importedCaptures, importedCategories, importedSubtasks, importedMedia))
+            capturesCommitted = true
+
+            // v1 archives have no newsletter arrays. v2 restores feeds and articles additively.
+            val currentNewsletterSources = newsletters.observeSources().first()
+            val sourceIdMap = mutableMapOf<String, String>()
+            val sourceIdByFeedUrl = currentNewsletterSources.associate { it.feedUrl to it.id }.toMutableMap()
+            val usedSourceIds = currentNewsletterSources.map { it.id }.toMutableSet()
+            val newsletterSourceJson = manifest.optJSONArray("newsletterSources") ?: JSONArray()
+            require(newsletterSourceJson.length() <= MAX_RECORDS) { "O backup contém fontes Newsletter demais." }
+            for (index in 0 until newsletterSourceJson.length()) {
+                val item = newsletterSourceJson.getJSONObject(index)
+                val oldId = item.getString("id")
+                val feedUrl = item.getString("feedUrl")
+                val existingId = sourceIdByFeedUrl[feedUrl]
+                val targetId = existingId ?: if (oldId in usedSourceIds) UUID.randomUUID().toString() else oldId
+                sourceIdMap[oldId] = targetId
+                if (existingId == null) {
+                    usedSourceIds += targetId
+                    sourceIdByFeedUrl[feedUrl] = targetId
+                    newsletters.addSource(NewsletterSource(
+                        id = targetId,
+                        title = item.optString("title").ifBlank { feedUrl },
+                        feedUrl = feedUrl,
+                        siteUrl = item.optString("siteUrl").takeUnless { it == "null" },
+                        description = item.optString("description").takeUnless { it == "null" },
+                        imageUrl = item.optString("imageUrl").takeUnless { it == "null" },
+                        createdAt = item.optLong("createdAt", System.currentTimeMillis()),
+                        lastFetchedAt = item.optLong("lastFetchedAt").takeIf { !item.isNull("lastFetchedAt") },
+                        etag = item.optString("etag").takeUnless { it == "null" },
+                        lastModified = item.optString("lastModified").takeUnless { it == "null" },
+                        lastError = item.optString("lastError").takeUnless { it == "null" },
+                    ))
+                }
+            }
+
+            val knownCaptureIds = existingCaptures.map { it.id }.toSet() + importedCaptures.map { it.id }
+            val newsletterArticleJson = manifest.optJSONArray("newsletterArticles") ?: JSONArray()
+            require(newsletterArticleJson.length() <= MAX_RECORDS) { "O backup contém artigos demais." }
+            val importedArticles = mutableListOf<NewsletterArticle>()
+            for (index in 0 until newsletterArticleJson.length()) {
+                val item = newsletterArticleJson.getJSONObject(index)
+                val sourceId = sourceIdMap[item.getString("sourceId")] ?: continue
+                val savedCaptureRaw = item.optString("savedCaptureId").takeUnless { it == "null" || it.isBlank() }
+                val savedCaptureId = savedCaptureRaw?.let { captureIdMap[it] ?: it.takeIf(knownCaptureIds::contains) }
+                importedArticles += NewsletterArticle(
+                    id = UUID.randomUUID().toString(),
+                    sourceId = sourceId,
+                    stableId = item.getString("stableId"),
+                    title = item.getString("title"),
+                    canonicalUrl = item.getString("canonicalUrl"),
+                    publishedAt = item.optLong("publishedAt").takeIf { !item.isNull("publishedAt") },
+                    summary = item.optString("summary").takeUnless { it == "null" },
+                    contentHtml = item.optString("contentHtml").takeUnless { it == "null" },
+                    imageUrl = item.optString("imageUrl").takeUnless { it == "null" },
+                    isRead = item.optBoolean("isRead"),
+                    savedCaptureId = savedCaptureId,
+                    fetchedAt = item.optLong("fetchedAt", System.currentTimeMillis()),
+                )
+            }
+            newsletters.saveArticles(importedArticles)
+
+            val retainedFiles = createdFiles.filter { Uri.fromFile(it).toString() in retainedImageUris }
             createdFiles.filterNot { it in retainedFiles }.forEach { it.delete() }
-            return BackupSummary(importedCaptures.size, importedCategories.size, retainedFiles.size)
+            return BackupSummary(importedCaptures.size, importedCategories.size, retainedFiles.size, newsletterSourceJson.length(), importedArticles.size)
         } catch (error: Exception) {
-            createdFiles.forEach { it.delete() }
+            createdFiles.filterNot { capturesCommitted && Uri.fromFile(it).toString() in retainedImageUris }
+                .forEach { it.delete() }
             throw error
         }
     }
@@ -312,11 +424,12 @@ class BackupArchiveManager(
         val identity = "${item.title.trim().lowercase()}|${item.content.trim()}|${item.kind}|${item.category}|${item.isCompleted}|$notes"
         return if (url.isNotBlank()) "$url|$identity" else identity
     }
-    data class BackupSummary(val captures: Int, val categories: Int, val images: Int)
+    data class BackupSummary(val captures: Int, val categories: Int, val images: Int, val newsletterSources: Int, val newsletterArticles: Int)
 
     private companion object {
         const val FORMAT_NAME = "captureflow-backup"
-        const val FORMAT_VERSION = 1
+        const val FORMAT_VERSION = 2
+        const val MIN_SUPPORTED_VERSION = 1
         const val MANIFEST_ENTRY = "manifest.json"
         const val MAX_IMAGE_BYTES = 25 * 1024 * 1024
         const val MAX_MANIFEST_BYTES = 10 * 1024 * 1024

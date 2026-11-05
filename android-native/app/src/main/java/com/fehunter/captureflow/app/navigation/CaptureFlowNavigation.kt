@@ -37,6 +37,7 @@ import com.fehunter.captureflow.features.settings.presentation.screens.PrivacyPo
 import com.fehunter.captureflow.features.settings.presentation.screens.TutorialsScreen
 import com.fehunter.captureflow.features.backup.presentation.screens.BackupScreen
 import com.fehunter.captureflow.features.backup.presentation.viewmodel.BackupViewModel
+import com.fehunter.captureflow.features.share.presentation.viewmodel.CaptureShareViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +48,7 @@ fun CaptureFlowApp(
     dashboardViewModel: DashboardViewModel,
     newslettersViewModel: NewslettersViewModel,
     backupViewModel: BackupViewModel,
+    shareViewModel: CaptureShareViewModel,
     themeMode: String,
     onThemeModeChange: (String) -> Unit,
     categorySortOrder: String,
@@ -189,6 +191,7 @@ fun CaptureFlowApp(
                     imageImportViewModel = imageImportViewModel,
                     categoriesViewModel = categoriesViewModel,
                     dashboardViewModel = dashboardViewModel,
+                    shareViewModel = shareViewModel,
                     categorySortOrder = categorySortOrder,
                     onCategorySortOrderChange = onCategorySortOrderChange,
                     captureSortOrder = captureSortOrder,

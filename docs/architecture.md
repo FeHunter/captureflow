@@ -17,10 +17,11 @@ Feature-first + MVVM e separação pragmática Presentation/Domain/Data em um ú
 - notes: editor; modelo/serialização pertencem a Captures.
 - newsletters: feeds RSS/Atom, parser, fetcher, Room e leitor.
 - settings: tema, ordenações, compressão, Privacidade e Tutoriais.
-- backup: ZIP versionado, restauração de imagens e mesclagem aditiva via contratos públicos de Captures.
+- backup: ZIP v2, restauração de imagens e mesclagem aditiva via contratos públicos de Captures/Newsletters; leitura compatível com v1.
+- share: payload de domínio para compartilhamento, exportadores PDF/RTF e integração Android Sharesheet; não possui persistência própria.
 
 ## Dependências
 Presentation consome Domain/UseCases/contratos; Data implementa contratos e acessa Room/Android. Domain não importa Android/Compose/Room/Data. Features não importam pacotes internos de Presentation/Data de outras features. Comunicação por contratos, callbacks/eventos ou IDs. Core não depende de features. Fullscreen não tem ViewModel próprio; Notes não duplica persistência; Backup delega lote ao repositório Room em transação.
 
 ## Persistência e validação
-Room v11: captures, categories, capture_subtasks, capture_media, newsletter_sources, newsletter_articles e checklist_tasks legado. Não reativar UI autônoma de checklist. Um módulo Gradle e DI manual; não introduzir Hilt/Koin sem decisão. CI precisa validar testDebugUnitTest e assembleDebug no HEAD exato; testes não substituem validação Android real.
+Room v11: captures, categories, capture_subtasks, capture_media, newsletter_sources, newsletter_articles e checklist_tasks legado. Share não adiciona tabelas. Não reativar UI autônoma de checklist. Um módulo Gradle e DI manual; não introduzir Hilt/Koin sem decisão. CI precisa validar testDebugUnitTest e assembleDebug no HEAD exato; testes não substituem validação Android real.

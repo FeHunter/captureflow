@@ -29,7 +29,7 @@ class ImageCompressionServiceTest {
         get() = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun compressesAppOwnedFileUriIntoPrivateJpeg() {
+    fun compressesAppOwnedFileUriIntoSmallestSupportedFormat() {
         val source = File(context.cacheDir, "compression-source-${System.nanoTime()}.png")
         val bitmap = Bitmap.createBitmap(900, 600, Bitmap.Config.ARGB_8888).apply {
             eraseColor(Color.MAGENTA)
@@ -51,8 +51,8 @@ class ImageCompressionServiceTest {
             BitmapFactory.decodeFile(output.path, bounds)
 
             assertTrue(output.isFile && output.length() > 0L)
-            assertEquals("image/jpeg", bounds.outMimeType)
-            assertTrue(output.path.endsWith(".jpg"))
+            assertTrue(bounds.outMimeType in setOf("image/jpeg", "image/webp", "image/png"))
+            assertTrue(output.path.endsWith(".jpg") || output.path.endsWith(".webp") || output.path.endsWith(".png"))
             output.delete()
         } finally {
             bitmap.recycle()
@@ -62,7 +62,7 @@ class ImageCompressionServiceTest {
 
 
     @Test
-    fun compressesContentProviderUriIntoPrivateJpeg() {
+    fun compressesContentProviderUriIntoSmallestSupportedFormat() {
         assumeTrue("MediaStore RELATIVE_PATH requires Android 10+", Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "captureflow-compression-${System.nanoTime()}.png")
@@ -99,7 +99,7 @@ class ImageCompressionServiceTest {
             BitmapFactory.decodeFile(output.path, bounds)
 
             assertTrue(output.isFile && output.length() > 0L)
-            assertEquals("image/jpeg", bounds.outMimeType)
+            assertTrue(bounds.outMimeType in setOf("image/jpeg", "image/webp"))
             output.delete()
         } finally {
             bitmap.recycle()
@@ -130,12 +130,16 @@ class ImageCompressionServiceTest {
             BitmapFactory.decodeFile(output.path, bounds)
 
             assertTrue(output.isFile && output.length() > 0L)
-            assertEquals("image/jpeg", bounds.outMimeType)
+            assertTrue(bounds.outMimeType in setOf("image/webp", "image/png"))
             assertTrue(bounds.outWidth <= 2560)
             assertTrue(bounds.outHeight <= 2560)
             val decoded = BitmapFactory.decodeFile(output.path)
             assertNotNull(decoded)
-            decoded?.recycle()
+            decoded?.let {
+                assertEquals(0, Color.alpha(it.getPixel(0, 0)))
+                assertEquals(255, Color.alpha(it.getPixel(10, 10)))
+                it.recycle()
+            }
             output.delete()
         } finally {
             source.recycle()

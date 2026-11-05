@@ -9,10 +9,12 @@ Kotlin, Android SDK, Jetpack Compose/Material 3, MVVM, Coroutines/Flow, Room v11
 - Captura por câmera, Photo Picker e compartilhamento de texto, links e imagens.
 - Prévia de metadados, confirmação de categoria e OCR local.
 - Categorias, busca, ordenação e dashboard de progresso.
-- Fullscreen, sub-checklist, Notes, leitor web e player YouTube.
+- Fullscreen, sub-checklist, Notes expansível, edição de capa, leitor web e player YouTube.
+- Compressão adaptativa WebP/JPEG, com preservação de transparência.
 - Newsletters RSS/Atom com atualização manual.
 - Monitoramento opt-in de screenshots, best-effort.
-- Backup ZIP v1 com restauração aditiva.
+- Backup ZIP v2 com referências, imagens e dados de Newsletters; importação v1/v2 aditiva.
+- Compartilhamento de pensamentos via Android Sharesheet, PDF e RTF.
 - Tema claro/escuro, Privacidade e Tutoriais.
 
 ## Compilar
@@ -28,4 +30,4 @@ APK: android-native/app/build/outputs/apk/debug/app-debug.apk.
 [Estado atual](docs/current-state.md) · [Visão geral](docs/project-overview.md) · [Arquitetura](docs/architecture.md) · [Features](docs/features/README.md) · [Design System](docs/design-system.md) · [AGENTS](AGENTS.md) · [Diagrama](docs/SD_captureflow.drawio)
 
 ## Privacidade
-Dados do caderno são locais; sem conta/sincronização própria. Links, feeds e leitura web podem acessar serviços externos. Backup v1 não inclui Newsletters nem preferências.
+Dados do caderno são locais; sem conta/sincronização própria. Links, feeds e leitura web podem acessar serviços externos. Backup v2 inclui fontes e artigos de Newsletters; preferências continuam fora do backup.

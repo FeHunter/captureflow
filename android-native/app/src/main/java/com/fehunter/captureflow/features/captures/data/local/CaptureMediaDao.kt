@@ -17,4 +17,5 @@ interface CaptureMediaDao {
     @Query("DELETE FROM capture_media WHERE captureId = :captureId") suspend fun deleteForCapture(captureId: String)
     @Query("UPDATE capture_media SET isCover = 0 WHERE captureId = :captureId") suspend fun clearCover(captureId: String)
     @Query("UPDATE capture_media SET isCover = 1 WHERE id = :mediaId AND captureId = :captureId") suspend fun setCover(captureId: String, mediaId: String)
+    @Query("UPDATE capture_media SET uri = :uri, mediaType = :mediaType WHERE id = :mediaId AND captureId = :captureId") suspend fun updateUriAndType(captureId: String, mediaId: String, uri: String, mediaType: String)
 }

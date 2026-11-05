@@ -16,5 +16,6 @@
 | Newsletters | [README](newsletters/README.md) |
 | Settings | [README](settings/README.md) |
 | Backup | [README](backup/README.md) |
+| Share | [README](share/README.md) |
 
 checklists.md é histórico: subtarefas pertencem a Captures. image-capture/README.md e image-import/ocr-title-detection.md complementam Image Import. Wireframes antigos devem ser confrontados com o código e Design System atual.
