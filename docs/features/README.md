@@ -1,6 +1,6 @@
 # Documentação das features
 
-**Atualizado:** 2026-11-04. Regras globais: AGENTS.md. Estado integrado: ../current-state.md.
+**Atualizado:** 2026-11-05. Regras globais: AGENTS.md. Estado integrado: ../current-state.md.
 
 | Feature | Contrato |
 |---|---|

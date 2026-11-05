@@ -4,7 +4,6 @@ import android.content.Intent
 import android.content.ClipData
 import android.net.Uri
 import androidx.core.content.FileProvider
-import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import java.io.File
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -64,6 +65,28 @@ fun CaptureShareDialog(
         uri?.let { viewModel.exportRtf(payload, it.toString()) }
     }
 
+    LaunchedEffect(state.shareablePdfUri) {
+        val rawUri = state.shareablePdfUri ?: return@LaunchedEffect
+        runCatching {
+            val sourceFile = Uri.parse(rawUri).path?.let(::File)?.canonicalFile ?: error("Arquivo PDF temporário inválido.")
+            val shareDirectory = File(context.cacheDir, "share_exports").canonicalFile
+            require(sourceFile.path.startsWith(shareDirectory.path + File.separator) && sourceFile.isFile) {
+                "O PDF temporário não está disponível para compartilhamento."
+            }
+            val contentUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", sourceFile)
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                putExtra(Intent.EXTRA_SUBJECT, payload.title)
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                clipData = ClipData.newUri(context.contentResolver, payload.title, contentUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(sendIntent, "Compartilhar PDF da tarefa"))
+        }.onFailure { viewModel.reportShareError(it.message ?: "Não foi possível compartilhar o PDF.") }
+        viewModel.consumeShareablePdf()
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Compartilhar pensamento", fontWeight = FontWeight.SemiBold) },
@@ -80,45 +103,17 @@ fun CaptureShareDialog(
                 }
                 Button(
                     onClick = {
-                        val sharedImages = buildList {
-                            (listOfNotNull(payload.coverUri) + payload.mediaUris + payload.notes.mapNotNull { it.imageUri })
-                                .distinct()
-                                .forEach { raw ->
-                                    val parsed = runCatching { Uri.parse(raw) }.getOrNull() ?: return@forEach
-                                    if (parsed.scheme != "file") return@forEach
-                                    val file = runCatching { File(parsed.path.orEmpty()).canonicalFile }.getOrNull() ?: return@forEach
-                                    val privateRoot = File(context.filesDir, "captures").canonicalFile
-                                    if (!file.toPath().startsWith(privateRoot.toPath()) || !file.isFile) return@forEach
-                                    runCatching {
-                                        add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
-                                    }
-                                }
-                        }
-                        val intent = if (sharedImages.isNotEmpty()) {
-                            Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                                type = "image/*"
-                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(sharedImages))
-                                putExtra(Intent.EXTRA_SUBJECT, payload.title)
-                                putExtra(Intent.EXTRA_TEXT, shareText)
-                                clipData = ClipData.newUri(context.contentResolver, payload.title, sharedImages.first()).also { clip ->
-                                    sharedImages.drop(1).forEach { clip.addItem(ClipData.Item(it)) }
-                                }
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                        } else {
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, payload.title)
-                                putExtra(Intent.EXTRA_TEXT, shareText)
-                            }
-                        }
-                        context.startActivity(Intent.createChooser(intent, "Compartilhar pensamento"))
+                        val shareDirectory = File(context.cacheDir, "share_exports").apply { mkdirs() }
+                        val expiration = System.currentTimeMillis() - 24L * 60L * 60L * 1000L
+                        shareDirectory.listFiles()?.filter { it.isFile && it.lastModified() < expiration }?.forEach(File::delete)
+                        val pdfFile = File(shareDirectory, "${safeName(payload.title)}-${System.nanoTime()}.pdf")
+                        viewModel.exportPdfForSharing(payload, Uri.fromFile(pdfFile).toString())
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !state.isBusy,
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null)
-                    Text("  Compartilhar")
+                    Text("  Compartilhar PDF")
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
