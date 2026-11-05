@@ -1,3 +1,5 @@
+> **Status 2026-11-04:** documento histórico. Para comportamento e layout atuais, consulte [estado atual](../../current-state.md), [índice de features](../README.md) e [Design System](../../design-system.md).
+
 # Wireframes — Capture Flow atual
 
 Os esquemas abaixo registram a estrutura ativa observada no código. Não representam pixels exatos; validar dimensões e fonte em dispositivo.

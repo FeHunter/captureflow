@@ -1,3 +1,5 @@
+> **Status 2026-11-04:** documento histórico. Para comportamento e layout atuais, consulte [estado atual](../current-state.md), [índice de features](README.md) e [Design System](../design-system.md).
+
 # Captures
 
 The feature receives, classifies, persists, searches and manages link, text and image references.

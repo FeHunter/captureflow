@@ -1,28 +1,10 @@
-# Integrações — Captures
+# Integrações — Capture Flow
 
-## Android Sharesheet / Intents
-`MainActivity` recebe payloads suportados por Android Share Intent, incluindo texto/URLs e URI de imagem (`EXTRA_STREAM`/ClipData conforme suporte do código). Conteúdo compartilhado é encaminhado ao ViewModel. O formulário manual de texto/link não faz parte da tela atual.
+**Atualizado:** 2026-11-04.
 
-## Photo Picker
-O seletor de imagem do sistema é usado para importar uma imagem sem solicitar permissão ampla de leitura de toda a galeria no fluxo manual. A URI é copiada para armazenamento privado quando possível.
-
-## Google ML Kit Text Recognition
-OCR roda localmente no aparelho. `OcrService` processa blocos/linhas, caixas delimitadoras e perfil heurístico de UI para sugerir título e descrição. A referência de imagem atual persiste o título sugerido, não o OCR bruto no campo `content`. Resultado pode variar por layout/idioma/qualidade da imagem.
-
-## Metadados HTTP(S)
-`LinkMetadataService` busca título e descrição em HTML público. Não executa JavaScript nem scraping visual; redirecionamentos automáticos estão desativados. Sites autenticados, bloqueados ou dependentes de JS podem não fornecer metadados.
-
-## Screenshot monitor
-`ScreenshotMonitor` observa MediaStore enquanto a UI está em primeiro plano. `ScreenshotNotificationService` implementa monitoramento opcional em foreground service e notificação persistente. Ambos reconhecem screenshots por metadados de nome/pasta e têm limitações por fabricante, permissões e política de bateria. Não usam Accessibility Service.
-
-## Persistência
-Room/SQLite é local. Não há sincronização cloud ou upload de imagem para OCR. O serviço de metadados de link faz uma requisição de rede à URL compartilhada.
-
-
-## Extração de metadados de link (estado atual)
-- `HttpURLConnection`, redirects habilitados, timeout de 4 s para conexão e leitura, leitura máxima de 512 KB.
-- Título: H1 → og:title → twitter:title → title do documento → host.
-- Imagem: img de article → img de main → og:image/og:image:url/twitter:image.
-- Resolve URL relativa contra a URL final da página.
-- O parser não executa JavaScript; páginas dinâmicas/autenticadas podem não expor conteúdo. O link continua salvável com fallback.
-- Download de imagem ocorre somente após o usuário confirmar a categoria.
+- **Sharesheet/Intents:** MainActivity recebe texto, URLs e URI(s) de imagem; SharedContentIntentParser adapta payloads na fronteira de Image Import. Links exigem revisão/categoria/confirmação; imagens seguem OCR/revisão. Texto manual é suportado por Nova tarefa.
+- **Photo Picker e câmera:** Photo Picker evita permissão ampla da galeria. CameraX tem foco por toque e etapa de recorte/revisão. Imagens são copiadas para storage privado quando possível; URI original é fallback.
+- **ML Kit OCR:** executado localmente. OcrService gera linhas/caixas; TitleDetectionService sugere título editável. OCR bruto não substitui conteúdo principal.
+- **Metadados HTTP(S):** Image Import tenta oEmbed oficial para YouTube; outros sites usam H1, metadados sociais e imagens de conteúdo. Não executa JavaScript; páginas dinâmicas/autenticadas/bloqueadas podem não fornecer metadados. Falha não descarta URL; download da capa ocorre após confirmação.
+- **Screenshots:** monitoramento opt-in via MediaStore/notificação, best-effort por metadados/nome/pasta. Não usa Accessibility Service, não lê pixels de outros apps e não cria overlay. Permissões/OEM/bateria podem interromper. Origem só é removida após confirmação e cópia privada bem-sucedida.
+- **WebViews:** Fullscreen e Newsletters têm leitores separados com JS/DOM Storage/file access desativados e mixed content bloqueado. YouTube Player usa IFrame dedicado com Referer/origin, controles e autoplay desativado.

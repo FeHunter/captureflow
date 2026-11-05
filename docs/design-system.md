@@ -1,6 +1,6 @@
 # CaptureFlow — Personal Notebook Design System
 
-**Status:** aprovado para implementação  
+**Status:** direção aprovada e aplicada nas views no PR #59; validação visual em dispositivo continua separada  
 **Direção:** Hybrid Personal Notebook  
 **Temas:** claro, escuro e seguir sistema  
 **Plataforma canônica:** Android nativo, Kotlin, Jetpack Compose e Material 3  

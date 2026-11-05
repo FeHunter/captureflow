@@ -1,0 +1,3 @@
+# YouTube Player
+
+Player IFrame em WebView Android, endpoint youtube-nocookie.com/embed/{VIDEO_ID}, ID validado, Referer explícito e origin alinhado ao applicationId. Controles on, autoplay off, 16:9. WebViewClient/WebChromeClient, hardware acceleration, callbacks loading/erro, lifecycle pause/resume/destroy. Fullscreen hospeda fora do HorizontalPager. Não falsifica User-Agent, não expõe APIs nativas nem contorna bloqueios. Link original é fallback. Thumbnail é responsabilidade de Image Import.
