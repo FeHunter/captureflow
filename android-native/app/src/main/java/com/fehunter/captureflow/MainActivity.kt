@@ -137,6 +137,9 @@ class MainActivity : ComponentActivity() {
         hasScreenshotAccess = hasScreenshotPermission()
         screenshotMonitoringEnabled = screenshotPreferences()
             .getBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
+        if (screenshotMonitoringEnabled && (!hasScreenshotAccess || !hasNotificationPermission())) {
+            stopScreenshotMonitoring()
+        }
     }
 
     override fun onStart() {

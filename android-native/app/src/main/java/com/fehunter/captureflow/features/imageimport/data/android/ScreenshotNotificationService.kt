@@ -99,6 +99,10 @@ class ScreenshotNotificationService : Service() {
 
     private fun findRecentScreenshots() {
         if (!isMonitoringAllowed()) {
+            getSharedPreferences(PREFERENCES, MODE_PRIVATE).edit()
+                .putBoolean(PREF_MONITOR_ENABLED, false)
+                .apply()
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
@@ -121,7 +125,11 @@ class ScreenshotNotificationService : Service() {
             contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 projection.toTypedArray(),
-                "${MediaStore.Images.Media.DATE_ADDED} >= ?",
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    "${MediaStore.Images.Media.DATE_ADDED} >= ? AND ${MediaStore.MediaColumns.IS_PENDING} = 0"
+                } else {
+                    "${MediaStore.Images.Media.DATE_ADDED} >= ?"
+                },
                 arrayOf((lastScan - CREATION_GRACE_SECONDS).coerceAtLeast(0L).toString()),
                 "${MediaStore.Images.Media.DATE_ADDED} DESC",
             )?.use { cursor ->
@@ -166,13 +174,22 @@ class ScreenshotNotificationService : Service() {
     private fun looksLikeScreenshot(displayName: String, relativePath: String): Boolean {
         val name = displayName.lowercase()
         val path = relativePath.lowercase()
-        return name.contains("screenshot") ||
-            name.contains("screen_shot") ||
-            name.contains("screen-shot") ||
-            name.contains("screen shot") ||
-            name.contains("screencap") ||
+        return listOf(
+            "screenshot",
+            "screen_shot",
+            "screen-shot",
+            "screen shot",
+            "screen_capture",
+            "screen capture",
+            "screencap",
+            "captura de tela",
+            "captura_de_tela",
+            "captura-de-tela",
+        ).any(name::contains) ||
             path.contains("/screenshots/") ||
-            path.endsWith("/screenshots")
+            path.endsWith("/screenshots") ||
+            path.contains("/capturas de tela/") ||
+            path.endsWith("/capturas de tela")
     }
 
     private fun notifyScreenshot(uri: Uri) {
