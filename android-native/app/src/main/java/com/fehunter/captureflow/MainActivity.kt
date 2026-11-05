@@ -6,32 +6,31 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import com.fehunter.captureflow.core.ui.theme.CaptureFlowTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.fehunter.captureflow.app.di.AppContainer
 import com.fehunter.captureflow.app.navigation.CaptureFlowApp
+import com.fehunter.captureflow.core.ui.theme.CaptureFlowTheme
+import com.fehunter.captureflow.features.backup.presentation.viewmodel.BackupViewModel
 import com.fehunter.captureflow.features.captures.presentation.viewmodel.CaptureViewModel
-import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
-import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
-import com.fehunter.captureflow.features.settings.presentation.viewmodel.SettingsViewModel
 import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
 import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
-import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
-import com.fehunter.captureflow.features.backup.presentation.viewmodel.BackupViewModel
-import com.fehunter.captureflow.features.share.presentation.viewmodel.CaptureShareViewModel
+import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imageimport.data.android.ScreenshotNotificationService
-import com.fehunter.captureflow.app.di.AppContainer
 import com.fehunter.captureflow.features.imageimport.data.android.SharedContentIntentParser
+import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
+import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
+import com.fehunter.captureflow.features.settings.presentation.viewmodel.SettingsViewModel
+import com.fehunter.captureflow.features.share.presentation.viewmodel.CaptureShareViewModel
 
 class MainActivity : ComponentActivity() {
     private val appContainer by lazy { AppContainer(application) }
@@ -43,23 +42,37 @@ class MainActivity : ComponentActivity() {
     private val newslettersViewModel: NewslettersViewModel by viewModels { appContainer.newslettersViewModelFactory }
     private val backupViewModel: BackupViewModel by viewModels { appContainer.backupViewModelFactory }
     private val shareViewModel: CaptureShareViewModel by viewModels { appContainer.shareViewModelFactory }
+
     private var pendingShareIntent by mutableStateOf<Intent?>(null)
-    private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
     private var pendingScreenshotImportUri by mutableStateOf<Uri?>(null)
+    private var detectedScreenshotUri by mutableStateOf<Uri?>(null)
     private var hasScreenshotAccess by mutableStateOf(false)
     private var screenshotMonitoringEnabled by mutableStateOf(false)
 
     private val screenshotPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        hasScreenshotAccess = granted
-        if (granted) requestNotificationPermission()
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { _ ->
+        hasScreenshotAccess = hasScreenshotPermission()
+        if (hasScreenshotAccess) {
+            requestNotificationPermission()
+        } else {
+            Toast.makeText(
+                this,
+                "A detecção contínua exige acesso completo às imagens. Você ainda pode adicionar imagens pela Galeria.",
+                Toast.LENGTH_LONG,
+            ).show()
+        }
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) startScreenshotNotificationService()
+        if (granted) startScreenshotMonitoring()
+        else {
+            screenshotMonitoringEnabled = false
+            screenshotPreferences().edit().putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false).apply()
+            Toast.makeText(this, "A permissão de notificações é necessária para manter o monitoramento visível.", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +96,11 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(shared) {
                     if (shared?.action == Intent.ACTION_SEND || shared?.action == Intent.ACTION_SEND_MULTIPLE) {
                         SharedContentIntentParser.parse(shared)?.let { incoming ->
-                            imageImportViewModel.receiveSharedContent(incoming.content, incoming.imageUri, ImageCompressionProfile.fromPreference(imageCompressionProfile))
+                            imageImportViewModel.receiveSharedContent(
+                                incoming.content,
+                                incoming.imageUri,
+                                ImageCompressionProfile.fromPreference(imageCompressionProfile),
+                            )
                         }
                         pendingShareIntent = null
                     }
@@ -106,27 +123,42 @@ class MainActivity : ComponentActivity() {
                     screenshotMonitoringEnabled = screenshotMonitoringEnabled,
                     detectedScreenshotUri = detectedScreenshotUri,
                     pendingScreenshotImportUri = pendingScreenshotImportUri,
-                    onScreenshotImportHandled = { pendingScreenshotImportUri = null },
                     onRequestScreenshotAccess = ::requestScreenshotAccess,
-                    onStopScreenshotMonitoring = ::stopScreenshotNotificationService,
+                    onStopScreenshotMonitoring = ::stopScreenshotMonitoring,
                     onScreenshotHandled = ::handleScreenshotHandled,
+                    onScreenshotImportHandled = { pendingScreenshotImportUri = null },
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hasScreenshotAccess = hasScreenshotPermission()
+        screenshotMonitoringEnabled = screenshotPreferences()
+            .getBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
+        if (screenshotMonitoringEnabled && (!hasScreenshotAccess || !hasNotificationPermission())) {
+            stopScreenshotMonitoring()
         }
     }
 
     override fun onStart() {
         super.onStart()
         hasScreenshotAccess = hasScreenshotPermission()
-        val preferences = getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE)
-        screenshotMonitoringEnabled = preferences.getBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
-        if (hasScreenshotAccess && screenshotMonitoringEnabled) {
-            if (hasNotificationPermission()) startScreenshotNotificationService() else {
-                screenshotMonitoringEnabled = false
-                preferences.edit().putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false).apply()
+        screenshotMonitoringEnabled = screenshotPreferences()
+            .getBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
+
+        if (screenshotMonitoringEnabled) {
+            if (hasScreenshotAccess && hasNotificationPermission()) {
+                startScreenshotService()
+            } else {
+                stopScreenshotMonitoring()
             }
         }
     }
+
+    private fun screenshotPreferences() =
+        getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE)
 
     private fun screenshotPermission(): String =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -138,56 +170,81 @@ class MainActivity : ComponentActivity() {
     private fun hasScreenshotPermission(): Boolean =
         checkSelfPermission(screenshotPermission()) == PackageManager.PERMISSION_GRANTED
 
-    private fun requestScreenshotAccess() {
-        if (hasScreenshotPermission()) {
-            hasScreenshotAccess = true
-            requestNotificationPermission()
-        } else {
-            screenshotPermissionLauncher.launch(screenshotPermission())
-        }
-    }
+    private fun hasNotificationPermission(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    private fun hasNotificationPermission(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    private fun requestScreenshotAccess() {
+        if (!hasScreenshotPermission()) {
+            val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                arrayOf(
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+                )
+            } else {
+                arrayOf(screenshotPermission())
+            }
+            screenshotPermissionLauncher.launch(permissions)
+            return
+        }
+        hasScreenshotAccess = true
+        requestNotificationPermission()
+    }
 
     private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission()) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            startScreenshotNotificationService()
+            startScreenshotMonitoring()
         }
     }
 
-    private fun startScreenshotNotificationService() {
+    private fun startScreenshotMonitoring() {
         if (!hasScreenshotPermission() || !hasNotificationPermission()) return
-        getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE).edit()
-            .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, true).apply()
+        screenshotPreferences().edit()
+            .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, true)
+            .putLong(ScreenshotNotificationService.PREF_LAST_SCAN_SECONDS, System.currentTimeMillis() / 1_000L - 3L)
+            .apply()
         screenshotMonitoringEnabled = true
-        val serviceIntent = Intent(this, ScreenshotNotificationService::class.java)
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent) else startService(serviceIntent)
-        } catch (_: Exception) {
-            getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE).edit()
-                .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false).apply()
+        startScreenshotService()
+    }
+
+    private fun startScreenshotService() {
+        if (!hasScreenshotPermission() || !hasNotificationPermission()) {
+            stopScreenshotMonitoring()
+            return
+        }
+        runCatching {
+            ContextCompat.startForegroundService(
+                this,
+                Intent(this, ScreenshotNotificationService::class.java),
+            )
+        }.onFailure {
+            screenshotPreferences().edit()
+                .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
+                .apply()
             screenshotMonitoringEnabled = false
+            Toast.makeText(this, "Não foi possível iniciar a detecção de screenshots.", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun stopScreenshotNotificationService() {
-        getSharedPreferences(ScreenshotNotificationService.PREFERENCES, MODE_PRIVATE).edit()
-            .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false).apply()
+    private fun stopScreenshotMonitoring() {
+        screenshotPreferences().edit()
+            .putBoolean(ScreenshotNotificationService.PREF_MONITOR_ENABLED, false)
+            .apply()
         screenshotMonitoringEnabled = false
-        startService(Intent(this, ScreenshotNotificationService::class.java).setAction(ScreenshotNotificationService.ACTION_STOP))
+        stopService(Intent(this, ScreenshotNotificationService::class.java))
     }
 
-    private fun handleScreenshotAction(intent: Intent?) {
-        val uri = intent?.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)?.let(Uri::parse) ?: return
-        when (intent.action) {
+    private fun handleScreenshotAction(source: Intent?) {
+        val incomingIntent = source ?: return
+        when (incomingIntent.action) {
+            ScreenshotNotificationService.ACTION_STOP -> stopScreenshotMonitoring()
             ScreenshotNotificationService.ACTION_IMPORT_SCREENSHOT -> {
-                pendingScreenshotImportUri = uri
-                detectedScreenshotUri = null
+                incomingIntent.getStringExtra(ScreenshotNotificationService.EXTRA_SCREENSHOT_URI)
+                    ?.let(Uri::parse)
+                    ?.let { pendingScreenshotImportUri = it }
             }
-            ScreenshotNotificationService.ACTION_SAVE_REFERENCE -> detectedScreenshotUri = uri
         }
     }
 

@@ -780,7 +780,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Text("Adicionar screenshot às referências?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text("Esta captura foi aberta pela notificação. Nada é salvo até você confirmar.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("A captura foi identificada pelo monitoramento ativado por você. A imagem original permanece na galeria; nada é salvo no CaptureFlow até sua confirmação.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         screenshotPreview?.let { preview ->
                             Image(
                                 bitmap = preview,
@@ -816,7 +816,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                                         imageImportViewModel.addImageCapture(
                                             uri.toString(),
                                             category = selectedCategory,
-                                            deleteSourceScreenshotAfterImport = true,
+                                            deleteSourceScreenshotAfterImport = false,
                                             compressionProfile = ImageCompressionProfile.fromPreference(imageCompressionProfile),
                                         )
                                         screenshotToConfirm = null

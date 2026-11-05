@@ -79,7 +79,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Seu caderno é particular. O CaptureFlow foi desenvolvido para organizar referências, tarefas e anotações no próprio dispositivo.",
+                    "Seu caderno fica sob seu controle. O CaptureFlow organiza referências, tarefas, imagens e anotações localmente no dispositivo e não exige criação de conta.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -99,13 +99,13 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
             item {
                 InformationSection(
                     title = "Capturas de tela e permissões",
-                    body = "Se você ativar o monitoramento de screenshots, o Android poderá conceder ao aplicativo o acesso necessário para detectar novas capturas e oferecer a importação. O processamento e o salvamento da referência acontecem no dispositivo. Você pode desativar esse recurso nas opções do próprio aplicativo ou nas configurações do Android.",
+                    body = "A detecção de screenshots é opcional e permanece ativa até você desativá-la. Ao ativá-la, o CaptureFlow solicita acesso completo a imagens (READ_MEDIA_IMAGES nas versões recentes ou a permissão equivalente em versões anteriores) e permissão para notificações (Android 13 ou superior). No Android 14 ou superior, o acesso limitado a fotos selecionadas não permite detectar todas as novas screenshots; nesse caso, o monitoramento não é iniciado e o Photo Picker continua disponível. Um serviço em primeiro plano observa metadados do MediaStore — como nome, pasta e data — para identificar novas capturas, inclusive enquanto você usa outros aplicativos. Uma notificação persistente informa que o monitoramento está ativo e oferece a ação Desativar. Cada screenshot identificada gera uma notificação para abrir uma prévia no CaptureFlow. A imagem original permanece na galeria e só é copiada para o caderno após sua confirmação e escolha de categoria. O app não captura a tela, não utiliza Serviços de Acessibilidade e não envia suas imagens a servidores. Você pode interromper o monitoramento pela notificação persistente ou pelo ícone no cabeçalho, além de revogar permissões nas configurações do Android. Se o acesso a imagens ou notificações deixar de estar disponível, o monitoramento é encerrado. A câmera também exige permissão própria e só é usada quando você escolhe fotografar dentro do app.",
                 )
             }
             item {
                 InformationSection(
-                    title = "Backups: funcionalidade futura",
-                    body = "O CaptureFlow permite exportar referências, categorias, subtarefas, anotações e imagens em um arquivo ZIP. A importação mescla os dados com o caderno atual, sem apagar referências locais. Você escolhe onde salvar o arquivo e é responsável por manter uma cópia segura, preferencialmente fora do dispositivo.",
+                    title = "Backup e restauração",
+                    body = "O CaptureFlow não utiliza o backup automático do Android nem transfere automaticamente os dados do aplicativo para outro dispositivo. A única forma de backup oferecida pelo app é a exportação manual de um arquivo ZIP, que reúne referências, categorias, subtarefas, mídias, anotações e dados de Newsletters compatíveis com a versão do arquivo. Na importação, os dados são mesclados ao conteúdo existente, sem apagar referências locais. Você escolhe onde salvar e de onde importar o arquivo. O ZIP pode conter informações pessoais e imagens; mantenha-o em local seguro. O CaptureFlow não envia esse arquivo aos nossos servidores.",
                 )
             }
             item {
@@ -139,7 +139,7 @@ fun TutorialsScreen(onBack: () -> Unit) {
         TutorialSection("Visualizar uma referência", "Toque em um card para abrir o visualizador. Deslize horizontalmente para navegar entre referências e, quando houver várias imagens, use os controles ou o gesto vertical para alternar entre elas."),
         TutorialSection("Abrir conteúdo da web", "Quando uma referência possui um link compatível, toque no ícone de globo na barra vertical para tentar visualizar a página dentro do CaptureFlow. No leitor, use a opção de abrir externamente se o site exigir login, JavaScript ou recursos não suportados."),
         TutorialSection("Newsletters", "Use o ícone de RSS no cabeçalho para acessar Newsletters e consultar os feeds adicionados. O carregamento dos feeds depende de conexão com a internet."),
-        TutorialSection("Monitoramento de screenshots", "O ícone de notificações no cabeçalho permite configurar ou ativar o aviso de novas capturas de tela. O Android solicitará a permissão necessária; você pode desativar o monitoramento quando quiser."),
+        TutorialSection("Detecção de screenshots", "O ícone de captura no cabeçalho permite ativar a detecção contínua de screenshots. O Android solicitará acesso completo a imagens e notificações. Enquanto ativada, uma notificação persistente indica que o monitoramento continua mesmo quando você sai do aplicativo e oferece a ação Desativar. Quando uma nova captura é identificada, toque na notificação para revisar e escolher se deseja salvá-la no caderno. A imagem original permanece na galeria. O Android pode interromper e tentar recriar o serviço; a detecção é best-effort. Você pode interromper o monitoramento pela notificação ou pelo cabeçalho a qualquer momento."),
         TutorialSection("Tema do aplicativo", "No menu de opções, escolha Alterar tema para seguir o dispositivo ou usar o tema claro ou escuro."),
     )
     InformationPage(title = "Tutoriais", onBack = onBack) {
