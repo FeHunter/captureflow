@@ -70,18 +70,22 @@ Plugins de build: Android Gradle Plugin 8.13.2, Kotlin 2.2.20 e KSP 2.2.20-2.0.2
 
 Não há dependência direta declarada de Firebase, Google Analytics, Crashlytics, AdMob, SDK de publicidade ou SDK de atribuição no módulo Android examinado. Isso não é uma afirmação sobre toda dependência transitiva nem substitui a análise do AAB final.
 
-### 4.2 Dependências transitivas e validação pendente
+### 4.2 Dependências transitivas e auditoria do AAB — 2026-11-05
 
-O projeto não utiliza Version Catalog. O arquivo de dependências diretas é `android-native/app/build.gradle.kts`; versões de plugins ficam em `android-native/build.gradle.kts`.
+O inventário foi gerado em CI e o AAB unsigned foi inspecionado. Artefato de auditoria do workflow run 41991366667 (artifact 13398566979): relatório releaseRuntimeClasspath, ML Kit dependencyInsight, manifesto mesclado, manifesto decodificado do AAB, configuração do bundle, inventário ZIP e SHA-256.
 
-Antes do Data Safety definitivo, gerar o inventário resolvido e inspecionar o AAB assinado:
-- `./gradlew :app:dependencies --configuration releaseRuntimeClasspath`
-- `./gradlew :app:bundleRelease`
-- inspecionar o manifesto mesclado do release e os metadados do AAB;
-- verificar presença de bibliotecas que realizem analytics, crash reporting, ads, identificadores, telemetria ou envio de dados;
-- confirmar o modelo/artefatos ML Kit e seu comportamento de download/execução na versão efetivamente empacotada.
+Resultados confirmados:
+- O AAB contém base/assets/mlkit-google-ocr-models/ e bibliotecas nativas libmlkit_google_ocr_pipeline.so para ARM64, ARM32, x86 e x86_64. O modelo de OCR está empacotado; não depende exclusivamente de download posterior do modelo.
+- O classpath inclui com.google.mlkit:text-recognition:16.0.1, com.google.android.gms:play-services-mlkit-text-recognition:19.0.1, com.google.mlkit:common:18.11.0, vision-common, vision-interfaces, firebase-components, firebase-encoders e com.google.android.datatransport (transport-runtime e backend CCT), como dependências transitivas do ML Kit.
+- Não foram encontrados firebase-analytics, Crashlytics, AdMob, Google Analytics, SDK de anúncios ou SDK de atribuição no inventário resolvido/AAB. A presença de firebase-components, encoders e transport CCT, isoladamente, não significa Firebase Analytics ou publicidade.
+- O manifesto confirma applicationId com.fehunter.captureflow, versionCode 5, versionName 0.3.3, minSdk 26, targetSdk 36, allowBackup=false, permissões de mídia/notificações/FGS e ScreenshotNotificationService com specialUse.
+- O AAB de auditoria é unsigned; não é apto para upload na Play Console.
 
-A auditoria atual é uma inspeção estática do repositório remoto. Nenhum relatório Gradle de dependências transitivas nem inspeção binária do AAB foi obtido nesta etapa. Não declarar o inventário transitivo como concluído.
+A documentação do ML Kit esclarece que o processamento das imagens/texto e os resultados ocorre no dispositivo e não é enviado aos servidores Google. O SDK pode contactar servidores Google para correções, modelos e compatibilidade de aceleradores e envia métricas técnicas de desempenho/utilização. Para recursos bundled, a documentação lista informações do dispositivo e do app, identificador por instalação, métricas de desempenho, configuração da API, tamanhos de entrada/saída, versão do recurso, tipos de evento e códigos de erro. O Google informa que essas métricas são transmitidas por HTTPS e não são transferidas a terceiros. A política de privacidade e o Data Safety devem declarar esse tratamento técnico.
+
+Fontes oficiais e rascunhos de declaração: docs/release/google-play-submission-drafts.md.
+
+Limite da auditoria: a análise confirma o conteúdo do AAB e dependências resolvidas, mas não substitui testes de rede em runtime em dispositivos nem validação da Play Console. Revalidar o AAB assinado antes do envio.
 
 ### 4.3 Tráfego de rede identificado no código Android
 
@@ -111,10 +115,11 @@ O monitoramento não lê pixels durante a varredura de descoberta, não captura 
 ### 4.5 Conclusão provisória para Data Safety
 
 - Não afirmar que o aplicativo é totalmente offline: existem requisições a sites, feeds, YouTube e WebView.
-- Não marcar automaticamente toda categoria de coleta como ausente apenas porque não há backend próprio.
-- Avaliar separadamente os dados enviados diretamente pelo app a terceiros, o conteúdo que o usuário compartilha intencionalmente e os dados que provedores externos coletam em seus próprios contextos.
-- Nenhum SDK de anúncios foi identificado nas dependências diretas Android examinadas; confirmar novamente no classpath transitivo/AAB antes de responder à declaração de anúncios.
-- A seção Data Safety deve ser finalizada depois da inspeção do AAB e do inventário transitivo, mantendo consistência com a política publicada.
+- Dados do caderno, imagens, metadados de screenshots e texto OCR permanecem locais no fluxo implementado; não foram identificados uploads desses conteúdos para servidores próprios do CaptureFlow.
+- O SDK ML Kit bundled envia métricas técnicas de uso/diagnóstico ao Google, conforme documentado em google-play-submission-drafts.md; incluir as categorias aplicáveis no formulário.
+- Não foram encontrados SDKs de publicidade/analytics/Crashlytics no classpath resolvido e no AAB auditado. Confirmar novamente no AAB assinado e manter a declaração de anúncios coerente.
+- Separar dados coletados pelo SDK, dados acessados localmente pelo app, requisições feitas a sites escolhidos pelo usuário e conteúdo transferido pelo Sharesheet.
+- A proposta de Data Safety é preliminar: a classificação final deve ser confirmada no formulário da Play Console e após testes de rede/runtime.
 
 ## 5. Manifest e permissões — monitoramento contínuo opt-in
 
@@ -171,9 +176,11 @@ A versão final deve cobrir:
 Pendências:
 - Publicar a página de política no domínio do portfólio.
 - Atualizar a tela Privacidade no app se a auditoria revelar conteúdo ausente ou impreciso.
-- Concluir inventário de dependências transitivas e AAB.
-- Preencher Data Safety com base no inventário completo.
-- Declarar anúncios corretamente após confirmar ausência/presença no AAB.
+- [x] Concluir inventário de dependências transitivas e inspeção do AAB unsigned.
+- [ ] Reinspecionar o AAB assinado e validar comportamento de rede/runtime.
+- [ ] Atualizar política publicada com métricas técnicas do ML Kit.
+- [ ] Preencher Data Safety com base no inventário e nas ressalvas do rascunho.
+- [x] Não foram encontrados SDKs de anúncios no classpath transitivo/AAB auditado; confirmar no AAB assinado.
 
 ## 8. Cadastro da loja — pendente
 
@@ -201,6 +208,7 @@ Pendências:
 - [ ] Build release/AAB compila no CI.
 - [ ] Assinatura release validada com chave de upload fora do Git.
 - [ ] Inventário e justificativa de permissões concluídos.
+- [x] Justificativas preliminares para READ_MEDIA_IMAGES e FGS specialUse documentadas; elegibilidade ainda sujeita à análise da Play.
 - [x] Auto Backup e transferência automática desabilitados; regras explícitas e documentação adicionadas.
 - [ ] Política de privacidade publicada e coerente com Data Safety.
 - [ ] Testes funcionais e de compatibilidade aprovados.
@@ -208,3 +216,8 @@ Pendências:
 - [ ] Conta Play Console verificada e requisitos de teste cumpridos.
 
 **Não considerar o app pronto para publicação enquanto qualquer item crítico acima estiver pendente.**
+
+
+## 11. Rascunhos de submissão e próximos passos
+
+Consultar docs/release/google-play-submission-drafts.md para o rascunho de Data Safety, justificativas de permissões, texto do Foreground Service, roteiro de vídeo, instruções locais de assinatura e checklist de testes reais. Esses textos são material de preparação, não declarações já enviadas ou aprovadas pela Google.
