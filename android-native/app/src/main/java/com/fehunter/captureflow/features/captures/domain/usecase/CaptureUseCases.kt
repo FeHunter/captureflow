@@ -16,6 +16,7 @@ class CaptureUseCases(private val repository: CaptureRepository) {
     fun observeMedia(): Flow<List<CaptureMedia>> = repository.observeMedia()
     suspend fun addMedia(items: List<CaptureMedia>) = repository.addMedia(items)
     suspend fun setCover(captureId: String, mediaId: String) = repository.setCover(captureId, mediaId)
+    suspend fun replaceCoverImage(captureId: String, uri: String) = repository.replaceCoverImage(captureId, uri)
     suspend fun save(capture: Capture) = repository.save(capture)
     suspend fun findByContent(content: String) = repository.findByContent(content)
     suspend fun findBySourceUrl(url: String) = repository.findBySourceUrl(url)

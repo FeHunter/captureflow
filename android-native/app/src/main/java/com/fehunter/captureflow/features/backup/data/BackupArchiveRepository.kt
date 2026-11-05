@@ -12,5 +12,5 @@ class BackupArchiveRepository(private val manager: BackupArchiveManager) : Backu
         manager.importFrom(Uri.parse(source)).toDomain()
 
     private fun BackupArchiveManager.BackupSummary.toDomain() =
-        BackupResult(captures, categories, images)
+        BackupResult(captures, categories, images, newsletterSources, newsletterArticles)
 }

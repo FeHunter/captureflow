@@ -3,18 +3,17 @@ package com.fehunter.captureflow.features.imagecompression.data
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
-import android.graphics.Paint
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.os.Build
 import androidx.exifinterface.media.ExifInterface
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCompressor
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
@@ -26,7 +25,7 @@ import kotlin.math.roundToInt
  *
  * URI input is decoded with bounds checking and EXIF normalization. Encoded byte input
  * (Notes' lossless PNG crop) is decoded without a URI/provider hop. Both paths share
- * the same dimension limit, alpha handling and JPEG encoder.
+ * the same dimension limit, alpha handling and adaptive WebP/JPEG encoder.
  */
 class ImageCompressionService(context: Context) : ImageCompressor {
     private val appContext = context.applicationContext
@@ -69,7 +68,7 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         try {
             val orientedBitmap = applyExifOrientation(source, decoded)
             oriented = orientedBitmap
-            return encodeJpegToPrivateStorage(orientedBitmap, profile)
+            return encodeOptimizedImageToPrivateStorage(orientedBitmap, profile, preserveLossless = bounds.outMimeType.equals("image/png", ignoreCase = true))
         } finally {
             if (oriented != null && oriented !== decoded && !oriented.isRecycled) oriented.recycle()
             if (!decoded.isRecycled) decoded.recycle()
@@ -109,7 +108,7 @@ class ImageCompressionService(context: Context) : ImageCompressor {
 
         return try {
             // Notes decodes and applies EXIF before cropping; its encoded PNG has no pending EXIF transform.
-            encodeJpegToPrivateStorage(decoded, profile)
+            encodeOptimizedImageToPrivateStorage(decoded, profile, preserveLossless = bounds.outMimeType.equals("image/png", ignoreCase = true))
         } finally {
             if (!decoded.isRecycled) decoded.recycle()
         }
@@ -198,12 +197,13 @@ class ImageCompressionService(context: Context) : ImageCompressor {
 
     /**
      * Shared encoder for URI-decoded images and Notes' decoded PNG crop.
-     * Transparent pixels are composited over white because JPEG has no alpha channel.
+     * Alpha-bearing images use a lossless format; opaque images compare lossy WebP and JPEG.
      * The caller's bitmap is never recycled or mutated.
      */
-    private fun encodeJpegToPrivateStorage(
+    private fun encodeOptimizedImageToPrivateStorage(
         source: Bitmap,
         profile: ImageCompressionProfile,
+        preserveLossless: Boolean,
     ): String {
         var working = source
         var ownsWorking = false
@@ -217,41 +217,40 @@ class ImageCompressionService(context: Context) : ImageCompressor {
                 ownsWorking = working !== source
             }
 
-            if (working.config != Bitmap.Config.ARGB_8888 || working.hasAlpha()) {
-                val normalized = Bitmap.createBitmap(
-                    working.width,
-                    working.height,
-                    Bitmap.Config.ARGB_8888,
-                )
-                try {
-                    Canvas(normalized).apply {
-                        drawColor(Color.WHITE)
-                        drawBitmap(working, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
-                    }
-                } catch (error: Exception) {
-                    normalized.recycle()
-                    throw error
-                }
-                if (ownsWorking && !working.isRecycled) working.recycle()
-                working = normalized
-                ownsWorking = true
+            val preserveDetails = preserveLossless || working.hasAlpha()
+            val webpFormat = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && preserveDetails -> Bitmap.CompressFormat.WEBP_LOSSLESS
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> Bitmap.CompressFormat.WEBP_LOSSY
+                else -> Bitmap.CompressFormat.WEBP
             }
+            val candidates = buildList {
+                runCatching {
+                    encodeCandidate(working, webpFormat, if (preserveDetails) 100 else profile.webpQuality)
+                }.getOrNull()?.let { add(it to "webp") }
+                if (preserveDetails) {
+                    // PNG is a lossless fallback if a device encoder rejects WebP alpha.
+                    runCatching { encodeCandidate(working, Bitmap.CompressFormat.PNG, 100) }
+                        .getOrNull()?.let { add(it to "png") }
+                } else {
+                    runCatching { encodeCandidate(working, Bitmap.CompressFormat.JPEG, profile.jpegQuality) }
+                        .getOrNull()?.let { add(it to "jpg") }
+                }
+            }
+            val (selectedBytes, extension) = candidates.minByOrNull { it.first.size }
+                ?: throw IOException("O dispositivo não conseguiu codificar a imagem em um formato compatível.")
 
             val directory = File(appContext.filesDir, CAPTURES_DIRECTORY)
             if (!directory.exists() && !directory.mkdirs()) {
                 throw IOException("Não foi possível preparar o armazenamento privado das imagens.")
             }
-
-            val destination = File(directory, "capture-${UUID.randomUUID()}.jpg")
+            val destination = File(directory, "capture-${UUID.randomUUID()}.$extension")
             try {
                 FileOutputStream(destination).use { output ->
-                    if (!working.compress(Bitmap.CompressFormat.JPEG, profile.quality, output)) {
-                        throw IOException("O Android não conseguiu codificar a imagem em JPEG.")
-                    }
+                    output.write(selectedBytes)
                     output.flush()
                 }
-                if (!destination.isFile || destination.length() <= 0L) {
-                    throw IOException("O arquivo JPEG gerado está vazio ou inválido.")
+                if (!destination.isFile || destination.length() != selectedBytes.size.toLong()) {
+                    throw IOException("O arquivo de imagem gerado está vazio ou incompleto.")
                 }
                 return Uri.fromFile(destination).toString()
             } catch (error: Exception) {
@@ -261,6 +260,18 @@ class ImageCompressionService(context: Context) : ImageCompressor {
         } finally {
             if (ownsWorking && !working.isRecycled) working.recycle()
         }
+    }
+
+    private fun encodeCandidate(
+        bitmap: Bitmap,
+        format: Bitmap.CompressFormat,
+        quality: Int,
+    ): ByteArray {
+        val output = ByteArrayOutputStream()
+        if (!bitmap.compress(format, quality, output) || output.size() <= 0) {
+            throw IOException("O Android não conseguiu codificar a imagem em $format.")
+        }
+        return output.toByteArray()
     }
 
     private fun calculateSampleSize(width: Int, height: Int, maxDimension: Int): Int {

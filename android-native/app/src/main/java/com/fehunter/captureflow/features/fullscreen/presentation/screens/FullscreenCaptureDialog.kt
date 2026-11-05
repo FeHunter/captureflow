@@ -19,7 +19,10 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Share
 import com.fehunter.captureflow.features.fullscreen.presentation.components.CaptureWebReader
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -60,6 +63,8 @@ fun FullscreenCaptureDialog(
     captures: List<Capture>,
     mediaByCapture: Map<String, List<CaptureMedia>>,
     onSetCover: (String, String) -> Unit,
+    onEditCover: (String) -> Unit,
+    onShare: (Capture) -> Unit,
     onDismiss: () -> Unit,
     onCaptureSelected: (Capture) -> Unit,
     onCompleted: (String, Boolean) -> Unit,
@@ -82,6 +87,7 @@ fun FullscreenCaptureDialog(
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
     var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
+    var notesExpanded by remember(capture?.id) { mutableStateOf(false) }
     var showWebReader by remember(capture?.id) { mutableStateOf(false) }
 
     capture?.let { selected ->
@@ -140,6 +146,18 @@ fun FullscreenCaptureDialog(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
+                        }
+                        IconButton(
+                            onClick = { onShare(selected) },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Compartilhar pensamento", tint = MaterialTheme.colorScheme.primary)
+                        }
+                        IconButton(
+                            onClick = { onEditCover(selected.id) },
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = "Editar imagem da capa", tint = MaterialTheme.colorScheme.primary)
                         }
                         sourceUrl?.let { url ->
                             IconButton(
@@ -291,8 +309,32 @@ fun FullscreenCaptureDialog(
                         ) {
                             val thoughtNotes = remember(selected.notes) { CaptureNotesCodec.decode(selected.notes) }
                             if (thoughtNotes.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        "Anotações · ${thoughtNotes.size}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    IconButton(
+                                        onClick = { notesExpanded = !notesExpanded },
+                                        modifier = Modifier.size(36.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = if (notesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = if (notesExpanded) "Recolher anotações" else "Expandir anotações",
+                                            tint = Color.White,
+                                        )
+                                    }
+                                }
                                 Column(
-                                    modifier = Modifier.fillMaxWidth().heightIn(max = 248.dp).verticalScroll(rememberScrollState()),
+                                    modifier = Modifier.fillMaxWidth()
+                                        .heightIn(max = if (notesExpanded) 560.dp else 248.dp)
+                                        .verticalScroll(rememberScrollState()),
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     thoughtNotes.forEach { note ->
