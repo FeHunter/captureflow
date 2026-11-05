@@ -1,28 +1,26 @@
 # Acesso a dados e ações — Captures
 
-## Estado observável
-`CaptureViewModel` expõe Flow/StateFlow para referências, tarefas mantidas no modelo e sub-checklists. A UI coleta estado e encaminha eventos; não consulta DAO diretamente.
+**Atualizado:** 2026-11-04.
 
-## Referências
-- `addCapture(raw)`: normaliza e classifica conteúdo; evita duplicatas textuais e tenta enriquecer URL.
-- `addImageCapture(uri, category)`: tenta copiar imagem para armazenamento privado, cria `CaptureEntity` e inicia OCR.
-- `setCaptureCompleted` e `setCaptureCategory`: atualizam campos persistidos.
-- `deleteCapture`: tenta remover arquivo privado, apaga sub-itens associados e remove a referência.
-- `extractText`: executa OCR em background, atualiza estado de processamento/erro e persiste o título sugerido.
+## Estado e persistência
+CaptureViewModel expõe referências, subtarefas, mídias e operações por Flow/StateFlow. Consome CaptureUseCases e não acessa DAO/Room diretamente. RoomCaptureRepository implementa CaptureRepository.
 
-## Imagens
-`SharedImageStorageService` tenta copiar para `filesDir/captures`. Se falhar, mantém a URI original como fallback. Exclusão deve apagar apenas arquivos privados que pertencem ao app; nunca apagar arquivos externos fornecidos pelo sistema/provedor.
+## Operações
+- Criar referência manual via CaptureFactory: título obrigatório, categoria válida, kind=text, sem imagem/URL/OCR.
+- Criar/importar imagem: Image Import coordena OCR/storage e solicita persistência pelo contrato público de Captures.
+- Editar título/categoria, concluir/reabrir e excluir via UseCases.
+- Adicionar/editar/excluir mídias e definir capa; limite de 10 mídias por referência.
+- Adicionar/concluir/excluir subtarefas por captureId.
+- Importar lote via CaptureImportBatch para Backup; inserção Room transacional.
 
-## Links
-`LinkMetadataService` procura metadados HTML comuns (`og:title`, `og:description`, Twitter Card e tags padrão). Há limites de timeout/tamanho e redirecionamentos automáticos desativados. Se a busca falhar, manter o conteúdo/URL original.
+## Ownership cross-feature
+- Categories aplica regras CRUD/seleção pelo contrato CaptureRepository.
+- Search filtra dados fornecidos por Captures.
+- Dashboard agrega fluxos, sem persistência própria.
+- Fullscreen usa callbacks de Captures.
+- Notes altera blocos do agregado por callbacks; não acessa Room.
+- Image Import possui OCR, metadados, cópia de imagem e screenshot.
+- Backup possui ZIP/manifesto e chama operações públicas de Captures.
 
-## Sub-checklists
-- Inserir item com UUID, `captureId`, título, estado inicial incompleto e timestamp.
-- Marcar conclusão e remover por ID.
-- Excluir os itens associados antes de excluir uma referência.
-
-## Tarefas legadas no modelo
-O banco/ViewModel ainda possui `ChecklistTaskEntity`, `checklistDao`, operações de criar/concluir/categorizar/excluir tarefa e análise de imagem de tarefa. A tela atual não expõe uma aba/lista de tarefas independente. Não conectar novamente esses fluxos à UI sem decisão explícita de produto.
-
-## Screenshot da notificação
-A confirmação atual chama `addImageCapture(uri, category = "Referência")`. Embora o nome da ação interna ainda possa conter `CREATE_TASK`, o resultado esperado é uma referência, não `ChecklistTaskEntity`.
+## Arquivos e privacidade
+Image Import/Image Compression são responsáveis pela cópia/compressão de arquivos. Captures mantém URIs de mídia e metadados. Ao excluir referência, subtarefas/mídias relacionadas são removidas; limpeza física só pode apagar arquivos privados pertencentes ao app. Nunca apagar URIs externas do provedor/MediaStore.
