@@ -32,7 +32,7 @@ fun FullscreenCapturePage(capture: Capture, showNavigationHint: Boolean) {
     val context = LocalContext.current
     val image by produceState<androidx.compose.ui.graphics.ImageBitmap?>(initialValue = null, capture.imageUri) {
         value = capture.imageUri?.let { raw ->
-            withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw) }.getOrNull() }
+            withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, raw, maxDimension = 1600) }.getOrNull() }
         }
     }
     Box(

@@ -86,13 +86,17 @@ fun FullscreenCaptureDialog(
     var showCategoryMenu by remember(capture?.id) { mutableStateOf(false) }
     var showSubtasks by remember(capture?.id) { mutableStateOf(false) }
     var newSubtask by remember(capture?.id) { mutableStateOf("") }
-    var expandedNoteImage by remember(capture?.id) { mutableStateOf<ImageBitmap?>(null) }
+    var expandedNoteImage by remember(capture?.id) { mutableStateOf<String?>(null) }
     var notesExpanded by remember(capture?.id) { mutableStateOf(false) }
     var showWebReader by remember(capture?.id) { mutableStateOf(false) }
 
     capture?.let { selected ->
-        val viewerCaptures = captures.filter { it.category == selected.category && it.isCompleted == selected.isCompleted }
-        val initialPage = viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
+        val viewerCaptures = remember(captures, selected.category, selected.isCompleted) {
+            captures.filter { it.category == selected.category && it.isCompleted == selected.isCompleted }
+        }
+        val initialPage = remember(viewerCaptures, selected.id) {
+            viewerCaptures.indexOfFirst { it.id == selected.id }.coerceAtLeast(0)
+        }
         val sourceUrl = selected.sourceUrl?.takeIf { url ->
             runCatching {
                 val uri = java.net.URI(url)
@@ -152,12 +156,6 @@ fun FullscreenCaptureDialog(
                             modifier = Modifier.size(44.dp),
                         ) {
                             Icon(Icons.Default.Share, contentDescription = "Compartilhar pensamento", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(
-                            onClick = { onEditCover(selected.id) },
-                            modifier = Modifier.size(44.dp),
-                        ) {
-                            Icon(Icons.Default.Image, contentDescription = "Editar imagem da capa", tint = MaterialTheme.colorScheme.primary)
                         }
                         sourceUrl?.let { url ->
                             IconButton(
@@ -358,7 +356,7 @@ fun FullscreenCaptureDialog(
                                                 note.imageUri?.let { rawUri ->
                                                     FullscreenNoteImage(
                                                         rawUri = rawUri,
-                                                        onExpand = { image -> expandedNoteImage = image },
+                                                        onExpand = { imageUri -> expandedNoteImage = imageUri },
                                                         onLongPress = { onEditNote(selected.id, note.id) },
                                                     )
                                                 }
@@ -594,6 +592,14 @@ fun FullscreenCaptureDialog(
                             }
                         }
                     }
+                    OutlinedButton(
+                        onClick = { onEditCover(capture.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Alterar imagem da capa")
+                    }
                 }
             },
             confirmButton = {
@@ -616,9 +622,9 @@ fun FullscreenCaptureDialog(
         )
     }
 
-    expandedNoteImage?.let { image ->
+    expandedNoteImage?.let { imageUri ->
         FullscreenNoteImageDialog(
-            image = image,
+            rawUri = imageUri,
             onDismiss = { expandedNoteImage = null },
         )
     }
@@ -628,12 +634,12 @@ fun FullscreenCaptureDialog(
 @Composable
 private fun FullscreenNoteImage(
     rawUri: String,
-    onExpand: (ImageBitmap) -> Unit,
+    onExpand: (String) -> Unit,
     onLongPress: () -> Unit,
 ) {
     val context = LocalContext.current
     val image by produceState<ImageBitmap?>(null, rawUri) {
-        value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri) }.getOrNull() }
+        value = withContext(Dispatchers.IO) { runCatching { loadCoverBitmap(context, rawUri, maxDimension = 480) }.getOrNull() }
     }
     image?.let { bitmap ->
         Box(
@@ -641,7 +647,7 @@ private fun FullscreenNoteImage(
                 .fillMaxWidth()
                 .heightIn(max = 52.dp)
                 .combinedClickable(
-                    onClick = { onExpand(bitmap) },
+                    onClick = { onExpand(rawUri) },
                     onLongClick = onLongPress,
                 ),
         ) {
@@ -666,7 +672,13 @@ private fun FullscreenNoteImage(
 }
 
 @Composable
-private fun FullscreenNoteImageDialog(image: ImageBitmap, onDismiss: () -> Unit) {
+private fun FullscreenNoteImageDialog(rawUri: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val image by produceState<ImageBitmap?>(null, rawUri) {
+        value = withContext(Dispatchers.IO) {
+            runCatching { loadCoverBitmap(context, rawUri, maxDimension = 1600) }.getOrNull()
+        }
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -679,12 +691,16 @@ private fun FullscreenNoteImageDialog(image: ImageBitmap, onDismiss: () -> Unit)
             modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f)),
             contentAlignment = Alignment.Center,
         ) {
-            Image(
-                    bitmap = image,
+            if (image != null) {
+                Image(
+                    bitmap = image!!,
                     contentDescription = "Imagem da anotação em tela cheia",
                     modifier = Modifier.fillMaxSize().padding(20.dp),
                     contentScale = ContentScale.Fit,
                 )
+            } else {
+                CircularProgressIndicator(color = Color.White)
+            }
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)

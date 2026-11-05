@@ -388,3 +388,13 @@ Base auditada: main em 155a49b34eb3e536ade189ce7e84c1344bb44560 (após PR #60). 
 Correções consolidadas: Settings mantém duas ordenações independentes; Fullscreen separa Abrir link no header de Visualizar conteúdo no dock; Image Import pode salvar thumbnail de YouTube; Newsletters e Backup são ativos; Backup v1 não incluía Newsletters; Backup v2 inclui fontes e artigos, enquanto preferências continuam fora; Checklists é legado e subtarefas pertencem a Captures. A tela Privacidade ainda contém texto legado dizendo que backup é futuro; corrigir UI em alteração de código separada.
 
 Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado se houver mudança de fluxo e o índice docs/features/README.md. Marcar documentos históricos e evitar regras contraditórias.
+
+
+## Performance and image loading guidelines — 2026-11-05
+
+- Prefer lazy Compose containers (LazyColumn, LazyRow, LazyVerticalGrid, HorizontalPager) for potentially unbounded collections. Use stable item keys and meaningful contentType values for repeated item types.
+- Keep filtering, grouping and sorting derived from observable state inside remember/derived state; avoid repeating a full-list scan once per category or item. Do not memoize large data without stable inputs.
+- Collect screen state with lifecycle-aware APIs (collectAsStateWithLifecycle) so inactive UI does not keep collecting unnecessarily.
+- Local image decoding must run off the main thread through core/ui. loadCoverBitmap uses bounded sampling and a size-limited process memory cache; request smaller decode dimensions for cards/previews and larger dimensions only for fullscreen viewing.
+- Never load full-resolution originals for small thumbnails. Keep decoded bitmap memory bounded and ensure cache keys distinguish image versions and requested sizes. Private files remain the source of truth; cache entries are disposable.
+- Do not introduce a third-party image-loading library or dependency without a measured need. Validate scrolling, memory pressure and image replacement on API 26+ devices/emulators.
