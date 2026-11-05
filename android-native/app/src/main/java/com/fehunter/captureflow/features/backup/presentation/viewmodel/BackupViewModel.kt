@@ -23,7 +23,7 @@ class BackupViewModel(private val useCases: BackupUseCases) : ViewModel() {
         runCatching { useCases.export(uri) }
             .onSuccess { result ->
                 _state.value = BackupUiState(message =
-                    "Backup criado: ${result.captures} referências, ${result.categories} categorias e ${result.images} imagens.")
+                    "Backup criado: ${result.captures} referências, ${result.categories} categorias, ${result.images} imagens e ${result.newsletterSources} fontes com ${result.newsletterArticles} artigos.")
             }
             .onFailure { error ->
                 _state.value = BackupUiState(error = error.message ?: "Não foi possível exportar o backup.")
@@ -35,7 +35,7 @@ class BackupViewModel(private val useCases: BackupUseCases) : ViewModel() {
         runCatching { useCases.import(uri) }
             .onSuccess { result ->
                 _state.value = BackupUiState(message =
-                    "Importação concluída: ${result.captures} referências, ${result.categories} categorias e ${result.images} imagens.")
+                    "Importação concluída: ${result.captures} referências, ${result.categories} categorias, ${result.images} imagens e ${result.newsletterSources} fontes com ${result.newsletterArticles} artigos.")
             }
             .onFailure { error ->
                 _state.value = BackupUiState(error = error.message ?: "Não foi possível importar o backup.")

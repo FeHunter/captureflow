@@ -15,6 +15,7 @@ interface CaptureRepository {
     fun observeMedia(): Flow<List<CaptureMedia>>
     suspend fun addMedia(items: List<CaptureMedia>)
     suspend fun setCover(captureId: String, mediaId: String)
+    suspend fun replaceCoverImage(captureId: String, uri: String)
     suspend fun save(capture: Capture)
     suspend fun findByContent(content: String): Boolean
     suspend fun findBySourceUrl(url: String): Boolean

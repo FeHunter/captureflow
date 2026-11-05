@@ -67,7 +67,8 @@ android-native/app/src/main/java/com/fehunter/captureflow/
     ├── notes/                         # blocos de pensamento com texto/imagem
     ├── newsletters/                  # feeds RSS/Atom, artigos e leitor
     ├── settings/                     # preferências e páginas informativas
-    └── backup/                       # exportação ZIP e restauração aditiva
+    ├── backup/                       # exportação ZIP e restauração aditiva
+    └── share/                        # compartilhamento nativo e exportação PDF/RTF
 ```
 
 ### 2.3 Responsabilidade de cada feature
@@ -79,12 +80,13 @@ android-native/app/src/main/java/com/fehunter/captureflow/
 - **fullscreen:** experiência Details Fullscreen, pager, sincronização da referência ativa, título, anotações e ações disponíveis no detalhe. Identifica o vídeo da referência ativa e hospeda o player fornecido pela feature youtubeplayer; não implementa nem configura WebView.
 - **captures:** é proprietária das referências e das subtarefas persistidas em `capture_subtasks`, vinculadas por `captureId` e apresentadas no fullscreen. A entidade/DAO histórica `checklist_tasks` permanece apenas para compatibilidade do schema Room, sem feature ou tela ativa.
 - **dashboard:** indicadores e estatísticas de referências/categorias. Somente consulta; não modifica Captures diretamente.
-- **imagecompression:** compressão local de imagens antes do armazenamento privado; oferece perfis Médio (JPEG quality 70) e Alto (JPEG quality 50), preservando orientação EXIF para URIs e limitando dimensões. O contrato aceita URI (`file://`/`content://`) ou bytes raster codificados, sem depender de Android no Domain.
+- **imagecompression:** pipeline local adaptativo antes do armazenamento privado. Gera WebP e JPEG para imagens opacas e mantém o menor arquivo; preserva PNG/transparência com WebP lossless (PNG lossless como fallback). Perfis controlam qualidade dos encoders; orientação EXIF e limite de dimensão são aplicados. O contrato aceita URI (`file://`/`content://`) ou bytes raster codificados.
 - **notes:** edição da linha de pensamento em blocos ordenados de texto e imagem. O modelo CaptureNote e CaptureNotesCodec pertencem ao domínio de Captures; o campo captures.notes armazena a coleção em formato versionado e mantém leitura retrocompatível de anotações antigas.
 - **youtubeplayer:** reprodução incorporada de vídeos do YouTube via IFrame Player API em Android WebView. É proprietária do HTML de embed, identidade HTTP Referer, configuração WebView, ciclo de vida, callbacks de estado/erro e limpeza da instância. Não persiste estado de negócio nem depende de Captures/Fullscreen.
 - **settings:** tema, ordenação dos containers de categoria e das referências na categoria expandida, perfil de compressão e páginas Privacidade/Tutoriais; preferências em SharedPreferences.
 - **newsletters:** fontes RSS 2.0/Atom, atualização manual, persistência e leitura.
-- **backup:** exportação/importação ZIP versionada de referências, categorias, subtarefas, mídias e anotações. A camada Data usa os contratos públicos de Captures; a restauração é aditiva e insere o lote em transação Room.
+- **backup:** exportação/importação ZIP versionada de referências, categorias, subtarefas, mídias, anotações e Newsletters. v2 inclui fontes/artigos e importa v1/v2; restauração é aditiva, preserva dados locais e usa contratos públicos de Captures/Newsletters.
+- **share:** compõe payload imutável de uma referência e suas imagens/anotações; oferece copiar texto, Android Sharesheet com imagens privadas via FileProvider e exportação PDF/RTF. Não altera a referência nem persiste cópias no banco.
 
 A divisão final de um serviço entre features/core deve seguir sua responsabilidade real. Ex.: OCR, download de capas, cópia de imagens compartilhadas e exclusão best-effort de screenshots pertencem a Image Import; Core mantém apenas o contrato mínimo de armazenamento privado usado por Captures. Não mover serviços indiscriminadamente para Core.
 
@@ -147,7 +149,7 @@ O código ativo fica em `android-native/app/src/main/java/com/fehunter/capturefl
 - Preservar o comportamento de filtros, busca, categorias, progresso e conclusão documentado em `docs/current-state.md`; em caso de divergência, verificar código e registrar a inconsistência antes de alterar.
 - A ordenação de containers de categoria oferece manual, mais recentes, mais antigas, nome A–Z/Z–A; datas derivam de createdAt das referências da categoria. Não altera thumbnails de preview.
 - A ordenação das referências na categoria expandida é uma preferência separada: mais recentes, mais antigas, título A–Z/Z–A. Ambas são persistidas por Settings.
-- Perfis de compressão: Médio usa JPEG quality 70 e Alto usa JPEG quality 50; esses valores representam qualidade de codificação, não uma garantia de redução exata do tamanho em bytes. URIs `file://` de arquivos temporários são lidas diretamente por `FileInputStream`; URIs de provedores usam `ContentResolver`, com fallback para descritor de arquivo.
+- Perfis adaptativos: Médio usa JPEG 70/WebP 78 e Alto JPEG 52/WebP 66; esses valores são parâmetros de qualidade, não percentuais de redução. Imagens opacas comparam WebP/JPEG e persistem o menor; PNG/alpha usa WebP lossless com PNG lossless como fallback. URIs `file://` usam `FileInputStream`; URIs de provedores usam `ContentResolver`, com fallback para descritor.
 - Cartões compactos atualmente usam 272 dp conforme a diretriz visual registrada; não alterar dimensões sem validar o layout atual e a decisão de produto.
 
 ## 6. Captura, links, imagens e privacidade
@@ -371,10 +373,18 @@ Estas melhorias são uma exceção explicitamente aprovada ao escopo presentatio
 - Versão inicial não inclui Newsletters nem preferências; manter esse limite documentado até ampliação explícita do escopo.
 
 
+## Regras das novas capacidades — 2026-11-04
+
+- Backup v2 deve continuar lendo v1. A importação é aditiva; Newsletters existentes são reconhecidas por feedUrl e artigos por índices naturais Room, sem sobrescrever estado local.
+- Novas imagens devem passar pelo ImageCompressionService. O encoder compara WebP/JPEG em imagens opacas e escolhe o menor; transparência exige WebP lossless. Não reprocessar automaticamente arquivos antigos sem plano de migração/rollback.
+- Troca da capa usa o contrato público replaceCoverImage, atualiza a mídia marcada como capa e preserva a galeria restante. Só excluir o arquivo anterior depois de confirmar a gravação.
+- Fullscreen pode expandir/recolher o painel Notes; isso é estado de UI e não altera o conteúdo persistido.
+- Share recebe payload snapshot de Captures/Notes; exportadores PDF/RTF ficam na camada Data da feature Share. Compartilhamento de arquivo privado deve usar FileProvider com escopo restrito a files/captures e grant read-only.
+
 ## Auditoria documental — 2026-11-04
 
 Base auditada: main em 155a49b34eb3e536ade189ce7e84c1344bb44560 (após PR #60). Precedência: código atual define comportamento; este arquivo define regras globais; docs/current-state.md descreve fluxo integrado; docs/features/{feature}/README.md descreve ownership. Handoffs e wireframes antigos são históricos até reconciliação.
 
-Correções consolidadas: Settings mantém duas ordenações independentes; Fullscreen separa Abrir link no header de Visualizar conteúdo no dock; Image Import pode salvar thumbnail de YouTube; Newsletters e Backup são ativos; Backup v1 não inclui Newsletters/preferências; Checklists é legado e subtarefas pertencem a Captures. A tela Privacidade ainda contém texto legado dizendo que backup é futuro; corrigir UI em alteração de código separada.
+Correções consolidadas: Settings mantém duas ordenações independentes; Fullscreen separa Abrir link no header de Visualizar conteúdo no dock; Image Import pode salvar thumbnail de YouTube; Newsletters e Backup são ativos; Backup v1 não incluía Newsletters; Backup v2 inclui fontes e artigos, enquanto preferências continuam fora; Checklists é legado e subtarefas pertencem a Captures. A tela Privacidade ainda contém texto legado dizendo que backup é futuro; corrigir UI em alteração de código separada.
 
 Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado se houver mudança de fluxo e o índice docs/features/README.md. Marcar documentos históricos e evitar regras contraditórias.

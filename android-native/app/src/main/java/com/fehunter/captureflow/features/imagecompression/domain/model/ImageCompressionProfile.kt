@@ -1,9 +1,16 @@
 package com.fehunter.captureflow.features.imagecompression.domain.model
 
-/** JPEG encoder quality settings; these values are not percentages of file-size reduction. */
-enum class ImageCompressionProfile(val quality: Int, val label: String) {
-    MEDIUM(70, "Médio"),
-    HIGH(50, "Alto");
+/** Adaptive encoder targets; values are quality parameters, not size percentages. */
+enum class ImageCompressionProfile(
+    val jpegQuality: Int,
+    val webpQuality: Int,
+    val label: String,
+) {
+    MEDIUM(70, 78, "Médio"),
+    HIGH(52, 66, "Alto");
+
+    /** Backwards-compatible alias for callers that still use the previous JPEG field. */
+    val quality: Int get() = jpegQuality
 
     companion object {
         fun fromPreference(value: String?): ImageCompressionProfile =

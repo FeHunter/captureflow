@@ -81,8 +81,15 @@ class ImageImportStorageService(
                 partialFile = null
                 null
             } else {
+                val optimizedUri = runCatching {
+                    imageCompressor.compressToPrivateStorage(
+                        Uri.fromFile(destination).toString(),
+                        ImageCompressionProfile.MEDIUM,
+                    )
+                }.getOrNull()
+                destination.delete()
                 partialFile = null
-                Uri.fromFile(destination)
+                optimizedUri?.let(Uri::parse)
             }
         } catch (_: Exception) {
             partialFile?.delete()

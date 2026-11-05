@@ -22,6 +22,11 @@ import com.fehunter.captureflow.features.search.presentation.viewmodel.SearchVie
 import com.fehunter.captureflow.features.search.domain.usecase.FilterCapturesUseCase
 import com.fehunter.captureflow.features.categories.presentation.viewmodel.CategoriesViewModel
 import com.fehunter.captureflow.features.dashboard.presentation.viewmodel.DashboardViewModel
+import com.fehunter.captureflow.features.share.presentation.viewmodel.CaptureShareViewModel
+import com.fehunter.captureflow.features.share.presentation.screens.CaptureShareDialog
+import com.fehunter.captureflow.features.share.domain.model.CaptureSharePayload
+import com.fehunter.captureflow.features.share.domain.model.CaptureShareNote
+import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.dashboard.presentation.components.DashboardSummaryCard
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +49,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +68,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -72,9 +79,17 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
+    val coverUpdateError by viewModel.coverUpdateError.collectAsStateWithLifecycle()
+    val libraryListState = rememberLazyListState()
+    LaunchedEffect(coverUpdateError) {
+        coverUpdateError?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.clearCoverUpdateError()
+        }
+    }
     val ocrStates by imageImportViewModel.ocrStates.collectAsState()
     val captureImageProcessingStates = remember(ocrStates) {
         ocrStates.mapValues { (_, state) ->
@@ -99,6 +114,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var expandedCategory by remember { mutableStateOf<String?>(null) }
     var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
+    var shareCapture by remember { mutableStateOf<Capture?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var editingNoteId by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
@@ -121,6 +137,15 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> uri?.let { imageImportViewModel.prepareImageReview(it.toString(), ImageCompressionProfile.fromPreference(imageCompressionProfile)) } },
+    )
+    val coverImagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            val targetId = selectedCapture?.id
+            if (uri != null && targetId != null) {
+                viewModel.replaceCaptureCover(targetId, uri.toString(), ImageCompressionProfile.fromPreference(imageCompressionProfile))
+            }
+        },
     )
     LaunchedEffect(detectedScreenshotUri) {
         detectedScreenshotUri?.let { selectedImageUri = it }
@@ -184,8 +209,9 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     Box(Modifier.fillMaxSize()) {
         CaptureFlowBackdrop(Modifier.matchParentSize())
         LazyColumn(
+        state = libraryListState,
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 104.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(key = "image-picker") {
@@ -329,6 +355,47 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 }
             }
         }
+        }
+        AnimatedVisibility(
+            visible = libraryListState.firstVisibleItemIndex > 0 || libraryListState.firstVisibleItemScrollOffset > 96,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp),
+            enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.96f, animationSpec = tween(160)),
+            exit = fadeOut(tween(120)),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shadowElevation = 10.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { showCameraCapture = true }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null)
+                            Text("Fotografar", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    TextButton(
+                        onClick = { imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Image, contentDescription = null)
+                            Text("Galeria", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    TextButton(onClick = { showCreateTaskDialog = true }, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Edit, contentDescription = null)
+                            Text("Nova tarefa", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
         }
     }
     if (showCategoryManager) {
@@ -516,6 +583,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         captures = fullscreenCaptures,
         mediaByCapture = remember(captureMedia) { captureMedia.groupBy { it.captureId } },
         onSetCover = viewModel::setCaptureCover,
+        onEditCover = { coverImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
         onDismiss = { selectedCapture = null },
         onCaptureSelected = { selectedCapture = it },
         onCompleted = { id, completed ->
@@ -540,8 +608,28 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         onAddSubtask = viewModel::addCaptureSubtask,
         onSubtaskCompleted = viewModel::setCaptureSubtaskCompleted,
         onDeleteSubtask = viewModel::deleteCaptureSubtask,
+        onShare = { shareCapture = it },
     )
 
+    shareCapture?.let { selectedItem ->
+        val item = captures.firstOrNull { it.id == selectedItem.id } ?: selectedItem
+        val itemMedia = captureMedia.filter { it.captureId == item.id }
+        val decodedNotes = CaptureNotesCodec.decode(item.notes)
+        CaptureShareDialog(
+            payload = CaptureSharePayload(
+                title = item.title,
+                category = item.category,
+                createdAt = item.createdAt,
+                sourceUrl = item.sourceUrl,
+                content = item.content,
+                coverUri = item.imageUri,
+                mediaUris = itemMedia.map { it.uri },
+                notes = decodedNotes.map { CaptureShareNote(it.text, it.imageUri) },
+            ),
+            viewModel = shareViewModel,
+            onDismiss = { shareCapture = null },
+        )
+    }
 
     notesCaptureId?.let { captureId ->
         val notesCapture = captures.firstOrNull { it.id == captureId }

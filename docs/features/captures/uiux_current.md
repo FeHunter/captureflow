@@ -5,3 +5,6 @@
 Hierarquia: top bar; Fotografar/Galeria/Nova tarefa; Meu progresso; filtros de categoria; busca; grupos/resultados. Filtros em duas linhas com rolagem compartilhada. Cards mostram prévias pendentes/progresso; grade expandida Pendentes/Concluídas em três colunas. TaskPaperCover para sem imagem; CompletedBadge para concluídas. Ordenações de categoria e referências são independentes.
 
 Câmera: preview escuro, foco por toque, recorte/revisão. Galeria: Photo Picker e revisão. Link: metadados, título editável e categoria obrigatória. Screenshot: opt-in, notificação, prévia e categoria. Hybrid Personal Notebook, superfícies de papel e temas claro/escuro. Não reintroduzir paleta azul, bottom navigation ou tela de tarefas.
+
+## Floating actions
+O card de entrada permanece no topo da Biblioteca. Após rolagem vertical suficiente, surge uma superfície bottom-center com Fotografar, Galeria e Nova tarefa. A lista reserva padding inferior para não ocultar os últimos itens. Ao retornar ao topo, os floating actions desaparecem.

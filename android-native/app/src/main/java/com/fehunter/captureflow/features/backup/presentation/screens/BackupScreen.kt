@@ -59,7 +59,7 @@ fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                "Exporte seu caderno em um arquivo ZIP ou importe um backup existente. Imagens, anotações, categorias e subtarefas acompanham as referências.",
+                "Exporte seu caderno em um arquivo ZIP ou importe um backup existente. Imagens, anotações, categorias, subtarefas e dados de Newsletters acompanham o backup.",
                 style = MaterialTheme.typography.bodyLarge,
             )
             Button(

@@ -3,6 +3,8 @@ package com.fehunter.captureflow.features.captures.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fehunter.captureflow.core.storage.PrivateImageStorage
+import com.fehunter.captureflow.features.imagecompression.domain.service.ImageCompressor
+import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.captures.domain.model.CaptureSubtask
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureFactory
 import com.fehunter.captureflow.features.captures.domain.model.CaptureMedia
@@ -10,6 +12,8 @@ import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.captures.domain.usecase.CaptureUseCases
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -18,6 +22,7 @@ import java.util.UUID
 class CaptureViewModel(
     private val captureUseCases: CaptureUseCases,
     private val privateImageStorage: PrivateImageStorage,
+    private val imageCompressor: ImageCompressor,
 ) : ViewModel() {
     val captures = captureUseCases.observeCaptures().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
@@ -25,6 +30,9 @@ class CaptureViewModel(
     val captureSubtasks = captureUseCases.observeSubtasks().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
     )
+    private val _coverUpdateError = MutableStateFlow<String?>(null)
+    val coverUpdateError = _coverUpdateError.asStateFlow()
+
     val captureMedia = captureUseCases.observeMedia().stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
     )
@@ -43,6 +51,24 @@ class CaptureViewModel(
     fun setCaptureCover(captureId: String, mediaId: String) {
         viewModelScope.launch(Dispatchers.IO) { captureUseCases.setCover(captureId, mediaId) }
     }
+    fun replaceCaptureCover(captureId: String, sourceUri: String, profile: ImageCompressionProfile) {
+        viewModelScope.launch(Dispatchers.IO) {
+            var newUri: String? = null
+            try {
+                val previousUri = captureUseCases.findById(captureId)?.imageUri
+                newUri = imageCompressor.compressToPrivateStorage(sourceUri, profile)
+                captureUseCases.replaceCoverImage(captureId, newUri)
+                if (previousUri != newUri) privateImageStorage.deletePrivateImage(previousUri)
+            } catch (error: Exception) {
+                privateImageStorage.deletePrivateImage(newUri)
+                _coverUpdateError.value = error.localizedMessage?.takeIf(String::isNotBlank)
+                    ?: "Não foi possível atualizar a imagem da capa."
+            }
+        }
+    }
+
+    fun clearCoverUpdateError() { _coverUpdateError.value = null }
+
     fun addCaptureSubtask(captureId: String, rawTitle: String) {
         val title = rawTitle.trim().take(160)
         if (title.isBlank()) return

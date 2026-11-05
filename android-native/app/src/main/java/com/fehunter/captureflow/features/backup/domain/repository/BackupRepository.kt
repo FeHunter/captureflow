@@ -5,4 +5,4 @@ interface BackupRepository {
     suspend fun importFrom(source: String): BackupResult
 }
 
-data class BackupResult(val captures: Int, val categories: Int, val images: Int)
+data class BackupResult(val captures: Int, val categories: Int, val images: Int, val newsletterSources: Int, val newsletterArticles: Int)

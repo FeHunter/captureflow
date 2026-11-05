@@ -14,6 +14,7 @@ import com.fehunter.captureflow.features.captures.domain.model.CaptureImportBatc
 import com.fehunter.captureflow.features.captures.domain.repository.CaptureRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 class RoomCaptureRepository(private val database: CaptureDatabase) : CaptureRepository {
     private val captures get() = database.captureDao()
@@ -60,6 +61,40 @@ class RoomCaptureRepository(private val database: CaptureDatabase) : CaptureRepo
             media.findForCapture(captureId).firstOrNull { it.id == mediaId }?.let {
                 captures.updateImageUri(captureId, it.uri)
             }
+        }
+    }
+
+    override suspend fun replaceCoverImage(captureId: String, uri: String) {
+        database.withTransaction {
+            require(captures.findById(captureId) != null) { "Capture does not exist" }
+            val existing = media.findForCapture(captureId)
+            val cover = existing.firstOrNull { it.isCover } ?: existing.minByOrNull { it.position }
+            if (cover != null) {
+                media.clearCover(captureId)
+                val extension = uri.substringBefore('?').substringAfterLast('.', "").lowercase()
+                val mediaType = when (extension) {
+                    "webp" -> "image/webp"
+                    "png" -> "image/png"
+                    "jpg", "jpeg" -> "image/jpeg"
+                    else -> "image/*"
+                }
+                media.updateUriAndType(captureId, cover.id, uri, mediaType)
+                media.setCover(captureId, cover.id)
+            } else {
+                media.insertAll(listOf(
+                    com.fehunter.captureflow.features.captures.data.local.CaptureMediaEntity(
+                        id = UUID.randomUUID().toString(),
+                        captureId = captureId,
+                        uri = uri,
+                        mediaType = "image/*",
+                        position = 0,
+                        isCover = true,
+                        sourceUrl = null,
+                        createdAt = System.currentTimeMillis(),
+                    ),
+                ))
+            }
+            captures.updateImageUri(captureId, uri)
         }
     }
 
