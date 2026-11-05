@@ -33,3 +33,8 @@ Biblioteca e grade expandida usam containers lazy com chaves estáveis; itens da
 
 ## Persistência e validação
 Room v11: captures, categories, capture_subtasks, capture_media, newsletter_sources e newsletter_articles; checklist_tasks é legado. As mudanças nesta branch ainda exigem CI (unit tests, assembleDebug, instrumentation compile), revisão de conflitos/duplicatas Backup v1/v2, teste real de FileProvider/Sharesheet, PDF/RTF, compressão WebP em API 26+ e interação de scroll/Fullscreen.
+
+
+## Compartilhamento de referências — atualização 2026-11-05
+
+O Android Sharesheet compartilha uma referência como um único PDF (application/pdf) gerado a partir do snapshot de Share. O documento inclui informações textuais, capa, galeria na ordem do payload e Notes com imagens. Exportação PDF/RTF via SAF e cópia de texto continuam disponíveis. O padrão de layout do PDF está documentado em docs/features/share/README.md.

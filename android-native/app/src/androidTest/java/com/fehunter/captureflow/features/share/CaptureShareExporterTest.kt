@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.core.content.FileProvider
 import com.fehunter.captureflow.features.share.data.CaptureShareExporter
 import com.fehunter.captureflow.features.share.domain.model.CaptureShareNote
 import com.fehunter.captureflow.features.share.domain.model.CaptureSharePayload
@@ -26,6 +27,8 @@ class CaptureShareExporterTest {
         val imageDirectory = File(context.filesDir, "captures").apply { mkdirs() }
         val image = File(imageDirectory, "share-export-test-${System.nanoTime()}.png")
         val pdf = File(context.cacheDir, "share-export-test-${System.nanoTime()}.pdf")
+        val sharedDirectory = File(context.cacheDir, "share_exports").apply { mkdirs() }
+        val sharedPdf = File(sharedDirectory, "share-export-test-${System.nanoTime()}.pdf")
         val rtf = File(context.cacheDir, "share-export-test-${System.nanoTime()}.rtf")
         val bitmap = Bitmap.createBitmap(160, 100, Bitmap.Config.ARGB_8888).apply {
             eraseColor(Color.BLUE)
@@ -47,9 +50,13 @@ class CaptureShareExporterTest {
             )
             val exporter = CaptureShareExporter(context)
             exporter.exportPdf(payload, Uri.fromFile(pdf).toString())
+            exporter.exportPdf(payload, Uri.fromFile(sharedPdf).toString())
             exporter.exportRtf(payload, Uri.fromFile(rtf).toString())
 
             assertTrue(pdf.isFile && pdf.length() > 100L)
+            assertTrue(sharedPdf.isFile && sharedPdf.extension == "pdf")
+            val sharedUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", sharedPdf)
+            assertTrue(sharedUri.scheme == "content")
             assertTrue(pdf.readBytes().copyOfRange(0, 4).toString(Charsets.US_ASCII) == "%PDF")
             val rtfContent = rtf.readText(Charsets.UTF_8)
             assertTrue(rtfContent.startsWith("{\\rtf1"))
@@ -59,6 +66,7 @@ class CaptureShareExporterTest {
             bitmap.recycle()
             image.delete()
             pdf.delete()
+            sharedPdf.delete()
             rtf.delete()
         }
     }

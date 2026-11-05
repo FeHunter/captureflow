@@ -390,11 +390,10 @@ Correções consolidadas: Settings mantém duas ordenações independentes; Full
 Ao mudar uma feature, atualizar seu README em docs/features, o estado integrado se houver mudança de fluxo e o índice docs/features/README.md. Marcar documentos históricos e evitar regras contraditórias.
 
 
-## Performance and image loading guidelines — 2026-11-05
+## Share — formato nativo e padrão de PDF (2026-11-05)
 
-- Prefer lazy Compose containers (LazyColumn, LazyRow, LazyVerticalGrid, HorizontalPager) for potentially unbounded collections. Use stable item keys and meaningful contentType values for repeated item types.
-- Keep filtering, grouping and sorting derived from observable state inside remember/derived state; avoid repeating a full-list scan once per category or item. Do not memoize large data without stable inputs.
-- Collect screen state with lifecycle-aware APIs (collectAsStateWithLifecycle) so inactive UI does not keep collecting unnecessarily.
-- Local image decoding must run off the main thread through core/ui. loadCoverBitmap uses bounded sampling and a size-limited process memory cache; request smaller decode dimensions for cards/previews and larger dimensions only for fullscreen viewing.
-- Never load full-resolution originals for small thumbnails. Keep decoded bitmap memory bounded and ensure cache keys distinguish image versions and requested sizes. Private files remain the source of truth; cache entries are disposable.
-- Do not introduce a third-party image-loading library or dependency without a measured need. Validate scrolling, memory pressure and image replacement on API 26+ devices/emulators.
+- O botão Compartilhar da feature Share envia um único documento PDF pela Android Sharesheet (ACTION_SEND, MIME application/pdf); não anexar imagens separadas (ACTION_SEND_MULTIPLE / image/*).
+- O PDF é gerado antes de abrir a Sharesheet, salvo em cacheDir/share_exports/ e compartilhado exclusivamente por FileProvider com URI content:// e grant temporário read-only. Nunca expor file:// nem usar MIME genérico.
+- O documento contém título, categoria, data, URL/conteúdo disponíveis, capa, galeria na ordem do payload e Notes ordenadas (texto seguido da imagem opcional). Não omitir silenciosamente imagens esperadas: falhar com mensagem compreensível.
+- PDF nativo e PDF exportado pelo SAF usam o mesmo CaptureShareExporter e padrão visual definido em docs/features/share/README.md (A4 retrato, margens 48 pt, paleta Personal Notebook, tipografia hierárquica, imagens proporcionais, paginação e rodapé).
+- Atualizar a documentação e os testes quando esse padrão for alterado. RTF e copiar texto permanecem opções separadas.
