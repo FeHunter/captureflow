@@ -4,7 +4,7 @@ Suporta RSS 2.0/Atom, cadastro por URL de feed/site e descoberta rel=alternate/c
 
 ## Prévia na Home
 
-A Biblioteca apresenta as três publicações mais recentes da fonte selecionada entre Dashboard e Categorias. A seção observa os StateFlows existentes do NewslettersViewModel e lê artigos já persistidos no Room; não inicia fetch de rede. Tocar em uma publicação abre o leitor existente e marca o artigo como lido. Ver todas abre a tela completa de Newsletters. Sem fonte/artigos, a seção mostra um estado vazio com acesso para adicionar ou atualizar feeds.
+A Biblioteca apresenta as publicações mais recentes da fonte selecionada entre Dashboard e Categorias. Para preservar o foco nas anotações, a seção inicia em modo compacto mostrando somente o artigo mais recente; o controle “Mostrar mais” expande até três artigos e “Mostrar menos” recolhe novamente. O cabeçalho permanece com o acesso “Ver todas”. A seção observa os StateFlows existentes do NewslettersViewModel e lê artigos já persistidos no Room; não inicia fetch de rede. Tocar em uma publicação abre o leitor existente e marca o artigo como lido. Ver todas abre a tela completa de Newsletters. Sem fonte/artigos, a seção mostra um estado vazio com acesso para adicionar ou atualizar feeds.
 
 A seleção da fonte continua sendo estado em memória do NewslettersViewModel; não foi adicionada persistência de preferência nesta alteração.
 

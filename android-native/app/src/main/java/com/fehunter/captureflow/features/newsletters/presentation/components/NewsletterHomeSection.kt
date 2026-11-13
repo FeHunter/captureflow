@@ -20,6 +20,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +46,7 @@ fun NewsletterHomeSection(
     val sources by viewModel.sources.collectAsState()
     val selectedSourceId by viewModel.selectedSourceId.collectAsState()
     val articles by viewModel.articles.collectAsState()
+    var isExpanded by remember { mutableStateOf(false) }
     val selectedSource = sources.firstOrNull { it.id == selectedSourceId }
     val recentArticles = articles
         .sortedByDescending { it.publishedAt ?: it.fetchedAt }
@@ -113,7 +118,7 @@ fun NewsletterHomeSection(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    recentArticles.forEach { article ->
+                    (if (isExpanded) recentArticles else recentArticles.take(1)).forEach { article ->
                         val date = (article.publishedAt ?: article.fetchedAt).takeIf { it > 0L }?.let {
                             SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(it))
                         }
@@ -149,6 +154,19 @@ fun NewsletterHomeSection(
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 }
+                            }
+                        }
+                    }
+                    if (recentArticles.size > 1) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            TextButton(onClick = { isExpanded = !isExpanded }) {
+                                Text(
+                                    if (isExpanded) "Mostrar menos"
+                                    else "Mostrar mais (${recentArticles.size - 1})",
+                                )
                             }
                         }
                     }
