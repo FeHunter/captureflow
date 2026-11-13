@@ -55,7 +55,11 @@ import java.util.concurrent.TimeUnit
 
 /** CameraX viewfinder owned by Capture Flow; the photo remains temporary until review confirmation. */
 @Composable
-fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
+fun ImageCaptureScreen(
+    onImageCaptured: (String) -> Unit,
+    onClose: () -> Unit,
+    reviewBeforeReturn: Boolean = true,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
@@ -108,7 +112,12 @@ fun ImageCaptureScreen(onImageCaptured: (String) -> Unit, onClose: () -> Unit) {
 
     Surface(modifier = Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Black) {
         val capturedUri = capturedImageUri
-        if (capturedUri != null) {
+        if (capturedUri != null && !reviewBeforeReturn) {
+            LaunchedEffect(capturedUri) {
+                onImageCaptured(capturedUri)
+                capturedImageUri = null
+            }
+        } else if (capturedUri != null) {
             ImageCropReviewScreen(
                 imageUri = capturedUri,
                 onConfirm = { croppedUri ->

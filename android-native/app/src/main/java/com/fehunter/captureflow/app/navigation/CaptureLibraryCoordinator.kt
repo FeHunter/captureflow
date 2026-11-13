@@ -17,6 +17,7 @@ import com.fehunter.captureflow.features.captures.presentation.model.CaptureImag
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imageimport.presentation.components.ImageCaptureScreen
+import com.fehunter.captureflow.features.imageimport.presentation.components.ImageCropReviewScreen
 import com.fehunter.captureflow.features.search.presentation.components.CaptureSearchField
 import com.fehunter.captureflow.features.search.presentation.viewmodel.SearchViewModel
 import com.fehunter.captureflow.features.search.domain.usecase.FilterCapturesUseCase
@@ -28,6 +29,10 @@ import com.fehunter.captureflow.features.share.domain.model.CaptureSharePayload
 import com.fehunter.captureflow.features.share.domain.model.CaptureShareNote
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.dashboard.presentation.components.DashboardSummaryCard
+import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterArticle
+import com.fehunter.captureflow.features.newsletters.presentation.components.NewsletterHomeSection
+import com.fehunter.captureflow.features.newsletters.presentation.screens.NewsletterArticleReader
+import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
@@ -79,7 +84,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, newslettersViewModel: NewslettersViewModel, onOpenNewsletters: () -> Unit, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val coverUpdateError by viewModel.coverUpdateError.collectAsStateWithLifecycle()
@@ -110,6 +115,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val query by searchViewModel.query.collectAsStateWithLifecycle()
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var coverCropSourceUri by remember { mutableStateOf<String?>(null) }
+    var coverCropTargetId by remember { mutableStateOf<String?>(null) }
     var showCameraCapture by remember { mutableStateOf(false) }
     var showCreateTaskDialog by remember { mutableStateOf(false) }
     var pendingDeleteCapture by remember { mutableStateOf<Capture?>(null) }
@@ -120,8 +127,11 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
     var shareCapture by remember { mutableStateOf<Capture?>(null) }
+    var selectedNewsletterArticle by remember { mutableStateOf<NewsletterArticle?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var editingNoteId by remember { mutableStateOf<String?>(null) }
+    var showNotesCameraCapture by remember { mutableStateOf(false) }
+    var notesCameraImageUri by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var screenshotImportCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
@@ -146,10 +156,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val coverImagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            val targetId = selectedCapture?.id
-            if (uri != null && targetId != null) {
-                viewModel.replaceCaptureCover(targetId, uri.toString(), ImageCompressionProfile.fromPreference(imageCompressionProfile))
-            }
+            if (uri != null && coverCropTargetId != null) coverCropSourceUri = uri.toString()
         },
     )
     LaunchedEffect(detectedScreenshotUri) {
@@ -280,6 +287,16 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         }
         item(key = "dashboard") { DashboardSummaryCard(dashboardSummary) }
+        item(key = "newsletter-preview") {
+            NewsletterHomeSection(
+                viewModel = newslettersViewModel,
+                onOpenArticle = { article ->
+                    newslettersViewModel.markRead(article.id, true)
+                    selectedNewsletterArticle = article
+                },
+                onOpenNewsletters = onOpenNewsletters,
+            )
+        }
         item(key = "categories") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 var showSortMenu by remember { mutableStateOf(false) }
@@ -585,7 +602,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         captures = fullscreenCaptures,
         mediaByCapture = remember(captureMedia) { captureMedia.groupBy { it.captureId } },
         onSetCover = viewModel::setCaptureCover,
-        onEditCover = { coverImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onEditCover = { captureId ->
+            coverCropTargetId = captureId
+            coverImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
         onDismiss = { selectedCapture = null },
         onCaptureSelected = { selectedCapture = it },
         onCompleted = { id, completed ->
@@ -612,6 +632,56 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         onDeleteSubtask = viewModel::deleteCaptureSubtask,
         onShare = { shareCapture = it },
     )
+
+    coverCropSourceUri?.let { sourceUri ->
+        Dialog(
+            onDismissRequest = {
+                coverCropSourceUri = null
+                coverCropTargetId = null
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            ImageCropReviewScreen(
+                imageUri = sourceUri,
+                onConfirm = { croppedUri ->
+                    val targetId = coverCropTargetId
+                    coverCropSourceUri = null
+                    coverCropTargetId = null
+                    if (targetId != null) {
+                        viewModel.replaceCaptureCover(
+                            targetId,
+                            croppedUri,
+                            ImageCompressionProfile.fromPreference(imageCompressionProfile),
+                            onComplete = {
+                                Uri.parse(croppedUri).path?.let { java.io.File(it).delete() }
+                            },
+                        )
+                    } else {
+                        Uri.parse(croppedUri).path?.let { java.io.File(it).delete() }
+                    }
+                },
+                onCancel = {
+                    coverCropSourceUri = null
+                    coverCropTargetId = null
+                },
+            )
+        }
+    }
+
+    selectedNewsletterArticle?.let { article ->
+        Dialog(
+            onDismissRequest = { selectedNewsletterArticle = null },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
+            ),
+        ) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                NewsletterArticleReader(article = article, onBack = { selectedNewsletterArticle = null })
+            }
+        }
+    }
 
     shareCapture?.let { selectedItem ->
         val item = captures.firstOrNull { it.id == selectedItem.id } ?: selectedItem
@@ -641,7 +711,15 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 captureTitle = item.title,
                 initialNotes = item.notes.orEmpty(),
                 initialEditingNoteId = editingNoteId,
-                onDismiss = { notesCaptureId = null; editingNoteId = null },
+                onRequestCamera = { showNotesCameraCapture = true },
+                cameraImageUri = notesCameraImageUri,
+                onCameraImageConsumed = { notesCameraImageUri = null },
+                onDismiss = {
+                    showNotesCameraCapture = false
+                    notesCameraImageUri = null
+                    notesCaptureId = null
+                    editingNoteId = null
+                },
                 onDeleteTemporaryImage = imageImportViewModel::deleteTemporaryImage,
                 onCompressImage = imageImportViewModel::compressNoteImage,
                 onSave = { notes ->
@@ -657,6 +735,22 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     }
 
 
+
+    if (showNotesCameraCapture) {
+        Dialog(
+            onDismissRequest = { showNotesCameraCapture = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            ImageCaptureScreen(
+                reviewBeforeReturn = false,
+                onImageCaptured = { uri ->
+                    notesCameraImageUri = uri
+                    showNotesCameraCapture = false
+                },
+                onClose = { showNotesCameraCapture = false },
+            )
+        }
+    }
 
     val pendingImageReview by imageImportViewModel.pendingImageReview.collectAsState()
     val pendingImagePreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(

@@ -1,9 +1,6 @@
 package com.fehunter.captureflow.features.notes.presentation.components
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.graphics.BitmapFactory.Options
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -29,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Save
@@ -63,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.exifinterface.media.ExifInterface
+import com.fehunter.captureflow.core.ui.loadCropBitmap
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNote
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import java.io.File
@@ -88,6 +86,9 @@ fun NotesEditorDialog(
     onSave: (String) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
     onCompressImage: (ByteArray, (String?, String?) -> Unit) -> Unit,
+    onRequestCamera: () -> Unit = {},
+    cameraImageUri: String? = null,
+    onCameraImageConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -122,6 +123,14 @@ fun NotesEditorDialog(
         }
     }
 
+    LaunchedEffect(cameraImageUri) {
+        cameraImageUri?.let { uri ->
+            selectedRatio = 0f
+            cropError = null
+            cropSourceUri = uri
+        }
+    }
+
     LaunchedEffect(cropSourceUri) {
         val sourceUri = cropSourceUri ?: return@LaunchedEffect
         // Clear the previous preview before loading another URI. Otherwise a slow
@@ -146,12 +155,16 @@ fun NotesEditorDialog(
                 if (!stagedFile.isFile || stagedFile.length() <= 0L) {
                     throw IOException("O seletor retornou um arquivo vazio ou indisponível.")
                 }
-                Result.success(decodeOrientedBitmap(context, Uri.fromFile(stagedFile).toString()))
+                Result.success(loadCropBitmap(context, Uri.fromFile(stagedFile).toString()))
             } catch (error: Exception) {
                 Result.failure<Bitmap>(error)
             } finally {
                 stagedFile.delete()
             }
+        }
+        if (sourceUri == cameraImageUri) {
+            Uri.parse(sourceUri).path?.let { File(it).delete() }
+            onCameraImageConsumed()
         }
         decoded.onSuccess { cropBitmap = it }
             .onFailure { error ->
@@ -162,11 +175,13 @@ fun NotesEditorDialog(
 
     fun closeAndDiscard() {
         generatedImageUris.forEach(onDeleteTemporaryImage)
+        cameraImageUri?.let { uri -> Uri.parse(uri).path?.let { path -> File(path).delete() } }
         cropBitmap?.recycle()
         onDismiss()
     }
 
     fun saveNote() {
+        if (cameraImageUri != null) return
         val text = draftText.trim().take(MAX_NOTE_LENGTH)
         if (text.isBlank() && draftImageUri.isNullOrBlank()) return
         val updated = if (editingNote == null) {
@@ -338,6 +353,10 @@ fun NotesEditorDialog(
                             onClick = {
                                 cropBitmap?.recycle()
                                 cropBitmap = null
+                                if (cropSourceUri == cameraImageUri) {
+                                    cameraImageUri?.let { uri -> Uri.parse(uri).path?.let { path -> File(path).delete() } }
+                                    onCameraImageConsumed()
+                                }
                                 cropSourceUri = null
                             },
                             enabled = !isSavingImage,
@@ -356,6 +375,15 @@ fun NotesEditorDialog(
                     draftImageUri?.let { NoteImagePreview(it) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
+                            onClick = onRequestCamera,
+                            enabled = !isSavingImage,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Câmera")
+                        }
+                        OutlinedButton(
                             onClick = {
                                 imagePicker.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -368,22 +396,22 @@ fun NotesEditorDialog(
                             Spacer(Modifier.width(6.dp))
                             Text(if (draftImageUri == null) "Selecionar imagem" else "Trocar imagem")
                         }
-                        if (draftImageUri != null) {
-                            OutlinedButton(
+                    }
+                    if (draftImageUri != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(
                                 onClick = {
                                     selectedRatio = 0f
                                     cropError = null
                                     cropSourceUri = draftImageUri
                                 },
                                 enabled = !isSavingImage,
-                            ) { Text("Recortar") }
+                            ) { Text("Recortar imagem") }
+                            TextButton(
+                                onClick = { draftImageUri = null },
+                                enabled = !isSavingImage,
+                            ) { Text("Remover imagem") }
                         }
-                    }
-                    if (draftImageUri != null) {
-                        TextButton(
-                            onClick = { draftImageUri = null },
-                            enabled = !isSavingImage,
-                        ) { Text("Remover imagem") }
                     }
                     imageError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
@@ -393,7 +421,7 @@ fun NotesEditorDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (editingNote != null && cropSourceUri == null) {
+                    if (editingNote != null && cropSourceUri == null && cameraImageUri == null) {
                         TextButton(
                             onClick = ::deleteNote,
                             enabled = !isSavingImage,
@@ -411,7 +439,7 @@ fun NotesEditorDialog(
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = ::saveNote,
-                        enabled = !isSavingImage && cropSourceUri == null &&
+                        enabled = !isSavingImage && cropSourceUri == null && cameraImageUri == null &&
                             (draftText.isNotBlank() || !draftImageUri.isNullOrBlank()),
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
@@ -432,7 +460,7 @@ private fun NoteImagePreview(rawUri: String) {
 
     LaunchedEffect(rawUri) {
         bitmap = withContext(Dispatchers.IO) {
-            runCatching { decodeOrientedBitmap(context, rawUri) }.getOrNull()
+            runCatching { loadCropBitmap(context, rawUri) }.getOrNull()
         }
     }
 
@@ -487,49 +515,6 @@ private fun NoteImagePreview(rawUri: String) {
                 }
             }
         }
-    }
-}
-
-private fun decodeOrientedBitmap(context: android.content.Context, rawUri: String): Bitmap {
-    val uri = Uri.parse(rawUri)
-    val bounds = Options().apply { inJustDecodeBounds = true }
-    openImageInputStream(context, uri).use { BitmapFactory.decodeStream(it, null, bounds) }
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-        throw IOException("O arquivo selecionado não contém uma imagem raster suportada.")
-    }
-
-    var sample = 1
-    while (bounds.outWidth / sample > 2560 || bounds.outHeight / sample > 2560) sample *= 2
-    val bitmap = openImageInputStream(context, uri).use {
-        BitmapFactory.decodeStream(it, null, Options().apply {
-            inSampleSize = sample
-            inPreferredConfig = Bitmap.Config.ARGB_8888
-        })
-    } ?: throw IOException("O Android não conseguiu decodificar o conteúdo da imagem.")
-
-    val orientation = runCatching {
-        openImageInputStream(context, uri).use { stream ->
-            ExifInterface(stream).getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL,
-            )
-        }
-    }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
-
-    val matrix = Matrix().apply {
-        when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(90f)
-            ExifInterface.ORIENTATION_ROTATE_180 -> postRotate(180f)
-            ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(270f)
-            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)
-            ExifInterface.ORIENTATION_FLIP_VERTICAL -> postScale(1f, -1f)
-            ExifInterface.ORIENTATION_TRANSPOSE -> { postRotate(90f); postScale(-1f, 1f) }
-            ExifInterface.ORIENTATION_TRANSVERSE -> { postRotate(270f); postScale(-1f, 1f) }
-        }
-    }
-    if (matrix.isIdentity) return bitmap
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true).also {
-        bitmap.recycle()
     }
 }
 

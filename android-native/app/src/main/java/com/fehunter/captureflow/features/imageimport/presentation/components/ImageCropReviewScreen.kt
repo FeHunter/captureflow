@@ -1,7 +1,6 @@
 package com.fehunter.captureflow.features.imageimport.presentation.components
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,6 +39,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
+import com.fehunter.captureflow.core.ui.loadCropBitmap
 
 /**
  * Lets the user choose a crop ratio before the image enters OCR/review.
@@ -59,8 +59,9 @@ fun ImageCropReviewScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(imageUri) {
+        bitmap?.let { if (!it.isRecycled) it.recycle() }
         bitmap = withContext(Dispatchers.IO) {
-            runCatching { BitmapFactory.decodeFile(Uri.parse(imageUri).path) }.getOrNull()
+            runCatching { loadCropBitmap(context, imageUri) }.getOrNull()
         }
         if (bitmap == null) error = "Não foi possível abrir a foto."
     }

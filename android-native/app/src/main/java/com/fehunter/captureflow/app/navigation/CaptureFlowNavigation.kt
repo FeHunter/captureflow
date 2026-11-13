@@ -193,6 +193,8 @@ fun CaptureFlowApp(
                     imageImportViewModel = imageImportViewModel,
                     categoriesViewModel = categoriesViewModel,
                     dashboardViewModel = dashboardViewModel,
+                    newslettersViewModel = newslettersViewModel,
+                    onOpenNewsletters = { showNewsletters = true },
                     shareViewModel = shareViewModel,
                     categorySortOrder = categorySortOrder,
                     onCategorySortOrderChange = onCategorySortOrderChange,
