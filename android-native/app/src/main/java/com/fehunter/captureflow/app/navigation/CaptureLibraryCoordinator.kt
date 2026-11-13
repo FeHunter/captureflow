@@ -645,6 +645,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 imageUri = sourceUri,
                 onConfirm = { croppedUri ->
                     val targetId = coverCropTargetId
+                    coverCropSourceUri = null
+                    coverCropTargetId = null
                     if (targetId != null) {
                         viewModel.replaceCaptureCover(
                             targetId,
@@ -652,13 +654,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                             ImageCompressionProfile.fromPreference(imageCompressionProfile),
                             onComplete = {
                                 Uri.parse(croppedUri).path?.let { java.io.File(it).delete() }
-                                coverCropSourceUri = null
-                                coverCropTargetId = null
                             },
                         )
                     } else {
                         Uri.parse(croppedUri).path?.let { java.io.File(it).delete() }
-                        coverCropSourceUri = null
                     }
                 },
                 onCancel = {
@@ -672,7 +671,11 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     selectedNewsletterArticle?.let { article ->
         Dialog(
             onDismissRequest = { selectedNewsletterArticle = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
+            ),
         ) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 NewsletterArticleReader(article = article, onBack = { selectedNewsletterArticle = null })
