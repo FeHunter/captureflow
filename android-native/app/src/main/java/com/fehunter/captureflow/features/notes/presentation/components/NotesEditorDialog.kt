@@ -181,6 +181,7 @@ fun NotesEditorDialog(
     }
 
     fun saveNote() {
+        if (cameraImageUri != null) return
         val text = draftText.trim().take(MAX_NOTE_LENGTH)
         if (text.isBlank() && draftImageUri.isNullOrBlank()) return
         val updated = if (editingNote == null) {
@@ -420,7 +421,7 @@ fun NotesEditorDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (editingNote != null && cropSourceUri == null) {
+                    if (editingNote != null && cropSourceUri == null && cameraImageUri == null) {
                         TextButton(
                             onClick = ::deleteNote,
                             enabled = !isSavingImage,
@@ -438,7 +439,7 @@ fun NotesEditorDialog(
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = ::saveNote,
-                        enabled = !isSavingImage && cropSourceUri == null &&
+                        enabled = !isSavingImage && cropSourceUri == null && cameraImageUri == null &&
                             (draftText.isNotBlank() || !draftImageUri.isNullOrBlank()),
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
