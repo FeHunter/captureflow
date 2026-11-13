@@ -9,11 +9,14 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -77,6 +80,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         pendingShareIntent = intent.takeIf {
             it.action == Intent.ACTION_SEND || it.action == Intent.ACTION_SEND_MULTIPLE
         }
@@ -92,6 +96,12 @@ class MainActivity : ComponentActivity() {
                 else -> androidx.compose.foundation.isSystemInDarkTheme()
             }
             CaptureFlowTheme(darkTheme = isDark) {
+                SideEffect {
+                    WindowCompat.getInsetsController(window, window.decorView).apply {
+                        isAppearanceLightStatusBars = !isDark
+                        isAppearanceLightNavigationBars = !isDark
+                    }
+                }
                 val shared = pendingShareIntent
                 LaunchedEffect(shared) {
                     if (shared?.action == Intent.ACTION_SEND || shared?.action == Intent.ACTION_SEND_MULTIPLE) {

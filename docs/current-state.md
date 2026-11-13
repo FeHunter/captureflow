@@ -1,6 +1,6 @@
 # Capture Flow — estado atual
 
-**Atualizado:** 2026-11-13 | **Base de implementação:** `main` + branch `feat/notes-camera-fullscreen-crop-newsletter-home`.
+**Atualizado:** 2026-11-13 | **Base de implementação:** `main`.
 
 ## Produto e stack
 Caderno pessoal Android local para guardar links, textos e imagens como referências organizadas, com categorias, subtarefas, anotações, newsletters e compartilhamento. Kotlin, Jetpack Compose/Material 3, MVVM, Coroutines/Flow, Room v11, ML Kit OCR e SharedPreferences. Sem conta/sincronização própria.
@@ -30,6 +30,12 @@ Feature nova com payload de título, categoria, data, link, conteúdo, capa, mí
 
 ## Desempenho
 Biblioteca e grade expandida usam containers lazy com chaves estáveis; itens da grade declaram contentType. O agrupamento por categoria é calculado uma vez por atualização do conjunto filtrado, evitando varreduras repetidas da lista para cada seção. O estado da barra flutuante deriva do scroll via derivedStateOf, e os coletores da Biblioteca usam collectAsStateWithLifecycle. core/ui/ImageBitmapLoader aplica downsampling por dimensão de destino e cache LRU limitado a uma fração do heap; previews usam bitmaps menores que o Fullscreen. O cache é transitório e não substitui arquivos privados/Room.
+
+## Compatibilidade de janelas e release
+
+A Activity principal habilita edge-to-edge explicitamente com `enableEdgeToEdge()`, incluindo compatibilidade em versões anteriores ao Android 15. A configuração de ícones das barras de status e navegação acompanha o tema claro/escuro escolhido no app, inclusive quando diverge do tema do dispositivo. O shell usa Material 3 Scaffold/TopAppBar para aplicar os insets padrão; evitar padding manual duplicado. A validação em dispositivo deve cobrir Android 15/16 (API 35/36), uma versão anterior, navegação por gestos e por três botões, recortes de tela, teclado, diálogos e telas fullscreen.
+
+A build release executa R8 com redução, otimização, ofuscação e redução de recursos. O CI valida `:app:bundleRelease`, confirma a geração do mapping e arquiva relatórios R8 não sensíveis. Os percentuais oficiais de otimização DEX devem ser conferidos no App Bundle Explorer do Play Console após upload do AAB; build verde isoladamente não comprova o limite percentual.
 
 ## Persistência e validação
 Room v11: captures, categories, capture_subtasks, capture_media, newsletter_sources e newsletter_articles; checklist_tasks é legado. Esta alteração não exige migration. CI deve validar unit tests, assembleDebug, instrumentation compile e bundleRelease; teste real de câmera, Photo Picker, crop de capa, cancelamento, leitor de Newsletter e temas claro/escuro permanece necessário em dispositivo/emulador.
