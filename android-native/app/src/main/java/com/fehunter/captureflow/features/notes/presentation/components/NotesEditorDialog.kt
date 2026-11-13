@@ -178,7 +178,7 @@ fun NotesEditorDialog(
 
     fun closeAndDiscard() {
         generatedImageUris.forEach(onDeleteTemporaryImage)
-        cameraImageUri?.let { Uri.parse(it).path?.let(File::delete) }
+        cameraImageUri?.let { uri -> Uri.parse(uri).path?.let { path -> File(path).delete() } }
         cropBitmap?.recycle()
         onDismiss()
     }

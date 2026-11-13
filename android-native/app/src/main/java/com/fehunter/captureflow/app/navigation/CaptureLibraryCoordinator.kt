@@ -29,6 +29,10 @@ import com.fehunter.captureflow.features.share.domain.model.CaptureSharePayload
 import com.fehunter.captureflow.features.share.domain.model.CaptureShareNote
 import com.fehunter.captureflow.features.captures.domain.model.CaptureNotesCodec
 import com.fehunter.captureflow.features.dashboard.presentation.components.DashboardSummaryCard
+import com.fehunter.captureflow.features.newsletters.domain.model.NewsletterArticle
+import com.fehunter.captureflow.features.newsletters.presentation.components.NewsletterHomeSection
+import com.fehunter.captureflow.features.newsletters.presentation.screens.NewsletterArticleReader
+import com.fehunter.captureflow.features.newsletters.presentation.viewmodel.NewslettersViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
@@ -80,7 +84,7 @@ import kotlinx.coroutines.withContext
 
 
 @Composable
-fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
+fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImportViewModel, categoriesViewModel: CategoriesViewModel, dashboardViewModel: DashboardViewModel, newslettersViewModel: NewslettersViewModel, onOpenNewsletters: () -> Unit, shareViewModel: CaptureShareViewModel, categorySortOrder: String, onCategorySortOrderChange: (String) -> Unit, captureSortOrder: String, imageCompressionProfile: String, hasScreenshotAccess: Boolean, screenshotMonitoringEnabled: Boolean, detectedScreenshotUri: Uri?, pendingScreenshotImportUri: Uri?, onRequestScreenshotAccess: () -> Unit, onStopScreenshotMonitoring: () -> Unit, onScreenshotHandled: () -> Unit, onScreenshotImportHandled: () -> Unit) {
     val context = LocalContext.current
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val coverUpdateError by viewModel.coverUpdateError.collectAsStateWithLifecycle()
@@ -123,6 +127,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var showCompletedInExpandedCategory by remember { mutableStateOf(false) }
     var selectedCapture by remember { mutableStateOf<Capture?>(null) }
     var shareCapture by remember { mutableStateOf<Capture?>(null) }
+    var selectedNewsletterArticle by remember { mutableStateOf<NewsletterArticle?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var editingNoteId by remember { mutableStateOf<String?>(null) }
     var showNotesCameraCapture by remember { mutableStateOf(false) }
@@ -282,6 +287,16 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
             }
         }
         item(key = "dashboard") { DashboardSummaryCard(dashboardSummary) }
+        item(key = "newsletter-preview") {
+            NewsletterHomeSection(
+                viewModel = newslettersViewModel,
+                onOpenArticle = { article ->
+                    newslettersViewModel.markRead(article.id, true)
+                    selectedNewsletterArticle = article
+                },
+                onOpenNewsletters = onOpenNewsletters,
+            )
+        }
         item(key = "categories") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 var showSortMenu by remember { mutableStateOf(false) }
@@ -651,6 +666,17 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                     coverCropTargetId = null
                 },
             )
+        }
+    }
+
+    selectedNewsletterArticle?.let { article ->
+        Dialog(
+            onDismissRequest = { selectedNewsletterArticle = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                NewsletterArticleReader(article = article, onBack = { selectedNewsletterArticle = null })
+            }
         }
     }
 
