@@ -352,6 +352,10 @@ fun NotesEditorDialog(
                             onClick = {
                                 cropBitmap?.recycle()
                                 cropBitmap = null
+                                if (cropSourceUri == cameraImageUri) {
+                                    cameraImageUri?.let { uri -> Uri.parse(uri).path?.let { path -> File(path).delete() } }
+                                    onCameraImageConsumed()
+                                }
                                 cropSourceUri = null
                             },
                             enabled = !isSavingImage,
@@ -391,22 +395,22 @@ fun NotesEditorDialog(
                             Spacer(Modifier.width(6.dp))
                             Text(if (draftImageUri == null) "Selecionar imagem" else "Trocar imagem")
                         }
-                        if (draftImageUri != null) {
-                            OutlinedButton(
+                    }
+                    if (draftImageUri != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(
                                 onClick = {
                                     selectedRatio = 0f
                                     cropError = null
                                     cropSourceUri = draftImageUri
                                 },
                                 enabled = !isSavingImage,
-                            ) { Text("Recortar") }
+                            ) { Text("Recortar imagem") }
+                            TextButton(
+                                onClick = { draftImageUri = null },
+                                enabled = !isSavingImage,
+                            ) { Text("Remover imagem") }
                         }
-                    }
-                    if (draftImageUri != null) {
-                        TextButton(
-                            onClick = { draftImageUri = null },
-                            enabled = !isSavingImage,
-                        ) { Text("Remover imagem") }
                     }
                     imageError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }

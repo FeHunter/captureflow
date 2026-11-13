@@ -136,7 +136,7 @@ fun NewsletterHomeSection(
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     date?.let {
-                                        Spacer(Modifier.padding(start = 4.dp))
+                                        Spacer(Modifier.width(4.dp))
                                         Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }

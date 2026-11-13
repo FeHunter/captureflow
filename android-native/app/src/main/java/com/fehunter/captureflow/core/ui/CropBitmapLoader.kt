@@ -33,7 +33,9 @@ fun loadCropBitmap(context: Context, rawUri: String, maxDimension: Int = 2560): 
         val streamAttempt = runCatching { resolver.openInputStream(uri) }
         streamAttempt.getOrNull()?.let { return it }
         val descriptorAttempt = runCatching {
-            resolver.openFileDescriptor(uri, "r")?.let(android.os.ParcelFileDescriptor.AutoCloseInputStream::new)
+            resolver.openFileDescriptor(uri, "r")?.let { descriptor ->
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor)
+            }
         }
         descriptorAttempt.getOrNull()?.let { return it }
         throw IOException(
