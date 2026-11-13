@@ -129,7 +129,7 @@ fun FullscreenCaptureDialog(
                 Column(Modifier.fillMaxSize()) {
                     Row(
                         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
-                            .padding(horizontal = 8.dp, vertical = 7.dp),
+                            .statusBarsPadding().padding(horizontal = 8.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f).padding(start = 8.dp)) {
@@ -264,7 +264,7 @@ fun FullscreenCaptureDialog(
                                         }
                                     }
                                     Surface(
-                                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 56.dp),
+                                        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 56.dp),
                                         color = Color.Black.copy(alpha = 0.72f),
                                         shape = MaterialTheme.shapes.extraLarge,
                                     ) {
@@ -300,7 +300,7 @@ fun FullscreenCaptureDialog(
                         }
                         Column(
                             modifier = Modifier.align(Alignment.BottomStart)
-                                .padding(start = 16.dp, bottom = 20.dp)
+                                .navigationBarsPadding().padding(start = 16.dp, bottom = 20.dp)
                                 .fillMaxWidth(0.78f),
                             horizontalAlignment = Alignment.Start,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -383,7 +383,7 @@ fun FullscreenCaptureDialog(
                             }
                         }
                         Surface(
-                            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 20.dp),
+                            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 16.dp, bottom = 20.dp),
                             shape = MaterialTheme.shapes.extraLarge,
                             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
                             shadowElevation = 8.dp,
