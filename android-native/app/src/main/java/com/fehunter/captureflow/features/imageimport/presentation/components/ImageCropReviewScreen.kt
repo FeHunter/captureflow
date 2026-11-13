@@ -1,8 +1,6 @@
 package com.fehunter.captureflow.features.imageimport.presentation.components
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,10 +38,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
-import java.util.UUID
-import androidx.exifinterface.media.ExifInterface
 import kotlin.math.roundToInt
+import com.fehunter.captureflow.core.ui.loadCropBitmap
 
 /**
  * Lets the user choose a crop ratio before the image enters OCR/review.
@@ -65,7 +61,7 @@ fun ImageCropReviewScreen(
     LaunchedEffect(imageUri) {
         bitmap?.let { if (!it.isRecycled) it.recycle() }
         bitmap = withContext(Dispatchers.IO) {
-            runCatching { decodeOrientedBitmap(context, imageUri) }.getOrNull()
+            runCatching { loadCropBitmap(context, imageUri) }.getOrNull()
         }
         if (bitmap == null) error = "Não foi possível abrir a foto."
     }
@@ -159,56 +155,6 @@ fun ImageCropReviewScreen(
                 }
             }
         }
-    }
-}
-
-private fun decodeOrientedBitmap(context: android.content.Context, rawUri: String): Bitmap {
-    val uri = Uri.parse(rawUri)
-    val stagedFile = File(context.cacheDir, "captureflow-crop-source-${UUID.randomUUID()}.image")
-    try {
-        val input = context.contentResolver.openInputStream(uri)
-            ?: throw IOException("Não foi possível acessar a imagem selecionada.")
-        input.use { source -> FileOutputStream(stagedFile).use { target -> source.copyTo(target) } }
-        if (!stagedFile.isFile || stagedFile.length() <= 0L) {
-            throw IOException("A imagem selecionada está vazia ou indisponível.")
-        }
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(stagedFile.absolutePath, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-            throw IOException("O arquivo selecionado não contém uma imagem compatível.")
-        }
-        var sample = 1
-        while (bounds.outWidth / sample > 2800 || bounds.outHeight / sample > 2800) sample *= 2
-        val decoded = BitmapFactory.decodeFile(
-            stagedFile.absolutePath,
-            BitmapFactory.Options().apply {
-                inSampleSize = sample
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            },
-        ) ?: throw IOException("Não foi possível decodificar a imagem selecionada.")
-        val orientation = runCatching {
-            ExifInterface(stagedFile.absolutePath).getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL,
-            )
-        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
-        val matrix = Matrix().apply {
-            when (orientation) {
-                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)
-                ExifInterface.ORIENTATION_ROTATE_180 -> postRotate(180f)
-                ExifInterface.ORIENTATION_FLIP_VERTICAL -> postScale(1f, -1f)
-                ExifInterface.ORIENTATION_TRANSPOSE -> { postRotate(90f); postScale(-1f, 1f) }
-                ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(90f)
-                ExifInterface.ORIENTATION_TRANSVERSE -> { postRotate(-90f); postScale(-1f, 1f) }
-                ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(270f)
-            }
-        }
-        if (matrix.isIdentity) return decoded
-        return Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true).also {
-            if (it !== decoded && !decoded.isRecycled) decoded.recycle()
-        }
-    } finally {
-        stagedFile.delete()
     }
 }
 
