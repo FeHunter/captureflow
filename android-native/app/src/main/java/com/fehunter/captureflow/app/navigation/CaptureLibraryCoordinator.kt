@@ -122,6 +122,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     var shareCapture by remember { mutableStateOf<Capture?>(null) }
     var notesCaptureId by remember { mutableStateOf<String?>(null) }
     var editingNoteId by remember { mutableStateOf<String?>(null) }
+    var showNotesCameraCapture by remember { mutableStateOf(false) }
+    var notesCameraImageUri by remember { mutableStateOf<String?>(null) }
     var sharedLinkCategory by remember { mutableStateOf<String?>(null) }
     var screenshotImportCategory by remember { mutableStateOf<String?>(null) }
     var showCategoryManager by remember { mutableStateOf(false) }
@@ -641,7 +643,15 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
                 captureTitle = item.title,
                 initialNotes = item.notes.orEmpty(),
                 initialEditingNoteId = editingNoteId,
-                onDismiss = { notesCaptureId = null; editingNoteId = null },
+                onRequestCamera = { showNotesCameraCapture = true },
+                cameraImageUri = notesCameraImageUri,
+                onCameraImageConsumed = { notesCameraImageUri = null },
+                onDismiss = {
+                    showNotesCameraCapture = false
+                    notesCameraImageUri = null
+                    notesCaptureId = null
+                    editingNoteId = null
+                },
                 onDeleteTemporaryImage = imageImportViewModel::deleteTemporaryImage,
                 onCompressImage = imageImportViewModel::compressNoteImage,
                 onSave = { notes ->
@@ -657,6 +667,22 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     }
 
 
+
+    if (showNotesCameraCapture) {
+        Dialog(
+            onDismissRequest = { showNotesCameraCapture = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            ImageCaptureScreen(
+                reviewBeforeReturn = false,
+                onImageCaptured = { uri ->
+                    notesCameraImageUri = uri
+                    showNotesCameraCapture = false
+                },
+                onClose = { showNotesCameraCapture = false },
+            )
+        }
+    }
 
     val pendingImageReview by imageImportViewModel.pendingImageReview.collectAsState()
     val pendingImagePreview by produceState<androidx.compose.ui.graphics.ImageBitmap?>(

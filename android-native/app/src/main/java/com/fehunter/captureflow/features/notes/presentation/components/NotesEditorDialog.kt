@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Save
@@ -88,6 +89,9 @@ fun NotesEditorDialog(
     onSave: (String) -> Unit,
     onDeleteTemporaryImage: (String) -> Unit,
     onCompressImage: (ByteArray, (String?, String?) -> Unit) -> Unit,
+    onRequestCamera: () -> Unit = {},
+    cameraImageUri: String? = null,
+    onCameraImageConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -122,6 +126,14 @@ fun NotesEditorDialog(
         }
     }
 
+    LaunchedEffect(cameraImageUri) {
+        cameraImageUri?.let { uri ->
+            selectedRatio = 0f
+            cropError = null
+            cropSourceUri = uri
+        }
+    }
+
     LaunchedEffect(cropSourceUri) {
         val sourceUri = cropSourceUri ?: return@LaunchedEffect
         // Clear the previous preview before loading another URI. Otherwise a slow
@@ -153,6 +165,10 @@ fun NotesEditorDialog(
                 stagedFile.delete()
             }
         }
+        if (sourceUri == cameraImageUri) {
+            Uri.parse(sourceUri).path?.let { File(it).delete() }
+            onCameraImageConsumed()
+        }
         decoded.onSuccess { cropBitmap = it }
             .onFailure { error ->
                 cropError = error.localizedMessage?.takeIf(String::isNotBlank)
@@ -162,6 +178,7 @@ fun NotesEditorDialog(
 
     fun closeAndDiscard() {
         generatedImageUris.forEach(onDeleteTemporaryImage)
+        cameraImageUri?.let { Uri.parse(it).path?.let(File::delete) }
         cropBitmap?.recycle()
         onDismiss()
     }
@@ -355,6 +372,15 @@ fun NotesEditorDialog(
                 } else {
                     draftImageUri?.let { NoteImagePreview(it) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = onRequestCamera,
+                            enabled = !isSavingImage,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Câmera")
+                        }
                         OutlinedButton(
                             onClick = {
                                 imagePicker.launch(
