@@ -17,6 +17,7 @@ import com.fehunter.captureflow.features.captures.presentation.model.CaptureImag
 import com.fehunter.captureflow.features.imageimport.presentation.viewmodel.ImageImportViewModel
 import com.fehunter.captureflow.features.imagecompression.domain.model.ImageCompressionProfile
 import com.fehunter.captureflow.features.imageimport.presentation.components.ImageCaptureScreen
+import com.fehunter.captureflow.features.imageimport.presentation.components.ImageCropReviewScreen
 import com.fehunter.captureflow.features.search.presentation.components.CaptureSearchField
 import com.fehunter.captureflow.features.search.presentation.viewmodel.SearchViewModel
 import com.fehunter.captureflow.features.search.domain.usecase.FilterCapturesUseCase
@@ -110,6 +111,8 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val query by searchViewModel.query.collectAsStateWithLifecycle()
     var category by remember { mutableStateOf("Todas") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var coverCropSourceUri by remember { mutableStateOf<String?>(null) }
+    var coverCropTargetId by remember { mutableStateOf<String?>(null) }
     var showCameraCapture by remember { mutableStateOf(false) }
     var showCreateTaskDialog by remember { mutableStateOf(false) }
     var pendingDeleteCapture by remember { mutableStateOf<Capture?>(null) }
@@ -148,10 +151,7 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
     val coverImagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            val targetId = selectedCapture?.id
-            if (uri != null && targetId != null) {
-                viewModel.replaceCaptureCover(targetId, uri.toString(), ImageCompressionProfile.fromPreference(imageCompressionProfile))
-            }
+            if (uri != null && coverCropTargetId != null) coverCropSourceUri = uri.toString()
         },
     )
     LaunchedEffect(detectedScreenshotUri) {
@@ -587,7 +587,10 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         captures = fullscreenCaptures,
         mediaByCapture = remember(captureMedia) { captureMedia.groupBy { it.captureId } },
         onSetCover = viewModel::setCaptureCover,
-        onEditCover = { coverImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onEditCover = { captureId ->
+            coverCropTargetId = captureId
+            coverImagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
         onDismiss = { selectedCapture = null },
         onCaptureSelected = { selectedCapture = it },
         onCompleted = { id, completed ->
@@ -614,6 +617,42 @@ fun CaptureLibrary(viewModel: CaptureViewModel, imageImportViewModel: ImageImpor
         onDeleteSubtask = viewModel::deleteCaptureSubtask,
         onShare = { shareCapture = it },
     )
+
+    coverCropSourceUri?.let { sourceUri ->
+        Dialog(
+            onDismissRequest = {
+                coverCropSourceUri = null
+                coverCropTargetId = null
+            },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true),
+        ) {
+            ImageCropReviewScreen(
+                imageUri = sourceUri,
+                onConfirm = { croppedUri ->
+                    val targetId = coverCropTargetId
+                    if (targetId != null) {
+                        viewModel.replaceCaptureCover(
+                            targetId,
+                            croppedUri,
+                            ImageCompressionProfile.fromPreference(imageCompressionProfile),
+                            onComplete = {
+                                Uri.parse(croppedUri).path?.let { java.io.File(it).delete() }
+                                coverCropSourceUri = null
+                                coverCropTargetId = null
+                            },
+                        )
+                    } else {
+                        Uri.parse(croppedUri).path?.let { java.io.File(it).delete() }
+                        coverCropSourceUri = null
+                    }
+                },
+                onCancel = {
+                    coverCropSourceUri = null
+                    coverCropTargetId = null
+                },
+            )
+        }
+    }
 
     shareCapture?.let { selectedItem ->
         val item = captures.firstOrNull { it.id == selectedItem.id } ?: selectedItem

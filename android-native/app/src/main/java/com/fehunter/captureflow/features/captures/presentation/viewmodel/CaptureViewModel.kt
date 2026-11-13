@@ -51,7 +51,12 @@ class CaptureViewModel(
     fun setCaptureCover(captureId: String, mediaId: String) {
         viewModelScope.launch(Dispatchers.IO) { captureUseCases.setCover(captureId, mediaId) }
     }
-    fun replaceCaptureCover(captureId: String, sourceUri: String, profile: ImageCompressionProfile) {
+    fun replaceCaptureCover(
+        captureId: String,
+        sourceUri: String,
+        profile: ImageCompressionProfile,
+        onComplete: () -> Unit = {},
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             var newUri: String? = null
             try {
@@ -63,6 +68,8 @@ class CaptureViewModel(
                 privateImageStorage.deletePrivateImage(newUri)
                 _coverUpdateError.value = error.localizedMessage?.takeIf(String::isNotBlank)
                     ?: "Não foi possível atualizar a imagem da capa."
+            } finally {
+                onComplete()
             }
         }
     }
