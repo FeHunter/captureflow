@@ -30,6 +30,8 @@
 | Android Gradle Plugin | 8.13.2 |
 | Kotlin | 2.2.20 |
 | Java toolchain CI | Temurin 21; bytecode JVM 17 |
+| R8 release | Ativo: shrinking, optimization, obfuscation e resource shrinking |
+| Edge-to-edge | `enableEdgeToEdge()` na MainActivity; ícones das barras seguem o tema do app |
 
 Não mudar o versionCode/versionName nesta fase. O primeiro lançamento público poderá adotar 1.0.0, mas o versionCode deverá ser maior que qualquer valor já enviado ao Play Console.
 
@@ -46,7 +48,7 @@ Definir todas as quatro variáveis ou nenhuma. Configuração parcial interrompe
 
 Sem as variáveis, `bundleRelease` valida a compilação e produz bundle não assinado. Esse artefato não está apto para upload. Antes da publicação, configurar a chave de upload e validar assinatura; usar Play App Signing no Play Console e guardar backup seguro da chave de upload. Não compartilhar a chave privada.
 
-A CI executa `bundleRelease` sem segredos para detectar problemas de compilação/configuração. A assinatura e o upload automatizado ficam fora do escopo desta etapa.
+A CI executa `bundleRelease` sem segredos para detectar problemas de compilação/configuração. A assinatura e o upload automatizado ficam fora do escopo desta etapa. A release ativa R8 com `isMinifyEnabled = true`, `isShrinkResources = true` e `proguard-android-optimize.txt`; não há regras keep customizadas amplas. O CI confirma a geração de `mapping.txt` e arquiva relatórios R8 de uso/configuração, sem publicar o mapping. Guardar o mapping correspondente a cada AAB publicado em armazenamento privado para retrace de crashes.
 
 ## 4. Inventário de dependências, SDKs e tráfego de rede
 
@@ -194,8 +196,9 @@ Pendências:
 ## 9. Testes de release
 
 - CI: `testDebugUnitTest`, `assembleDebug`, `assembleDebugAndroidTest`, `bundleRelease`.
-- Teste manual em API 26 e versões recentes, incluindo API 36.
-- Testar edge-to-edge, barras do sistema, predictive back, orientação, telas grandes e fontes ampliadas.
+- Teste manual em API 26 e versões recentes, incluindo API 35 e 36.
+- Testar edge-to-edge: status/navigation bars, tema claro/escuro (inclusive diferente do tema do sistema), gestos e navegação de três botões, display cutouts, teclado/IME, dialogs, fullscreen, predictive back, orientação, telas grandes e fontes ampliadas.
+- Conferir no App Bundle Explorer do Play Console os percentuais separados de shrinking, obfuscation e optimization do AAB efetivamente enviado; não inferir os percentuais apenas pelo sucesso do R8 no CI.
 - Testar Photo Picker, câmera, OCR, compartilhamento PDF via FileProvider, backup/restauração, RSS, player e screenshot monitoring opt-in.
 - Testar permissões negadas/revogadas e comportamento sem conexão.
 - Instalar AAB assinado via faixa interna do Play Console e validar atualização sobre instalação anterior.

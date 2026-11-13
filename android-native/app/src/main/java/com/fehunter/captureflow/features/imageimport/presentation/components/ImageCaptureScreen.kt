@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -160,7 +162,7 @@ fun ImageCaptureScreen(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).statusBarsPadding().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onClose, modifier = Modifier.size(44.dp)) {
@@ -177,7 +179,7 @@ fun ImageCaptureScreen(
             if (hasPermission && imageCapture != null) {
                 Text(
                     "Toque na imagem para ajustar o foco",
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 118.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 118.dp),
                     color = androidx.compose.ui.graphics.Color.White,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -204,7 +206,7 @@ fun ImageCaptureScreen(
                     })
                 },
                 enabled = hasPermission && imageCapture != null && !isCapturing,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)
+                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 48.dp)
                     .size(84.dp).background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f), CircleShape),
             ) {
                 if (isCapturing) CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.White)

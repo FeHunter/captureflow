@@ -49,8 +49,10 @@ android {
     }
     buildTypes {
         getByName("release") {
-            // Keep shrinking disabled until release-specific regression coverage is established.
-            isMinifyEnabled = false
+            // R8 shrinks, optimizes and obfuscates release code; keep rules must stay narrowly scoped.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             if (hasCompleteReleaseSigningValues) {
                 signingConfig = signingConfigs.getByName("release")
             }

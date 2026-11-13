@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -38,7 +40,7 @@ fun NewsletterArticleReader(article: NewsletterArticle, onBack: () -> Unit) {
     val quoteBackground = MaterialTheme.colorScheme.surfaceVariant.toCssHex()
     val styleKey = listOf(article.id, pageBackground, pageText, quoteBorder, quoteText, quoteBackground).joinToString("|")
     Column(Modifier.fillMaxSize()) {
-        Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
+        Surface(Modifier.fillMaxWidth().statusBarsPadding(), color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Voltar às publicações")
@@ -51,7 +53,7 @@ fun NewsletterArticleReader(article: NewsletterArticle, onBack: () -> Unit) {
             }
         }
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().navigationBarsPadding(),
             factory = { context ->
                 WebView(context).apply {
                     settings.javaScriptEnabled = false

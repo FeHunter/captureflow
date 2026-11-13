@@ -47,6 +47,16 @@ jobs:
           test -f "$bundle_path"
           cp "$bundle_path" ../audit-output/captureflow-release-unsigned.aab
 
+          # Confirm R8 ran and preserve non-sensitive diagnostics for release review.
+          mapping_dir="app/build/outputs/mapping/release"
+          test -f "$mapping_dir/mapping.txt"
+          mkdir -p ../audit-output/r8
+          for report in usage.txt seeds.txt configuration.txt missing_rules.txt; do
+            if [[ -f "$mapping_dir/$report" ]]; then
+              cp "$mapping_dir/$report" "../audit-output/r8/$report"
+            fi
+          done
+
           curl --fail --location --silent --show-error \
             https://github.com/google/bundletool/releases/download/1.18.2/bundletool-all-1.18.2.jar \
             --output /tmp/bundletool.jar
